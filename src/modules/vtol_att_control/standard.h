@@ -48,6 +48,10 @@
 #include "vtol_type.h"
 #include <parameters/param.h>
 #include <drivers/drv_hrt.h>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionCallback.hpp>
+#include <uORB/Publication.hpp>
+#include <uORB/topics/colugo_actuator.h>
 
 class Standard : public VtolType
 {
@@ -93,12 +97,22 @@ private:
 	struct {
 		vtol_mode flight_mode;			// indicates in which mode the vehicle is in
 		hrt_abstime transition_start;	// at what time did we start a transition (front- or backtransition)
+		hrt_abstime colugo_intermidiate_time;//stage of intermidiate actuator posiotion
+		bool need_update_intermidiate_time;//stage of intermidiate actuator posiotion
 	} _vtol_schedule;
 
 	float _pusher_throttle{0.0f};
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
+    uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
 
 	void parameters_update() override;
+	//cologo staff
+	void publishColugoActuator(float val);
+	float getColugoToFwPitchTransition();
+	float getColugoToFwFlapsTransition();
+	float getColugoActuatorToFwTransition();
+	bool isAirspeedinPos1ForTransition();
+	bool isAirspeedinPos2ForTransition();
 };
 #endif

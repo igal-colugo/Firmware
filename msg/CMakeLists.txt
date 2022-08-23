@@ -59,6 +59,7 @@ set(msg_files
 	cellular_status.msg
 	collision_constraints.msg
 	collision_report.msg
+        colugo_actuator.msg
 	commander_state.msg
 	control_allocator_status.msg
 	cpuload.msg

@@ -239,7 +239,9 @@ uint32_t version_tag_to_vendor_version_number(const char *tag)
 
 uint32_t px4_firmware_vendor_version(void)
 {
-	return version_tag_to_vendor_version_number(PX4_GIT_TAG_STR);
+   // return version_tag_to_vendor_version_number(PX4_GIT_TAG_STR);
+    //colugo proprietory version...
+    return version_tag_to_vendor_version_number("v1.13.0-1.0.4");
 }
 
 const char *px4_firmware_git_branch(void)

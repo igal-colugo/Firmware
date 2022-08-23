@@ -46,14 +46,20 @@
 
 #include <float.h>
 #include <uORB/topics/landing_gear.h>
+#include <uORB/topics/colugo_actuator.h>
+//#include <mathlib/mathlib.h>
 
 using namespace matrix;
+
+//constexpr float C_AIRSPD_POS_2 = 11.0;
 
 Standard::Standard(VtolAttitudeControl *attc) :
 	VtolType(attc)
 {
 	_vtol_schedule.flight_mode = vtol_mode::MC_MODE;
 	_vtol_schedule.transition_start = 0;
+	_vtol_schedule.colugo_intermidiate_time = 0;
+	_vtol_schedule.need_update_intermidiate_time = false;
 	_pusher_active = false;
 
 	_mc_roll_weight = 1.0f;
@@ -97,6 +103,14 @@ Standard::parameters_update()
 
 }
 
+void Standard::publishColugoActuator(float val)
+{
+	colugo_actuator_s colugo_act{};
+	colugo_act.actuator_state = val;
+	colugo_act.timestamp = hrt_absolute_time();
+	_colugo_actuator_pub.publish(colugo_act);
+}
+
 void Standard::update_vtol_state()
 {
 	/* After flipping the switch the vehicle will start the pusher (or tractor) motor, picking up
@@ -127,6 +141,7 @@ void Standard::update_vtol_state()
 			mc_weight = 1.0f;
 			_pusher_throttle = 0.0f;
 			_reverse_output = 0.0f;
+			_vtol_schedule.need_update_intermidiate_time = true;//set it for when we go to fw
 
 		} else if (_vtol_schedule.flight_mode == vtol_mode::FW_MODE) {
 			// Regular backtransition
@@ -341,12 +356,84 @@ void Standard::update_fw_state()
 	VtolType::update_fw_state();
 }
 
+bool Standard::isAirspeedinPos1ForTransition()
+{
+	bool res = math::isInRange(_airspeed_validated->calibrated_airspeed_m_s, _params->airspeed_blend, 11.0f);
+	if(res && _vtol_schedule.need_update_intermidiate_time){
+		_vtol_schedule.need_update_intermidiate_time = false;
+		_vtol_schedule.colugo_intermidiate_time = hrt_absolute_time();
+	}
+	return res;
+}
+
+bool Standard::isAirspeedinPos2ForTransition()
+{
+	return _airspeed_validated->calibrated_airspeed_m_s > 11.0f;
+}
+/*
+get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
+*/
+float Standard::getColugoToFwPitchTransition()
+{
+	float res = 0;
+
+	if (isAirspeedinPos1ForTransition()) {
+		res = 0.5;
+
+	} else if (isAirspeedinPos2ForTransition()) {
+		res = 1.0;
+	}
+
+	return res;
+}
+
+/*
+get the postion of flaps control for mc to fw trasition (to move the free wing to correct location before lock)
+*/
+float Standard::getColugoToFwFlapsTransition()
+{
+	float res = 0;
+
+	if (isAirspeedinPos1ForTransition()) {
+		res = 0.1;
+
+	} else if (isAirspeedinPos2ForTransition()) {
+		res = -0.1;
+	}
+
+	return res;
+}
+
+
+/*
+get the postion of the colugo acctuator mc to fw trasition (to move the wing lock pin to correct location)
+*/
+float Standard::getColugoActuatorToFwTransition()
+{
+	float res = 0;
+
+	if (isAirspeedinPos1ForTransition()) {
+		res = 0.5;
+
+	} else if (isAirspeedinPos2ForTransition()
+	//past at list 2 seconds form position #1
+	&& ( hrt_absolute_time() - _vtol_schedule.colugo_intermidiate_time > 2000000) &&
+	_vtol_schedule.need_update_intermidiate_time == false) {
+		res = 1.0;
+	}
+
+	return res;
+}
+
+
+
 /**
  * Prepare message to actuators with data from mc and fw attitude controllers. An mc attitude weighting will determine
  * what proportion of control should be applied to each of the control groups (mc and fw).
  */
 void Standard::fill_actuator_outputs()
 {
+	float colugoVal = 0.1;
 	auto &mc_in = _actuators_mc_in->control;
 	auto &fw_in = _actuators_fw_in->control;
 
@@ -373,9 +460,28 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = 0;
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
+		colugoVal = -1.0;
+
 		break;
 
 	case vtol_mode::TRANSITION_TO_FW:
+		fw_out[actuator_controls_s::INDEX_PITCH]        = getColugoToFwPitchTransition();
+		mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
+		mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+		mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
+		mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+		mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
+
+		// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+		fw_out[actuator_controls_s::INDEX_ROLL]         =
+			fw_in[actuator_controls_s::INDEX_ROLL];	//fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
+		fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
+		fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
+		fw_out[actuator_controls_s::INDEX_FLAPS]        =
+			getColugoToFwFlapsTransition();//fw_in[actuator_controls_s::INDEX_FLAPS];
+		colugoVal = getColugoActuatorToFwTransition();
+		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+		break;
 
 	// FALLTHROUGH
 	case vtol_mode::TRANSITION_TO_MC:
@@ -393,6 +499,7 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+		colugoVal = -1.0;
 
 		break;
 
@@ -411,6 +518,9 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = fw_in[actuator_controls_s::INDEX_THROTTLE];
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
+		colugoVal = 1.0;
+
+
 		break;
 	}
 
@@ -442,6 +552,8 @@ void Standard::fill_actuator_outputs()
 	_actuators_out_1->timestamp_sample = _actuators_fw_in->timestamp_sample;
 
 	_actuators_out_0->timestamp = _actuators_out_1->timestamp = hrt_absolute_time();
+
+	publishColugoActuator(colugoVal);
 }
 
 void
