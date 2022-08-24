@@ -739,8 +739,13 @@ bool MixingOutput::updateStaticMixer()
 	reorderOutputs(_current_output_value);
 
 	/* now return the outputs to the driver */
+	//colugotest
+	//_current_output_value[6] = 1333;
 	if (_interface.updateOutputs(stop_motors, _current_output_value, mixed_num_outputs, n_updates)) {
 		actuator_outputs_s actuator_outputs{};
+		//colugotest
+		//actuator_outputs.output[8] = 0.3f;
+		//actuator_outputs.output[10] = 0.6f;
 		setAndPublishActuatorOutputs(mixed_num_outputs, actuator_outputs);
 
 		publishMixerStatus(actuator_outputs);
