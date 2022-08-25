@@ -52,6 +52,7 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/topics/colugo_actuator.h>
+#include <px4_platform_common/module_params.h>
 
 class Standard : public VtolType
 {
@@ -114,5 +115,12 @@ private:
 	float getColugoActuatorToFwTransition();
 	bool isAirspeedinPos1ForTransition();
 	bool isAirspeedinPos2ForTransition();
+
+
+	float _param_c_wafp{0.1f};
+	param_get(param_find("C_WAFP"), &_param_c_wafp);
+	//DEFINE_PARAMETERS(
+	//	(ParamFloat<px4::params::C_WAFP>) _param_c_wafp
+	//);
 };
 #endif
