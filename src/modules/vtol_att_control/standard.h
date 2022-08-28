@@ -52,7 +52,6 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/topics/colugo_actuator.h>
-#include <px4_platform_common/module_params.h>
 
 class Standard : public VtolType
 {
@@ -88,6 +87,16 @@ private:
 		param_t reverse_delay;
 	} _params_handles_standard;
 
+
+	struct {
+		float _param_c_wafp;
+	} _params_colugo;
+
+
+	struct {
+		param_t _param_c_wafp;
+	} _params_handles_colugo;
+
 	enum class vtol_mode {
 		MC_MODE = 0,
 		TRANSITION_TO_FW,
@@ -117,10 +126,10 @@ private:
 	bool isAirspeedinPos2ForTransition();
 
 
-	float _param_c_wafp{0.1f};
-	param_get(param_find("C_WAFP"), &_param_c_wafp);
+//	float _param_c_wafp{0.1f};
+
 	//DEFINE_PARAMETERS(
-	//	(ParamFloat<px4::params::C_WAFP>) _param_c_wafp
+	//	(ParamFloat<px4::params::WAFP>) _param_wafp
 	//);
 };
 #endif

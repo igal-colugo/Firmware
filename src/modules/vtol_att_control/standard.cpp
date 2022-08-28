@@ -72,6 +72,9 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_params_handles_standard.pitch_setpoint_offset = param_find("FW_PSP_OFF");
 	_params_handles_standard.reverse_output = param_find("VT_B_REV_OUT");
 	_params_handles_standard.reverse_delay = param_find("VT_B_REV_DEL");
+
+	//colugo
+	_params_handles_colugo._param_c_wafp = param_find("C_WAFP");
 }
 
 void
@@ -100,6 +103,12 @@ Standard::parameters_update()
 	/* reverse output */
 	param_get(_params_handles_standard.reverse_delay, &v);
 	_params_standard.reverse_delay = math::constrain(v, 0.0f, 10.0f);
+
+//colugo
+	/*  */
+	param_get(_params_handles_colugo._param_c_wafp, &v);
+	_params_colugo._param_c_wafp = math::constrain(v, -1.0f, 1.0f);
+
 
 }
 
@@ -465,7 +474,6 @@ void Standard::fill_actuator_outputs()
 		break;
 
 	case vtol_mode::TRANSITION_TO_FW:
-		fw_out[actuator_controls_s::INDEX_PITCH]        = getColugoToFwPitchTransition();
 		mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 		mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
 		mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
@@ -473,8 +481,8 @@ void Standard::fill_actuator_outputs()
 		mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
 		// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-		fw_out[actuator_controls_s::INDEX_ROLL]         =
-			fw_in[actuator_controls_s::INDEX_ROLL];	//fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
+		fw_out[actuator_controls_s::INDEX_PITCH]        = getColugoToFwPitchTransition();
+		fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
 		fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
 		fw_out[actuator_controls_s::INDEX_FLAPS]        =

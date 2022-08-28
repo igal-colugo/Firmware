@@ -1,0 +1,18 @@
+
+module_name: pwm_out
+
+parameters:
+    - group: COLUGO
+      definitions:
+        
+
+        C_WAFP:
+            description:
+                short: wing actuator pos1
+                long: |
+                    first position of wing lock actuator moving from MC to FW.                    
+            type: float
+            min: -1.0
+            max: 1.0
+            default: 0.34         
+       
