@@ -1,18 +1,89 @@
 
-module_name: pwm_out
+module_name: colugo
 
 parameters:
     - group: COLUGO
-      definitions:
-        
-
+      definitions:     
+            
+        C_DEBUG:
+            description:
+                short: 'proprietary debug options'         
+                long: |
+                    'default - disabled is 0.'                       
+            type: int32              
+            default: 0 
+            min: 0
+            
         C_WAFP:
             description:
-                short: wing actuator pos1
+                short: 'wing actuator pos 1'
                 long: |
                     first position of wing lock actuator moving from MC to FW.                    
             type: float
+            decimal: 2
+            increment: 0.01
             min: -1.0
             max: 1.0
-            default: 0.34         
+            default: 0.3       
+            
+        C_WASP:
+            description:
+                short: 'wing actuator pos #2'
+                long: |
+                    Second position of wing lock actuator moving from MC to FW.                    
+            type: float
+            decimal: 2
+            increment: 0.01
+            min: -1.0
+            max: 1.0
+            default: 0.5   
+       
+        C_PI_FP:
+            description:
+                short: 'Elevator (pitch) pos #1'
+                long: |
+                    first position of Elevator actuator moving from MC to FW.                    
+            type: float
+            decimal: 2
+            increment: 0.01
+            min: -1.0
+            max: 1.0
+            default: 0.4         
+            
+        C_PI_SP:
+            description:
+                short: 'Elevator (pitch) pos #2'
+                long: |
+                    Second position of Elevator actuator moving from MC to FW.                    
+            type: float
+            decimal: 2
+            increment: 0.01
+            min: -1.0
+            max: 1.0
+            default: 0.6  
+            
+        C_FL_FP:
+            description:
+                short: 'Flaps actuator pos #1'
+                long: |
+                    first position of Flaps actuator moving from MC to FW.                    
+            type: float
+            decimal: 2
+            increment: 0.01
+            min: -1.0
+            max: 1.0
+            default: -0.4         
+            
+        C_FL_SP:
+            description:
+                short: 'Flaps actuator pos #2'
+                long: |
+                    Second position of Flaps actuator moving from MC to FW.                    
+            type: float
+            decimal: 2
+            increment: 0.01
+            min: -1.0
+            max: 1.0
+            default: 0.7           
+                
        

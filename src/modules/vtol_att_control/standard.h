@@ -89,12 +89,24 @@ private:
 
 
 	struct {
-		float _param_c_wafp;
+		int32_t _param_c_debug;
+		float 	_param_c_wafp;
+		float 	_param_c_wasp;
+		float 	_param_c_pi_fp;
+		float 	_param_c_pi_sp;
+		float 	_param_c_fl_fp;
+		float 	_param_c_fl_sp;
 	} _params_colugo;
 
 
 	struct {
+		param_t _param_c_debug;
 		param_t _param_c_wafp;
+		param_t _param_c_wasp;
+		param_t _param_c_pi_fp;
+		param_t _param_c_pi_sp;
+		param_t _param_c_fl_fp;
+		param_t _param_c_fl_sp;
 	} _params_handles_colugo;
 
 	enum class vtol_mode {
