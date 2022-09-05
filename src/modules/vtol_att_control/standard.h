@@ -123,6 +123,7 @@ private:
 		bool need_update_intermidiate_time;//stage of intermidiate actuator posiotion
 	} _vtol_schedule;
 
+	const float COLUGO_ACTUATOR_MC_POS{-1.0f};
 	float _pusher_throttle{0.0f};
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
@@ -131,17 +132,21 @@ private:
 	void parameters_update() override;
 	//cologo staff
 	void publishColugoActuator(float val);
+	/*
+get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
+*/
 	float getColugoToFwPitchTransition();
+
+	/*
+get the postion of flaps control for mc to fw trasition (to move the free wing to correct location before lock)
+*/
 	float getColugoToFwFlapsTransition();
 	float getColugoActuatorToFwTransition();
-	bool isAirspeedinPos1ForTransition();
-	bool isAirspeedinPos2ForTransition();
 
+	//is the airspeed is higher than blend air speed
+	bool isAirspeedAbovePos1ForTransition();
+	//is the airspeed is higher than transition air speed
+	bool isAirspeedAbovePos2ForTransition();
 
-//	float _param_c_wafp{0.1f};
-
-	//DEFINE_PARAMETERS(
-	//	(ParamFloat<px4::params::WAFP>) _param_wafp
-	//);
 };
 #endif

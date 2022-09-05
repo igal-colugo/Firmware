@@ -121,14 +121,19 @@ Standard::parameters_update()
 	/*params for transition from mc to fw*/
 	param_get(_params_handles_colugo._param_c_wafp, &v);
 	_params_colugo._param_c_wafp = math::constrain(v, -1.0f, 1.0f);
+
 	param_get(_params_handles_colugo._param_c_wasp, &v);
 	_params_colugo._param_c_wasp = math::constrain(v, -1.0f, 1.0f);
+
 	param_get(_params_handles_colugo._param_c_pi_fp, &v);
 	_params_colugo._param_c_pi_fp = math::constrain(v, -1.0f, 1.0f);
+
 	param_get(_params_handles_colugo._param_c_pi_sp, &v);
 	_params_colugo._param_c_pi_sp = math::constrain(v, -1.0f, 1.0f);
+
 	param_get(_params_handles_colugo._param_c_fl_fp, &v);
 	_params_colugo._param_c_fl_fp = math::constrain(v, -1.0f, 1.0f);
+
 	param_get(_params_handles_colugo._param_c_fl_sp, &v);
 	_params_colugo._param_c_fl_sp = math::constrain(v, -1.0f, 1.0f);
 
@@ -391,9 +396,10 @@ void Standard::update_fw_state()
 	VtolType::update_fw_state();
 }
 
-bool Standard::isAirspeedinPos1ForTransition()
+bool Standard::isAirspeedAbovePos1ForTransition()
 {
-	bool res = math::isInRange(_airspeed_validated->calibrated_airspeed_m_s, _params->airspeed_blend, 11.0f);
+	//bool res = math::isInRange(_airspeed_validated->calibrated_airspeed_m_s, _params->airspeed_blend, 11.0f);
+	bool res = _airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend;
 	if(res && _vtol_schedule.need_update_intermidiate_time){
 		_vtol_schedule.need_update_intermidiate_time = false;
 		_vtol_schedule.colugo_intermidiate_time = hrt_absolute_time();
@@ -401,9 +407,9 @@ bool Standard::isAirspeedinPos1ForTransition()
 	return res;
 }
 
-bool Standard::isAirspeedinPos2ForTransition()
+bool Standard::isAirspeedAbovePos2ForTransition()
 {
-	return _airspeed_validated->calibrated_airspeed_m_s > 11.0f;
+	return _airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend;
 }
 /*
 get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
@@ -412,11 +418,12 @@ float Standard::getColugoToFwPitchTransition()
 {
 	float res = 0;
 
-	if (isAirspeedinPos1ForTransition()) {
+	if (isAirspeedAbovePos2ForTransition()) {
+		res = _params_colugo._param_c_pi_sp;
+	}
+	else if (isAirspeedAbovePos1ForTransition()) {
 		res = _params_colugo._param_c_pi_fp;
 
-	} else if (isAirspeedinPos2ForTransition()) {
-		res = _params_colugo._param_c_pi_sp;
 	}
 
 	return res;
@@ -429,11 +436,12 @@ float Standard::getColugoToFwFlapsTransition()
 {
 	float res = 0;
 
-	if (isAirspeedinPos1ForTransition()) {
+	if (isAirspeedAbovePos2ForTransition()) {
+		res = _params_colugo._param_c_fl_sp;
+	}
+	if (isAirspeedAbovePos1ForTransition()) {
 		res = _params_colugo._param_c_fl_fp;
 
-	} else if (isAirspeedinPos2ForTransition()) {
-		res = _params_colugo._param_c_fl_sp;
 	}
 
 	return res;
@@ -445,16 +453,19 @@ get the postion of the colugo acctuator mc to fw trasition (to move the wing loc
 */
 float Standard::getColugoActuatorToFwTransition()
 {
-	float res = 0;
+	float res = COLUGO_ACTUATOR_MC_POS;
 
-	if (isAirspeedinPos1ForTransition()) {
-		res = _params_colugo._param_c_wafp;
-
-	} else if (isAirspeedinPos2ForTransition()
+//second position is after reaching trans speed and 2 seconds time... past from previus speed
+	if (isAirspeedAbovePos2ForTransition()
 	//past at list 2 seconds form position #1
 	&& ( hrt_absolute_time() - _vtol_schedule.colugo_intermidiate_time > 2000000) &&
 	_vtol_schedule.need_update_intermidiate_time == false) {
 		res = _params_colugo._param_c_wasp;
+	}
+	//first postiotion is after reaching blend speed
+	else if (isAirspeedAbovePos1ForTransition()) {
+		res = _params_colugo._param_c_wafp;
+
 	}
 
 	return res;
@@ -468,7 +479,7 @@ float Standard::getColugoActuatorToFwTransition()
  */
 void Standard::fill_actuator_outputs()
 {
-	float colugoVal = 0.1;
+	float colugoVal = COLUGO_ACTUATOR_MC_POS;
 	auto &mc_in = _actuators_mc_in->control;
 	auto &fw_in = _actuators_fw_in->control;
 
@@ -495,8 +506,7 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = 0;
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		colugoVal = -1.0;
-
+		colugoVal = COLUGO_ACTUATOR_MC_POS;
 		break;
 
 	case vtol_mode::TRANSITION_TO_FW:
@@ -536,7 +546,7 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
-		colugoVal = -1.0;
+		colugoVal = COLUGO_ACTUATOR_MC_POS;
 
 		break;
 
