@@ -83,6 +83,7 @@ param set-default VT_ARSP_BLEND 7.0
 param set-default VT_ARSP_TRANS 13.0
 param set-default VT_TRANS_TIMEOUT 25.0
 param set-default VT_TRANS_MIN_TM 8.0
+param set-default VT_F_TR_OL_TM 9.0
 param set-default VT_F_TRANS_DUR 12.0
 param set-default C_DEBUG 1
 param set-default C_PI_FP 0.1
@@ -91,6 +92,7 @@ param set-default C_FL_FP 0.0
 param set-default C_FL_SP 0.1
 param set-default C_WAFP 0.2
 param set-default C_WASP 0.8
+param set-default FW_FLAPS_TO_SCL 0.5
 
 set MIXER_FILE etc/mixers-sitl/standard_vtol_sitl.main.mix
 set MIXER custom

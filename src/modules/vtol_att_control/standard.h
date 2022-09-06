@@ -124,6 +124,7 @@ private:
 	} _vtol_schedule;
 
 	const float COLUGO_ACTUATOR_MC_POS{-1.0f};
+	float _colugoActuatorPos{COLUGO_ACTUATOR_MC_POS};
 	float _pusher_throttle{0.0f};
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
@@ -131,7 +132,7 @@ private:
 
 	void parameters_update() override;
 	//cologo staff
-	void publishColugoActuator(float val);
+	void publishColugoActuatorIfneeded(float val);
 	/*
 get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
 */
