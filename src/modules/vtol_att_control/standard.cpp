@@ -143,13 +143,13 @@ Standard::parameters_update()
 void Standard::publishColugoActuatorIfneeded(float val)
 {
 	if(_params_colugo._param_c_debug != 0){
-		if(fabsf(val - _colugoActuatorPos) > FLT_EPSILON){
-			_colugoActuatorPos = val;
+		//if(fabsf(val - _colugoActuatorPos) > FLT_EPSILON){
+			//_colugoActuatorPos = val;
 			colugo_actuator_s colugo_act{};
-			colugo_act.actuator_state = _colugoActuatorPos;
+			colugo_act.actuator_state = val;
 			colugo_act.timestamp = hrt_absolute_time();
 			_colugo_actuator_pub.publish(colugo_act);
-		}
+		//}
 
 	}
 
@@ -482,7 +482,7 @@ float Standard::getColugoActuatorToFwTransition()
  */
 void Standard::fill_actuator_outputs()
 {
-	//float colugoVal = COLUGO_ACTUATOR_MC_POS;
+	float colugoVal = COLUGO_ACTUATOR_MC_POS;
 	auto &mc_in = _actuators_mc_in->control;
 	auto &fw_in = _actuators_fw_in->control;
 
@@ -509,7 +509,7 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = 0;
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		publishColugoActuatorIfneeded(COLUGO_ACTUATOR_MC_POS);
+		colugoVal = COLUGO_ACTUATOR_MC_POS;
 		break;
 
 	case vtol_mode::TRANSITION_TO_FW:{
@@ -526,15 +526,49 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
 			fw_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();//fw_in[actuator_controls_s::INDEX_FLAPS];
-			publishColugoActuatorIfneeded(getColugoActuatorToFwTransition());
 			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+			colugoVal  = getColugoActuatorToFwTransition();
 			break;
 		}
 		else if(_params_colugo._param_c_debug == 2){
-			if(_airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend){
-				publishColugoActuatorIfneeded(_params_colugo._param_c_wasp);
-			}
+			// MC out = MC in (weighted)
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
+			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
+			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
+			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+			fw_out[actuator_controls_s::INDEX_ROLL]         = fw_in[actuator_controls_s::INDEX_ROLL];
+			fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
+			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
+			fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
+			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+
+			if(_airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend){
+				colugoVal = _params_colugo._param_c_wasp;
+			}
+			break;
+
+		}
+		else if(_params_colugo._param_c_debug == 3){//my tests ....
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
+			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
+			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
+
+			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+			fw_out[actuator_controls_s::INDEX_PITCH]        = getColugoToFwPitchTransition();
+			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
+			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
+			fw_out[actuator_controls_s::INDEX_FLAPS]        = vehicle_attitude_setpoint_s::FLAPS_TAKEOFF;//_params_colugo._param_c_fl_sp;
+			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+			colugoVal  = getColugoActuatorToFwTransition();
+
+			break;
 		}
 		else{}// - just fallthrough
 
@@ -556,7 +590,7 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
-		publishColugoActuatorIfneeded(COLUGO_ACTUATOR_MC_POS);
+		colugoVal  = COLUGO_ACTUATOR_MC_POS;
 
 		break;
 
@@ -566,7 +600,7 @@ void Standard::fill_actuator_outputs()
 		mc_out[actuator_controls_s::INDEX_PITCH]        = 0;
 		mc_out[actuator_controls_s::INDEX_YAW]          = 0;
 		mc_out[actuator_controls_s::INDEX_THROTTLE]     = 0;
-		mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
+		mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = (_params_colugo._param_c_debug == 3) ? vehicle_attitude_setpoint_s::FLAPS_LAND: landing_gear_s::GEAR_UP;
 
 		// FW out = FW in
 		fw_out[actuator_controls_s::INDEX_ROLL]         = fw_in[actuator_controls_s::INDEX_ROLL];
@@ -575,7 +609,7 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = fw_in[actuator_controls_s::INDEX_THROTTLE];
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
-		publishColugoActuatorIfneeded(_params_colugo._param_c_wasp);
+		colugoVal  = _params_colugo._param_c_wasp;
 		break;
 	}
 
@@ -608,7 +642,7 @@ void Standard::fill_actuator_outputs()
 
 	_actuators_out_0->timestamp = _actuators_out_1->timestamp = hrt_absolute_time();
 
-	//publishColugoActuatorIfneeded(colugoVal);
+	publishColugoActuatorIfneeded(colugoVal);
 }
 
 void
