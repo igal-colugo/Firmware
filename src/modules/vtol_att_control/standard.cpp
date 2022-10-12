@@ -509,6 +509,14 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = 0;
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
+		if(_params_colugo._param_c_debug == 1){
+			//fw_out[actuator_controls_s::INDEX_FLAPS]        = 0.5;
+			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.5;
+			mc_out[actuator_controls_s::INDEX_FLAPS]        = 0.6;
+			mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.6;
+
+		}
+
 		colugoVal = COLUGO_ACTUATOR_MC_POS;
 		break;
 
@@ -526,7 +534,9 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
 			fw_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();//fw_in[actuator_controls_s::INDEX_FLAPS];
-			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = getColugoToFwPitchTransition();
+			mc_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();
+			mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = getColugoToFwFlapsTransition();
 			colugoVal  = getColugoActuatorToFwTransition();
 			break;
 		}
@@ -564,7 +574,7 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
 			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = vehicle_attitude_setpoint_s::FLAPS_TAKEOFF;//_params_colugo._param_c_fl_sp;
+			fw_out[actuator_controls_s::INDEX_FLAPS]        = vehicle_attitude_setpoint_s::FLAPS_LAND;//_params_colugo._param_c_fl_sp;
 			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
 			colugoVal  = getColugoActuatorToFwTransition();
 
@@ -609,6 +619,19 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = fw_in[actuator_controls_s::INDEX_THROTTLE];
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
+
+		//if(_params_colugo._param_c_debug == 1){
+			//fw_out[actuator_controls_s::INDEX_FLAPS]        = -0.5;
+			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = -0.5;
+			//mc_out[actuator_controls_s::INDEX_FLAPS]        = -0.6;
+			//mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = -0.6;
+		//}
+
+
+
+
+
+
 		colugoVal  = _params_colugo._param_c_wasp;
 		break;
 	}
