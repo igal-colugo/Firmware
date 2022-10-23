@@ -488,8 +488,8 @@ void Standard::fill_actuator_outputs()
 
 	auto &mc_out = _actuators_out_0->control;
 	auto &fw_out = _actuators_out_1->control;
-
 	const bool elevon_lock = (_params->elevons_mc_lock == 1);
+	bool switch_aileron = false;
 
 	switch (_vtol_schedule.flight_mode) {
 	case vtol_mode::MC_MODE:
@@ -580,6 +580,50 @@ void Standard::fill_actuator_outputs()
 
 			break;
 		}
+		else if(_params_colugo._param_c_debug == 4){//sim only
+			switch_aileron = true;
+
+			mc_out[actuator_controls_s::INDEX_ROLL]         = 0;
+			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+			mc_out[actuator_controls_s::INDEX_YAW]          = 0;
+			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
+
+			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+			fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
+			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
+			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
+			fw_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();//_flaps_setpoint_with_slewrate.getState(); //Flaps are enabled
+			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+			colugoVal  = getColugoActuatorToFwTransition();
+			break;
+
+
+		}
+
+else if(_params_colugo._param_c_debug == 5){//derived form sim - for real plane
+			switch_aileron = true;
+
+			mc_out[actuator_controls_s::INDEX_ROLL]         = 0;
+			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+			mc_out[actuator_controls_s::INDEX_YAW]          = 0;
+			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
+
+			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+			fw_out[actuator_controls_s::INDEX_PITCH]        = getColugoToFwPitchTransition();
+			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
+			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
+			fw_out[actuator_controls_s::INDEX_FLAPS]        = -0.5;//_flaps_setpoint_with_slewrate.getState(); //Flaps are enabled
+			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+			colugoVal  = getColugoActuatorToFwTransition();
+			break;
+
+
+		}
+
 		else{}// - just fallthrough
 
 	}
@@ -644,7 +688,7 @@ void Standard::fill_actuator_outputs()
 
 	_torque_setpoint_1->timestamp = hrt_absolute_time();
 	_torque_setpoint_1->timestamp_sample = _actuators_fw_in->timestamp_sample;
-	_torque_setpoint_1->xyz[0] = fw_out[actuator_controls_s::INDEX_ROLL];
+	_torque_setpoint_1->xyz[0] = switch_aileron ? 0:fw_out[actuator_controls_s::INDEX_ROLL];
 	_torque_setpoint_1->xyz[1] = fw_out[actuator_controls_s::INDEX_PITCH];
 	_torque_setpoint_1->xyz[2] = fw_out[actuator_controls_s::INDEX_YAW];
 
