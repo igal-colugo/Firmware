@@ -46,7 +46,7 @@
 #include <lib/mathlib/mathlib.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_pwm_output.h>
-#include <lib/slew_rate/SlewRate.hpp>
+//#include <lib/slew_rate/SlewRate.hpp>
 
 struct Params {
 	int32_t ctrl_alloc;
@@ -293,7 +293,7 @@ public:
 
 	float update_and_get_backtransition_pitch_sp();
 
-	SlewRate<float> _flaps_setpoint_with_slewrate;
+	//SlewRate<float> _flaps_setpoint_with_slewrate;
 
 	float _dt{0.0025f}; // time step [s]
 private:

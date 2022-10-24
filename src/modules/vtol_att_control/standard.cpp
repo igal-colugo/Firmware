@@ -509,13 +509,13 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = 0;
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		if(_params_colugo._param_c_debug == 1){
+		//if(_params_colugo._param_c_debug == 1){
 			//fw_out[actuator_controls_s::INDEX_FLAPS]        = 0.5;
 			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.5;
-			mc_out[actuator_controls_s::INDEX_FLAPS]        = 0.6;
-			mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.6;
+		//	mc_out[actuator_controls_s::INDEX_FLAPS]        = 0.6;
+		//	mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.6;
 
-		}
+		//}
 
 		colugoVal = COLUGO_ACTUATOR_MC_POS;
 		break;
@@ -594,20 +594,24 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
 			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();//_flaps_setpoint_with_slewrate.getState(); //Flaps are enabled
-			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
+			fw_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();//
+			//_flaps_setpoint_with_slewrate.getState(); //Flaps are enabled
+			mc_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();
+			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = getColugoActuatorToFwTransition();
 			colugoVal  = getColugoActuatorToFwTransition();
 			break;
 
 
 		}
 
-else if(_params_colugo._param_c_debug == 5){//derived form sim - for real plane
+else if(_params_colugo._param_c_debug == 5){//derived derived from sim - for real plane
 			switch_aileron = true;
 
-			mc_out[actuator_controls_s::INDEX_ROLL]         = 0;
+			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
-			mc_out[actuator_controls_s::INDEX_YAW]          = 0;
+			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
 			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
 			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
@@ -616,12 +620,11 @@ else if(_params_colugo._param_c_debug == 5){//derived form sim - for real plane
 			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
 			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = -0.5;//_flaps_setpoint_with_slewrate.getState(); //Flaps are enabled
-			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
-			colugoVal  = getColugoActuatorToFwTransition();
+			fw_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();//fw_in[actuator_controls_s::INDEX_FLAPS];
+
+			colugoVal  					= getColugoActuatorToFwTransition();
+
 			break;
-
-
 		}
 
 		else{}// - just fallthrough

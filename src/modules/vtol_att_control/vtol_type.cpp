@@ -136,7 +136,7 @@ bool VtolType::init()
 		}
 	}
 
-	_flaps_setpoint_with_slewrate.setSlewRate(1.f);
+	//_flaps_setpoint_with_slewrate.setSlewRate(1.f);
 	return true;
 
 }
@@ -158,7 +158,7 @@ void VtolType::update_mc_state()
 	_mc_pitch_weight = 1.0f;
 	_mc_yaw_weight = 1.0f;
 	_mc_throttle_weight = 1.0f;
-	_flaps_setpoint_with_slewrate.update(0.f, _dt);
+	//_flaps_setpoint_with_slewrate.update(0.f, _dt);
 }
 
 void VtolType::update_fw_state()
@@ -207,7 +207,7 @@ void VtolType::update_fw_state()
 	}
 
 	check_quadchute_condition();
-	_flaps_setpoint_with_slewrate.update(_actuators_fw_in->control[actuator_controls_s::INDEX_FLAPS], _dt);
+	//_flaps_setpoint_with_slewrate.update(_actuators_fw_in->control[actuator_controls_s::INDEX_FLAPS], _dt);
 }
 
 void VtolType::update_transition_state()
