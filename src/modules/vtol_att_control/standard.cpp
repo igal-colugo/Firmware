@@ -509,13 +509,13 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = 0;
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		//if(_params_colugo._param_c_debug == 1){
-			//fw_out[actuator_controls_s::INDEX_FLAPS]        = 0.5;
+		if(_params_colugo._param_c_debug == 4){
+			fw_out[actuator_controls_s::INDEX_FLAPS]        = 0.3;
 			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.5;
-		//	mc_out[actuator_controls_s::INDEX_FLAPS]        = 0.6;
+			mc_out[actuator_controls_s::INDEX_FLAPS]        = 0.4;
 		//	mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.6;
 
-		//}
+		}
 
 		colugoVal = COLUGO_ACTUATOR_MC_POS;
 		break;
@@ -597,7 +597,7 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();//
 			//_flaps_setpoint_with_slewrate.getState(); //Flaps are enabled
 			mc_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();
-			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = getColugoActuatorToFwTransition();
+			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = getColugoActuatorToFwTransition();
 			colugoVal  = getColugoActuatorToFwTransition();
 			break;
 
