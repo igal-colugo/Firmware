@@ -448,7 +448,7 @@ float Standard::getColugoToFwFlapsTransition()
 	if (isAirspeedAbovePos2ForTransition()) {
 		res = _params_colugo._param_c_fl_sp;
 	}
-	if (isAirspeedAbovePos1ForTransition()) {
+	else if (isAirspeedAbovePos1ForTransition()) {
 		res = _params_colugo._param_c_fl_fp;
 
 	}
@@ -677,12 +677,12 @@ else if(_params_colugo._param_c_debug == 5){//derived derived from sim - for rea
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		//if(_params_colugo._param_c_debug == 1){
+		if(_params_colugo._param_c_debug == 4){
 			//fw_out[actuator_controls_s::INDEX_FLAPS]        = -0.5;
 			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = -0.5;
-			//mc_out[actuator_controls_s::INDEX_FLAPS]        = -0.6;
+			mc_out[actuator_controls_s::INDEX_FLAPS]        = -fw_in[actuator_controls_s::INDEX_PITCH];
 			//mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = -0.6;
-		//}
+		}
 
 
 
