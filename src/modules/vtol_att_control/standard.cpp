@@ -80,6 +80,7 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_params_handles_colugo._param_c_pi_sp = param_find("C_PI_SP");
 	_params_handles_colugo._param_c_fl_fp = param_find("C_FL_FP");
 	_params_handles_colugo._param_c_fl_sp = param_find("C_FL_SP");
+	_params_handles_colugo._param_c_fl_mc_pos = param_find("C_FL_MC_POS");
 
 	_params_handles_colugo._param_c_debug = param_find("C_DEBUG");
 
@@ -136,6 +137,10 @@ Standard::parameters_update()
 
 	param_get(_params_handles_colugo._param_c_fl_sp, &v);
 	_params_colugo._param_c_fl_sp = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_fl_mc_pos, &v);
+	_params_colugo._param_c_fl_mc_pos = math::constrain(v, -1.0f, 1.0f);
+
 
 
 }
@@ -510,9 +515,9 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
 		if(_params_colugo._param_c_debug == 4){
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = 0.3;
+			//fw_out[actuator_controls_s::INDEX_FLAPS]        = 0.3;
 			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.5;
-			mc_out[actuator_controls_s::INDEX_FLAPS]        = 0.4;
+			mc_out[actuator_controls_s::INDEX_FLAPS]        = _params_colugo._param_c_fl_mc_pos;
 		//	mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.6;
 
 		}
@@ -580,7 +585,7 @@ void Standard::fill_actuator_outputs()
 
 			break;
 		}
-		else if(_params_colugo._param_c_debug == 4){//sim only
+		else if(_params_colugo._param_c_debug == 4){//for sim only
 			switch_aileron = true;
 
 			mc_out[actuator_controls_s::INDEX_ROLL]         = 0;
@@ -648,6 +653,11 @@ else if(_params_colugo._param_c_debug == 5){//derived derived from sim - for rea
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
 		colugoVal  = COLUGO_ACTUATOR_MC_POS;
+
+
+		if(_params_colugo._param_c_debug == 4){
+			mc_out[actuator_controls_s::INDEX_FLAPS]        = _params_colugo._param_c_fl_mc_pos;
+		}
 
 		break;
 

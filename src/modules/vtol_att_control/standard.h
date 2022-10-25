@@ -96,6 +96,7 @@ private:
 		float 	_param_c_pi_sp;
 		float 	_param_c_fl_fp;
 		float 	_param_c_fl_sp;
+		float	_param_c_fl_mc_pos;
 	} _params_colugo;
 
 
@@ -107,6 +108,7 @@ private:
 		param_t _param_c_pi_sp;
 		param_t _param_c_fl_fp;
 		param_t _param_c_fl_sp;
+		param_t _param_c_fl_mc_pos;
 	} _params_handles_colugo;
 
 	enum class vtol_mode {
