@@ -78,6 +78,7 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_params_handles_colugo._param_c_wasp  = param_find("C_WASP");
 	_params_handles_colugo._param_c_pi_fp = param_find("C_PI_FP");
 	_params_handles_colugo._param_c_pi_sp = param_find("C_PI_SP");
+	_params_handles_colugo._param_c_pi_mc_pos = param_find("C_PI_MC_POS");
 	_params_handles_colugo._param_c_fl_fp = param_find("C_FL_FP");
 	_params_handles_colugo._param_c_fl_sp = param_find("C_FL_SP");
 	_params_handles_colugo._param_c_fl_mc_pos = param_find("C_FL_MC_POS");
@@ -140,6 +141,9 @@ Standard::parameters_update()
 
 	param_get(_params_handles_colugo._param_c_fl_mc_pos, &v);
 	_params_colugo._param_c_fl_mc_pos = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_pi_mc_pos, &v);
+	_params_colugo._param_c_pi_mc_pos = math::constrain(v, -1.0f, 1.0f);
 
 
 
@@ -418,7 +422,7 @@ bool Standard::isAirspeedAbovePos1ForTransition()
 
 bool Standard::isAirspeedAbovePos2ForTransition()
 {
-	return _airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend;
+	return _airspeed_validated->calibrated_airspeed_m_s > _params->transition_airspeed;
 }
 /*
 get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
@@ -515,11 +519,8 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
 		if(_params_colugo._param_c_debug == 4){
-			//fw_out[actuator_controls_s::INDEX_FLAPS]        = 0.3;
-			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.5;
-			mc_out[actuator_controls_s::INDEX_FLAPS]        = _params_colugo._param_c_fl_mc_pos;
-		//	mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.6;
-
+			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
+			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}
 
 		colugoVal = COLUGO_ACTUATOR_MC_POS;
@@ -545,65 +546,24 @@ void Standard::fill_actuator_outputs()
 			colugoVal  = getColugoActuatorToFwTransition();
 			break;
 		}
-		else if(_params_colugo._param_c_debug == 2){
-			// MC out = MC in (weighted)
-			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
-			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
-			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
-			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
-			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
-			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-			fw_out[actuator_controls_s::INDEX_ROLL]         = fw_in[actuator_controls_s::INDEX_ROLL];
-			fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
-			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
-			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
-			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
-
-			if(_airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend){
-				colugoVal = _params_colugo._param_c_wasp;
-			}
-			break;
-
-		}
-		else if(_params_colugo._param_c_debug == 3){//my tests ....
-			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
-			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
-			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
-			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
-			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
-
-			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-			fw_out[actuator_controls_s::INDEX_PITCH]        = getColugoToFwPitchTransition();
-			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
-			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
-			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = vehicle_attitude_setpoint_s::FLAPS_LAND;//_params_colugo._param_c_fl_sp;
-			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
-			colugoVal  = getColugoActuatorToFwTransition();
-
-			break;
-		}
 		else if(_params_colugo._param_c_debug == 4){//for sim only
 			switch_aileron = true;
 
-			mc_out[actuator_controls_s::INDEX_ROLL]         = 0;
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
-			mc_out[actuator_controls_s::INDEX_YAW]          = 0;
+			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
 			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
 			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
 			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-			fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
-			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
-			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
-			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();//
-			//_flaps_setpoint_with_slewrate.getState(); //Flaps are enabled
-			mc_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();
-			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = getColugoActuatorToFwTransition();
-			colugoVal  = getColugoActuatorToFwTransition();
+			fw_out[actuator_controls_s::INDEX_PITCH]    = getColugoToFwPitchTransition();
+			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;//level ailrons let only flaps work//
+			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE] = _pusher_throttle;
+			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
+			mc_out[actuator_controls_s::INDEX_FLAPS]    = getColugoToFwFlapsTransition();
+			colugoVal  				    = getColugoActuatorToFwTransition();
 			break;
 
 
@@ -656,7 +616,8 @@ else if(_params_colugo._param_c_debug == 5){//derived derived from sim - for rea
 
 
 		if(_params_colugo._param_c_debug == 4){
-			mc_out[actuator_controls_s::INDEX_FLAPS]        = _params_colugo._param_c_fl_mc_pos;
+			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
+			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}
 
 		break;
@@ -674,14 +635,11 @@ else if(_params_colugo._param_c_debug == 5){//derived derived from sim - for rea
 		fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
 		fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = fw_in[actuator_controls_s::INDEX_THROTTLE];
-		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
+		//fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
 		if(_params_colugo._param_c_debug == 4){
-			//fw_out[actuator_controls_s::INDEX_FLAPS]        = -0.5;
-			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = -0.5;
 			mc_out[actuator_controls_s::INDEX_FLAPS]        = -fw_in[actuator_controls_s::INDEX_PITCH];
-			//mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = -0.6;
 		}
 
 

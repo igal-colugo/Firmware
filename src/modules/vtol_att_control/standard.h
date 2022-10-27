@@ -94,6 +94,7 @@ private:
 		float 	_param_c_wasp;
 		float 	_param_c_pi_fp;
 		float 	_param_c_pi_sp;
+		float	_param_c_pi_mc_pos;
 		float 	_param_c_fl_fp;
 		float 	_param_c_fl_sp;
 		float	_param_c_fl_mc_pos;
@@ -106,6 +107,7 @@ private:
 		param_t _param_c_wasp;
 		param_t _param_c_pi_fp;
 		param_t _param_c_pi_sp;
+		param_t _param_c_pi_mc_pos;
 		param_t _param_c_fl_fp;
 		param_t _param_c_fl_sp;
 		param_t _param_c_fl_mc_pos;
