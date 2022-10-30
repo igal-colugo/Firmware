@@ -413,6 +413,9 @@ bool Standard::isAirspeedAbovePos1ForTransition()
 {
 	//bool res = math::isInRange(_airspeed_validated->calibrated_airspeed_m_s, _params->airspeed_blend, 11.0f);
 	bool res = _airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend;
+
+	_fw_trans_latch = _fw_trans_latch || (res && (_vtol_schedule.flight_mode == vtol_mode::TRANSITION_TO_FW));
+
 	if(res && _vtol_schedule.need_update_intermidiate_time){
 		_vtol_schedule.need_update_intermidiate_time = false;
 		_vtol_schedule.colugo_intermidiate_time = hrt_absolute_time();
@@ -429,14 +432,13 @@ get the postion of pitch control for mc to fw trasition (to move the free wing t
 */
 float Standard::getColugoToFwPitchTransition()
 {
-	float res = 0;
+	float res = _params_colugo._param_c_pi_mc_pos;
 
 	if (isAirspeedAbovePos2ForTransition()) {
 		res = _params_colugo._param_c_pi_sp;
 	}
-	else if (isAirspeedAbovePos1ForTransition()) {
+	else if (isAirspeedAbovePos1ForTransition() || _fw_trans_latch) {
 		res = _params_colugo._param_c_pi_fp;
-
 	}
 
 	return res;
@@ -447,16 +449,15 @@ get the postion of flaps control for mc to fw trasition (to move the free wing t
 */
 float Standard::getColugoToFwFlapsTransition()
 {
-	float res = 0;
+	float res = _params_colugo._param_c_fl_mc_pos;
 
 	if (isAirspeedAbovePos2ForTransition()) {
 		res = _params_colugo._param_c_fl_sp;
 	}
-	else if (isAirspeedAbovePos1ForTransition()) {
+	else if (isAirspeedAbovePos1ForTransition() || _fw_trans_latch) {
 		res = _params_colugo._param_c_fl_fp;
 
 	}
-
 	return res;
 }
 
@@ -476,7 +477,7 @@ float Standard::getColugoActuatorToFwTransition()
 		res = _params_colugo._param_c_wasp;
 	}
 	//first postiotion is after reaching blend speed
-	else if (isAirspeedAbovePos1ForTransition()) {
+	else if (isAirspeedAbovePos1ForTransition() || _fw_trans_latch) {
 		res = _params_colugo._param_c_wafp;
 
 	}
@@ -519,6 +520,7 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
 		if(_params_colugo._param_c_debug == 4){
+			_fw_trans_latch = false;
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
 			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}
@@ -550,7 +552,7 @@ void Standard::fill_actuator_outputs()
 		else if(_params_colugo._param_c_debug == 4){//for sim only
 			switch_aileron = true;
 
-			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;;
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
 			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
 			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
@@ -616,6 +618,7 @@ else if(_params_colugo._param_c_debug == 5){//derived derived from sim - for rea
 
 
 		if(_params_colugo._param_c_debug == 4){
+			_fw_trans_latch = false;
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
 			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}

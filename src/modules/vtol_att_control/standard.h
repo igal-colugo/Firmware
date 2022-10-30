@@ -113,6 +113,8 @@ private:
 		param_t _param_c_fl_mc_pos;
 	} _params_handles_colugo;
 
+	bool _fw_trans_latch = false;
+
 	enum class vtol_mode {
 		MC_MODE = 0,
 		TRANSITION_TO_FW,

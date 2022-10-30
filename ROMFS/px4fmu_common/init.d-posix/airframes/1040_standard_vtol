@@ -43,6 +43,7 @@ param set-default PWM_MAIN_FUNC6 201
 param set-default PWM_MAIN_FUNC7 202
 param set-default PWM_MAIN_FUNC8 203
 param set-default PWM_MAIN_FUNC9 11000
+param set-default PWM_MAIN_FUNC10 204
 
 param set-default FW_L1_PERIOD 12
 param set-default FW_MAN_P_MAX 30
