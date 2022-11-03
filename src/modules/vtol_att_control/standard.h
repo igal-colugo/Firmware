@@ -45,13 +45,14 @@
 
 #ifndef STANDARD_H
 #define STANDARD_H
-#include "vtol_type.h"
+#include "vtol_type.h"///
 #include <parameters/param.h>
 #include <drivers/drv_hrt.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/topics/colugo_actuator.h>
+//#include <lib/colugo/colugoTransHelper.h>
 
 class Standard : public VtolType
 {
@@ -98,6 +99,7 @@ private:
 		float 	_param_c_fl_fp;
 		float 	_param_c_fl_sp;
 		float	_param_c_fl_mc_pos;
+		float _param_c_tm_to_pos1;
 	} _params_colugo;
 
 
@@ -111,9 +113,19 @@ private:
 		param_t _param_c_fl_fp;
 		param_t _param_c_fl_sp;
 		param_t _param_c_fl_mc_pos;
+		param_t _param_c_tm_to_pos1;
 	} _params_handles_colugo;
 
-	bool _fw_trans_latch = false;
+//	bool _fw_trans_latch = false;
+
+	struct
+	{
+		bool _reached_blend_atlist_once;
+		bool _reached_trans_atlist_once;
+		hrt_abstime blend_speed_reached_time;// at what time did we reached blend speed
+
+	} _colugo_trans_to_fw;
+
 
 	enum class vtol_mode {
 		MC_MODE = 0,
@@ -125,8 +137,9 @@ private:
 	struct {
 		vtol_mode flight_mode;			// indicates in which mode the vehicle is in
 		hrt_abstime transition_start;	// at what time did we start a transition (front- or backtransition)
-		hrt_abstime colugo_intermidiate_time;//stage of intermidiate actuator posiotion
-		bool need_update_intermidiate_time;//stage of intermidiate actuator posiotion
+		//hrt_abstime blend_speed_treached;// at what time did we reached blend speed
+		//hrt_abstime blend_speed_reached;//time after reaching blend speed for actuator posiotion 1
+		//bool need_update_blend_time_reached;//bool latch helper for intermidiate time
 	} _vtol_schedule;
 
 	const float COLUGO_ACTUATOR_MC_POS{-1.0f};
@@ -134,11 +147,14 @@ private:
 	float _pusher_throttle{0.0f};
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
-    uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
+
+	//colugoTransHelper * _colugo_trans_helper{nullptr};
+    	uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
 
 	void parameters_update() override;
 	//cologo staff
 	void publishColugoActuatorIfneeded(float val);
+	void resetColugoTransitionStruct();
 	/*
 get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
 */
@@ -154,6 +170,14 @@ get the postion of flaps control for mc to fw trasition (to move the free wing t
 	bool isAirspeedAbovePos1ForTransition();
 	//is the airspeed is higher than transition air speed
 	bool isAirspeedAbovePos2ForTransition();
+	//is time since trasition command > _param_c_tm_to_pos1
+	bool isTimeToColugoPos1();
+
+	//same as getColugoToFwFlapsTransition - but pos #1 is time based
+	float getColugoToFwFlapsTransitionTimeBased();
+
+	//same as getColugoToFwPitchTransition - but pos #1 is time based
+	float getColugoToFwPitchTransitionTimeBased();
 
 };
 #endif
