@@ -1,5 +1,5 @@
 #include "colugoTransHelper.h"
 
-colugoTransHelper::colugoTransHelper(/* args */)
+ColugoTransHelper::ColugoTransHelper(/* args */)
 {
 }

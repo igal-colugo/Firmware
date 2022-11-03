@@ -45,14 +45,22 @@
 
 #ifndef STANDARD_H
 #define STANDARD_H
-#include "vtol_type.h"///
+#include "vtol_type.h"
 #include <parameters/param.h>
 #include <drivers/drv_hrt.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/topics/colugo_actuator.h>
-//#include <lib/colugo/colugoTransHelper.h>
+#include <lib/colugo/colugoTransHelper.h>
+
+//debug
+//#include <uORB/topics/debug_key_value.h>
+//#include <uORB/uORB.h>
+//#include <string.h>
+//#include <uORB/topics/debug_value.h>
+#include <uORB/topics/debug_vect.h>
+
 
 class Standard : public VtolType
 {
@@ -148,8 +156,11 @@ private:
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
 
-	//colugoTransHelper * _colugo_trans_helper{nullptr};
+	//ColugoTransHelper _colugo_trans_helper = ColugoTransHelper();
     	uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
+
+	struct debug_vect_s dbg_vect_clg;
+	orb_advert_t pub_dbg_vect = orb_advertise(ORB_ID(debug_vect), &dbg_vect_clg);
 
 	void parameters_update() override;
 	//cologo staff

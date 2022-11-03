@@ -8,7 +8,7 @@ helper file for trasitioning f
 
 #pragma once
 
-class colugoTransHelper
+class ColugoTransHelper
 {
 private:
 	/* data */
@@ -21,8 +21,8 @@ private:
 
 	TRANSITION_TO_FW_STATE _transStage = TRANSITION_TO_FW_STATE::NOT_IN_TRANSITION;
 public:
-	colugoTransHelper(/* args */);
-	~colugoTransHelper() = default;
+	ColugoTransHelper(/* args */);
+	~ColugoTransHelper() = default;
 };
 
 //#endif
