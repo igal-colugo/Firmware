@@ -43,6 +43,7 @@ param set-default PWM_MAIN_FUNC6 201
 param set-default PWM_MAIN_FUNC7 202
 param set-default PWM_MAIN_FUNC8 203
 param set-default PWM_MAIN_FUNC9 11000
+param set-default PWM_MAIN_FUNC10 204
 
 param set-default FW_L1_PERIOD 12
 param set-default FW_MAN_P_MAX 30
@@ -85,12 +86,12 @@ param set-default VT_TRANS_TIMEOUT 25.0
 param set-default VT_TRANS_MIN_TM 8.0
 param set-default VT_F_TR_OL_TM 9.0
 param set-default VT_F_TRANS_DUR 12.0
-param set-default C_DEBUG 1
+param set-default C_DEBUG 4
 param set-default C_PI_FP 0.1
 param set-default C_PI_SP 0.2
-param set-default C_FL_FP 0.0
-param set-default C_FL_SP 0.1
-param set-default C_WAFP 0.2
+param set-default C_FL_FP 0.8
+param set-default C_FL_SP -0.8
+param set-default C_WAFP -0.8
 param set-default C_WASP 0.8
 param set-default FW_FLAPS_TO_SCL 0.5
 

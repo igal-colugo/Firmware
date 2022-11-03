@@ -47,6 +47,7 @@
 #include <float.h>
 #include <uORB/topics/landing_gear.h>
 #include <uORB/topics/colugo_actuator.h>
+
 //#include <mathlib/mathlib.h>
 
 using namespace matrix;
@@ -58,8 +59,9 @@ Standard::Standard(VtolAttitudeControl *attc) :
 {
 	_vtol_schedule.flight_mode = vtol_mode::MC_MODE;
 	_vtol_schedule.transition_start = 0;
-	_vtol_schedule.colugo_intermidiate_time = 0;
-	_vtol_schedule.need_update_intermidiate_time = false;
+	//_vtol_schedule.blend_speed_reached = 0;
+	//_vtol_schedule.blend_speed_treached = 0;
+	//_vtol_schedule.need_update_blend_time_reached = false;
 	_pusher_active = false;
 
 	_mc_roll_weight = 1.0f;
@@ -78,10 +80,16 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_params_handles_colugo._param_c_wasp  = param_find("C_WASP");
 	_params_handles_colugo._param_c_pi_fp = param_find("C_PI_FP");
 	_params_handles_colugo._param_c_pi_sp = param_find("C_PI_SP");
+	_params_handles_colugo._param_c_pi_mc_pos = param_find("C_PI_MC_POS");
 	_params_handles_colugo._param_c_fl_fp = param_find("C_FL_FP");
 	_params_handles_colugo._param_c_fl_sp = param_find("C_FL_SP");
+	_params_handles_colugo._param_c_fl_mc_pos = param_find("C_FL_MC_POS");
+	_params_handles_colugo._param_c_tm_to_pos1 = param_find("C_TM_TO_POS1");
 
 	_params_handles_colugo._param_c_debug = param_find("C_DEBUG");
+
+	//_colugo_trans_helper = new colugoTransHelper();
+	resetColugoTransitionStruct();
 
 }
 
@@ -137,7 +145,14 @@ Standard::parameters_update()
 	param_get(_params_handles_colugo._param_c_fl_sp, &v);
 	_params_colugo._param_c_fl_sp = math::constrain(v, -1.0f, 1.0f);
 
+	param_get(_params_handles_colugo._param_c_fl_mc_pos, &v);
+	_params_colugo._param_c_fl_mc_pos = math::constrain(v, -1.0f, 1.0f);
 
+	param_get(_params_handles_colugo._param_c_pi_mc_pos, &v);
+	_params_colugo._param_c_pi_mc_pos = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_tm_to_pos1, &v);
+	_params_colugo._param_c_tm_to_pos1 = math::constrain(v, 0.0f, 100.0f);
 }
 
 void Standard::publishColugoActuatorIfneeded(float val)
@@ -153,6 +168,12 @@ void Standard::publishColugoActuatorIfneeded(float val)
 
 	}
 
+}
+
+/// @brief
+void Standard::resetColugoTransitionStruct(){
+	_colugo_trans_to_fw._reached_blend_atlist_once = false;
+	_colugo_trans_to_fw._reached_trans_atlist_once = false;
 }
 
 void Standard::update_vtol_state()
@@ -185,7 +206,7 @@ void Standard::update_vtol_state()
 			mc_weight = 1.0f;
 			_pusher_throttle = 0.0f;
 			_reverse_output = 0.0f;
-			_vtol_schedule.need_update_intermidiate_time = true;//set it for when we go to fw
+			//_vtol_schedule.need_update_blend_time_reached = true;//set it for when we go to fw
 
 		} else if (_vtol_schedule.flight_mode == vtol_mode::FW_MODE) {
 			// Regular backtransition
@@ -404,30 +425,48 @@ bool Standard::isAirspeedAbovePos1ForTransition()
 {
 	//bool res = math::isInRange(_airspeed_validated->calibrated_airspeed_m_s, _params->airspeed_blend, 11.0f);
 	bool res = _airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend;
-	if(res && _vtol_schedule.need_update_intermidiate_time){
-		_vtol_schedule.need_update_intermidiate_time = false;
-		_vtol_schedule.colugo_intermidiate_time = hrt_absolute_time();
+
+	if(res && !_colugo_trans_to_fw._reached_blend_atlist_once){
+		_colugo_trans_to_fw._reached_blend_atlist_once = true;
+		_colugo_trans_to_fw.blend_speed_reached_time = hrt_absolute_time();
 	}
-	return res;
+	return _colugo_trans_to_fw._reached_blend_atlist_once;
 }
 
 bool Standard::isAirspeedAbovePos2ForTransition()
 {
-	return _airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend;
+	if(_airspeed_validated->calibrated_airspeed_m_s > _params->transition_airspeed ){
+		_colugo_trans_to_fw._reached_trans_atlist_once = true;
+	}
+
+	return _colugo_trans_to_fw._reached_trans_atlist_once && _colugo_trans_to_fw._reached_blend_atlist_once;
 }
 /*
 get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
 */
 float Standard::getColugoToFwPitchTransition()
 {
-	float res = 0;
+	float res = _params_colugo._param_c_pi_mc_pos;
 
 	if (isAirspeedAbovePos2ForTransition()) {
 		res = _params_colugo._param_c_pi_sp;
 	}
 	else if (isAirspeedAbovePos1ForTransition()) {
 		res = _params_colugo._param_c_pi_fp;
+	}
 
+	return res;
+}
+
+float Standard::getColugoToFwPitchTransitionTimeBased()
+{
+	float res = _params_colugo._param_c_pi_mc_pos;
+
+	if (isAirspeedAbovePos2ForTransition()) {
+		res = _params_colugo._param_c_pi_sp;
+	}
+	else if (isTimeToColugoPos1()) {
+		res = _params_colugo._param_c_pi_fp;
 	}
 
 	return res;
@@ -438,17 +477,40 @@ get the postion of flaps control for mc to fw trasition (to move the free wing t
 */
 float Standard::getColugoToFwFlapsTransition()
 {
-	float res = 0;
+	float res = _params_colugo._param_c_fl_mc_pos;
 
 	if (isAirspeedAbovePos2ForTransition()) {
 		res = _params_colugo._param_c_fl_sp;
 	}
-	if (isAirspeedAbovePos1ForTransition()) {
+	else if (isAirspeedAbovePos1ForTransition()) {
 		res = _params_colugo._param_c_fl_fp;
 
 	}
-
 	return res;
+}
+
+float Standard::getColugoToFwFlapsTransitionTimeBased()
+{
+	float res = _params_colugo._param_c_fl_mc_pos;
+
+	if (isAirspeedAbovePos2ForTransition()) {
+		res = _params_colugo._param_c_fl_sp;
+	}
+	else if (isTimeToColugoPos1()) {
+		res = _params_colugo._param_c_fl_fp;
+
+	}
+	return res;
+}
+
+bool Standard::isTimeToColugoPos1(){
+	//first we need to make sure we are in transition to FW & blending time is up to date.
+	bool res = (_vtol_schedule.flight_mode == vtol_mode::TRANSITION_TO_FW) && _colugo_trans_to_fw._reached_blend_atlist_once;
+	//now make sure enough time past...
+	float time_since_blend_reached = (float)(hrt_absolute_time() - _colugo_trans_to_fw.blend_speed_reached_time) * 1e-6f;
+	res = res && (_params_colugo._param_c_tm_to_pos1 * 1e-6f < time_since_blend_reached);
+	return res;
+
 }
 
 
@@ -462,14 +524,12 @@ float Standard::getColugoActuatorToFwTransition()
 //second position is after reaching trans speed and 2 seconds time... past from previus speed
 	if (isAirspeedAbovePos2ForTransition()
 	//past at list 2 seconds form position #1
-	&& ( hrt_absolute_time() - _vtol_schedule.colugo_intermidiate_time > 2000000) &&
-	_vtol_schedule.need_update_intermidiate_time == false) {
+	&& ((hrt_absolute_time() - _colugo_trans_to_fw.blend_speed_reached_time) > 2000000)) {
 		res = _params_colugo._param_c_wasp;
 	}
 	//first postiotion is after reaching blend speed
 	else if (isAirspeedAbovePos1ForTransition()) {
 		res = _params_colugo._param_c_wafp;
-
 	}
 	return res;
 }
@@ -488,8 +548,8 @@ void Standard::fill_actuator_outputs()
 
 	auto &mc_out = _actuators_out_0->control;
 	auto &fw_out = _actuators_out_1->control;
-
 	const bool elevon_lock = (_params->elevons_mc_lock == 1);
+	bool switch_aileron = false;
 
 	switch (_vtol_schedule.flight_mode) {
 	case vtol_mode::MC_MODE:
@@ -509,12 +569,10 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = 0;
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		if(_params_colugo._param_c_debug == 1){
-			//fw_out[actuator_controls_s::INDEX_FLAPS]        = 0.5;
-			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.5;
-			mc_out[actuator_controls_s::INDEX_FLAPS]        = 0.6;
-			mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0.6;
-
+		if(_params_colugo._param_c_debug == 4 || _params_colugo._param_c_debug == 3){
+			resetColugoTransitionStruct();
+			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
+			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}
 
 		colugoVal = COLUGO_ACTUATOR_MC_POS;
@@ -540,8 +598,10 @@ void Standard::fill_actuator_outputs()
 			colugoVal  = getColugoActuatorToFwTransition();
 			break;
 		}
-		else if(_params_colugo._param_c_debug == 2){
-			// MC out = MC in (weighted)
+
+		else if(_params_colugo._param_c_debug == 3){//time based - not blend speed
+			switch_aileron = true;
+
 			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
 			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
@@ -549,20 +609,19 @@ void Standard::fill_actuator_outputs()
 			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
 			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-			fw_out[actuator_controls_s::INDEX_ROLL]         = fw_in[actuator_controls_s::INDEX_ROLL];
-			fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
-			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
-			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
-			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
-
-			if(_airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend){
-				colugoVal = _params_colugo._param_c_wasp;
-			}
+			fw_out[actuator_controls_s::INDEX_PITCH]    = getColugoToFwPitchTransitionTimeBased();//getColugoToFwPitchTransition();
+			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;//level ailrons let only flaps work//
+			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE] = _pusher_throttle;
+			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
+			mc_out[actuator_controls_s::INDEX_FLAPS]    = getColugoToFwFlapsTransitionTimeBased(); //getColugoToFwFlapsTransition();
+			colugoVal  				    = getColugoActuatorToFwTransition();
 			break;
-
 		}
-		else if(_params_colugo._param_c_debug == 3){//my tests ....
+
+		else if(_params_colugo._param_c_debug == 4){
+			switch_aileron = true;
+
 			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
 			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
@@ -570,16 +629,17 @@ void Standard::fill_actuator_outputs()
 			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
 			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-			fw_out[actuator_controls_s::INDEX_PITCH]        = getColugoToFwPitchTransition();
-			fw_out[actuator_controls_s::INDEX_ROLL]         = 0;//level ailrons let only flaps work//
-			fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
-			fw_out[actuator_controls_s::INDEX_THROTTLE]     = _pusher_throttle;
-			fw_out[actuator_controls_s::INDEX_FLAPS]        = vehicle_attitude_setpoint_s::FLAPS_LAND;//_params_colugo._param_c_fl_sp;
-			fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
-			colugoVal  = getColugoActuatorToFwTransition();
-
+			fw_out[actuator_controls_s::INDEX_PITCH]    = getColugoToFwPitchTransition();
+			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;//level ailrons let only flaps work//
+			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE] = _pusher_throttle;
+			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
+			mc_out[actuator_controls_s::INDEX_FLAPS]    = getColugoToFwFlapsTransition();
+			colugoVal  				    = getColugoActuatorToFwTransition();
 			break;
 		}
+
+
 		else{}// - just fallthrough
 
 	}
@@ -602,6 +662,13 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
 		colugoVal  = COLUGO_ACTUATOR_MC_POS;
 
+
+		if(_params_colugo._param_c_debug == 4 || _params_colugo._param_c_debug == 3){
+			resetColugoTransitionStruct();
+			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
+			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
+		}
+
 		break;
 
 	case vtol_mode::FW_MODE:
@@ -617,15 +684,12 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_PITCH]        = fw_in[actuator_controls_s::INDEX_PITCH];
 		fw_out[actuator_controls_s::INDEX_YAW]          = fw_in[actuator_controls_s::INDEX_YAW];
 		fw_out[actuator_controls_s::INDEX_THROTTLE]     = fw_in[actuator_controls_s::INDEX_THROTTLE];
-		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
+		//fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		//if(_params_colugo._param_c_debug == 1){
-			//fw_out[actuator_controls_s::INDEX_FLAPS]        = -0.5;
-			//fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = -0.5;
-			//mc_out[actuator_controls_s::INDEX_FLAPS]        = -0.6;
-			//mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = -0.6;
-		//}
+		if(_params_colugo._param_c_debug == 4 || _params_colugo._param_c_debug == 3){
+			mc_out[actuator_controls_s::INDEX_FLAPS]        = -fw_in[actuator_controls_s::INDEX_PITCH];
+		}
 
 
 
@@ -644,7 +708,7 @@ void Standard::fill_actuator_outputs()
 
 	_torque_setpoint_1->timestamp = hrt_absolute_time();
 	_torque_setpoint_1->timestamp_sample = _actuators_fw_in->timestamp_sample;
-	_torque_setpoint_1->xyz[0] = fw_out[actuator_controls_s::INDEX_ROLL];
+	_torque_setpoint_1->xyz[0] = switch_aileron ? 0:fw_out[actuator_controls_s::INDEX_ROLL];
 	_torque_setpoint_1->xyz[1] = fw_out[actuator_controls_s::INDEX_PITCH];
 	_torque_setpoint_1->xyz[2] = fw_out[actuator_controls_s::INDEX_YAW];
 
@@ -668,8 +732,7 @@ void Standard::fill_actuator_outputs()
 	publishColugoActuatorIfneeded(colugoVal);
 }
 
-void
-Standard::waiting_on_tecs()
+void Standard::waiting_on_tecs()
 {
 	// keep thrust from transition
 	_v_att_sp->thrust_body[0] = _pusher_throttle;
