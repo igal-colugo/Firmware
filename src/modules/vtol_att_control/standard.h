@@ -52,7 +52,7 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/topics/colugo_actuator.h>
-#include <lib/colugo/colugoTransHelper.h>
+//#include <../lib/colugo/colugoTransHelper.h>
 
 //debug
 //#include <uORB/topics/debug_key_value.h>
@@ -108,6 +108,9 @@ private:
 		float 	_param_c_fl_sp;
 		float	_param_c_fl_mc_pos;
 		float _param_c_tm_to_pos1;
+		float _param_c_tm_to_col_pos1;
+		float _param_c_tm_to_pos2;
+
 	} _params_colugo;
 
 
@@ -122,6 +125,9 @@ private:
 		param_t _param_c_fl_sp;
 		param_t _param_c_fl_mc_pos;
 		param_t _param_c_tm_to_pos1;
+		param_t _param_c_tm_to_col_pos1;
+		param_t _param_c_tm_to_pos2;
+
 	} _params_handles_colugo;
 
 //	bool _fw_trans_latch = false;
@@ -131,6 +137,7 @@ private:
 		bool _reached_blend_atlist_once;
 		bool _reached_trans_atlist_once;
 		hrt_abstime blend_speed_reached_time;// at what time did we reached blend speed
+		hrt_abstime throttle_trans_reached_time;
 
 	} _colugo_trans_to_fw;
 
@@ -141,6 +148,15 @@ private:
 		TRANSITION_TO_MC,
 		FW_MODE
 	};
+
+	enum class COLUGO_FW_TRANS_STAGE{
+		TRANS_IDLE = 0,
+		TRANS_START,
+		TRANS_REACHED_THROTLE,
+		TRANS_COLUGO_ACT_TIME_FIRST_POS,
+		TRANS_CONTROL_ACT_TIME_FIRST_POS,
+		TRANS_TIME_SCND_POS
+	}_colugo_fw_trans_stage;
 
 	struct {
 		vtol_mode flight_mode;			// indicates in which mode the vehicle is in
@@ -156,7 +172,7 @@ private:
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
 
-	//ColugoTransHelper _colugo_trans_helper = ColugoTransHelper();
+	//ColugoTransHelper _colugo_trans_helper;// = ColugoTransHelper();
     	uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
 
 	struct debug_vect_s dbg_vect_clg;
@@ -189,6 +205,24 @@ get the postion of flaps control for mc to fw trasition (to move the free wing t
 
 	//same as getColugoToFwPitchTransition - but pos #1 is time based
 	float getColugoToFwPitchTransitionTimeBased();
+
+/*
+get the postion of pitch control from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoToFwPitchTransitionTimeBased2();
+
+/*
+get the postion of flaps control from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoToFwFlapsTransitionTimeBased2();
+
+/*
+get the postion of colugo actuator from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoActuatorToFwTransition2();
+
+//colugo go through the trasitions stages to fw
+	void updateTransitionStage();
 
 };
 #endif

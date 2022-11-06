@@ -47,6 +47,7 @@
 #include <float.h>
 #include <uORB/topics/landing_gear.h>
 #include <uORB/topics/colugo_actuator.h>
+#include <colugo/colugoTransHelper.h>
 
 //#include <mathlib/mathlib.h>
 
@@ -85,6 +86,9 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_params_handles_colugo._param_c_fl_sp = param_find("C_FL_SP");
 	_params_handles_colugo._param_c_fl_mc_pos = param_find("C_FL_MC_POS");
 	_params_handles_colugo._param_c_tm_to_pos1 = param_find("C_TM_TO_POS1");
+	_params_handles_colugo._param_c_tm_to_col_pos1 = param_find("C_TM_TO_COL_POS1");
+	_params_handles_colugo._param_c_tm_to_pos2 = param_find("C_TM_TO_POS2");
+
 
 	_params_handles_colugo._param_c_debug = param_find("C_DEBUG");
 
@@ -161,6 +165,12 @@ Standard::parameters_update()
 
 	param_get(_params_handles_colugo._param_c_tm_to_pos1, &v);
 	_params_colugo._param_c_tm_to_pos1 = math::constrain(v, 0.0f, 100.0f);
+
+	param_get(_params_handles_colugo._param_c_tm_to_col_pos1, &v);
+	_params_colugo._param_c_tm_to_col_pos1 = math::constrain(v, 0.0f, 100.0f);
+
+	param_get(_params_handles_colugo._param_c_tm_to_pos2, &v);
+	_params_colugo._param_c_tm_to_pos2 = math::constrain(v, 0.0f, 100.0f);
 }
 
 void Standard::publishColugoActuatorIfneeded(float val)
@@ -476,6 +486,40 @@ float Standard::getColugoToFwPitchTransition()
 	return res;
 }
 
+
+float Standard::getColugoToFwPitchTransitionTimeBased2(){
+	float res = _params_colugo._param_c_pi_mc_pos;
+	if(_colugo_fw_trans_stage >= COLUGO_FW_TRANS_STAGE::TRANS_CONTROL_ACT_TIME_FIRST_POS){
+		res = _params_colugo._param_c_pi_fp;
+	}
+	if(_colugo_fw_trans_stage >= COLUGO_FW_TRANS_STAGE::TRANS_TIME_SCND_POS){
+		res = _params_colugo._param_c_pi_sp;
+	}
+	return res;
+}
+
+float Standard::getColugoToFwFlapsTransitionTimeBased2(){
+	float res = _params_colugo._param_c_fl_mc_pos;
+	if(_colugo_fw_trans_stage >= COLUGO_FW_TRANS_STAGE::TRANS_CONTROL_ACT_TIME_FIRST_POS){
+		res = _params_colugo._param_c_fl_fp;
+	}
+	if(_colugo_fw_trans_stage >= COLUGO_FW_TRANS_STAGE::TRANS_TIME_SCND_POS){
+		res = _params_colugo._param_c_fl_sp;
+	}
+	return res;
+}
+
+float Standard::getColugoActuatorToFwTransition2(){
+	float res = COLUGO_ACTUATOR_MC_POS;
+	if(_colugo_fw_trans_stage >= COLUGO_FW_TRANS_STAGE::TRANS_COLUGO_ACT_TIME_FIRST_POS){
+		res = _params_colugo._param_c_wafp;
+	}
+	if(_colugo_fw_trans_stage >= COLUGO_FW_TRANS_STAGE::TRANS_TIME_SCND_POS){
+		res = _params_colugo._param_c_wasp;
+	}
+	return res;
+}
+
 float Standard::getColugoToFwPitchTransitionTimeBased()
 {
 	float res = _params_colugo._param_c_pi_mc_pos;
@@ -531,7 +575,7 @@ bool Standard::isTimeToColugoPos1(){
 		float time_since_blend_reached = (float)(hrt_absolute_time() - _colugo_trans_to_fw.blend_speed_reached_time);
 
 		res = time_since_blend_reached > (_params_colugo._param_c_tm_to_pos1 * 1000000);
-		dbg_vect_clg.z = time_since_blend_reached/1000000;
+		//dbg_vect_clg.z = time_since_blend_reached/1000000;
 
 		//dbg_vect.z = time_since_blend_reached;
 
@@ -574,7 +618,63 @@ float Standard::getColugoActuatorToFwTransition()
 	return res;
 }
 
+void Standard::updateTransitionStage(){
+	if(_vtol_schedule.flight_mode == vtol_mode::TRANSITION_TO_FW){
 
+		float time_since_thr_reached = (float)(hrt_absolute_time() - _colugo_trans_to_fw.throttle_trans_reached_time);
+
+		switch(_colugo_fw_trans_stage){
+			case COLUGO_FW_TRANS_STAGE::TRANS_IDLE:
+				_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_START;
+			break;
+
+			case COLUGO_FW_TRANS_STAGE::TRANS_START:
+			if(_pusher_throttle >= _params->front_trans_throttle){
+				_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_REACHED_THROTLE;
+				//update time
+				_colugo_trans_to_fw.throttle_trans_reached_time = hrt_absolute_time();
+			}
+			break;
+
+			case COLUGO_FW_TRANS_STAGE::TRANS_REACHED_THROTLE:
+
+				if (time_since_thr_reached > (_params_colugo._param_c_tm_to_col_pos1 * 1000000)){
+					_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_COLUGO_ACT_TIME_FIRST_POS;
+				}
+			break;
+
+			case COLUGO_FW_TRANS_STAGE::TRANS_COLUGO_ACT_TIME_FIRST_POS:
+
+				if (time_since_thr_reached > (_params_colugo._param_c_tm_to_pos1 * 1000000)){
+					_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_CONTROL_ACT_TIME_FIRST_POS;
+				}
+			break;
+
+
+
+			case COLUGO_FW_TRANS_STAGE::TRANS_CONTROL_ACT_TIME_FIRST_POS:
+			if (time_since_thr_reached > (_params_colugo._param_c_tm_to_pos2 * 1000000)){
+					_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_TIME_SCND_POS;
+				}
+			break;
+
+			case COLUGO_FW_TRANS_STAGE::TRANS_TIME_SCND_POS:
+			break;
+
+		}
+
+		}
+		else{//we are in any other mode...
+		//reset
+		_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_IDLE;
+		}
+
+		//update debug mavlink...
+		dbg_vect_clg.x = (float)_colugo_fw_trans_stage;
+
+
+
+}
 
 /**
  * Prepare message to actuators with data from mc and fw attitude controllers. An mc attitude weighting will determine
@@ -615,6 +715,12 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}
 
+		if(_params_colugo._param_c_debug == 2){
+			//updateTransitionStage();
+			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
+			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
+		}
+
 		colugoVal = COLUGO_ACTUATOR_MC_POS;
 		break;
 
@@ -636,6 +742,34 @@ void Standard::fill_actuator_outputs()
 			mc_out[actuator_controls_s::INDEX_FLAPS]        = getColugoToFwFlapsTransition();
 			mc_out[actuator_controls_s::INDEX_AIRBRAKES]    = getColugoToFwFlapsTransition();
 			colugoVal  = getColugoActuatorToFwTransition();
+			break;
+		}
+
+		else if(_params_colugo._param_c_debug == 2){//time based - not blend speed
+			updateTransitionStage();
+
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
+			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
+			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
+
+			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+			fw_out[actuator_controls_s::INDEX_PITCH]    = getColugoToFwPitchTransitionTimeBased2();//getColugoToFwPitchTransition();
+			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;//level ailrons let only flaps work//
+			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE] = _pusher_throttle;
+			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
+			mc_out[actuator_controls_s::INDEX_FLAPS]    = getColugoToFwFlapsTransitionTimeBased2(); //getColugoToFwFlapsTransition();
+			colugoVal  				    = getColugoActuatorToFwTransition2();
+
+		//	dbg_vect_clg.x = getColugoActuatorToFwTransition();//getColugoToFwFlapsTransitionTimeBased();
+			//past at list 2 seconds form position #1
+			//dbg_vect_clg.y = getColugoToFwFlapsTransitionTimeBased();
+			//dbg_vect.z = _airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend;
+
+
+
 			break;
 		}
 
@@ -720,6 +854,13 @@ void Standard::fill_actuator_outputs()
 			//dbg_vect_clg.y = 0.0f;
 			//dbg_vect_clg.z = 0.0f;
 		}
+		if(_params_colugo._param_c_debug == 2){
+			updateTransitionStage();
+			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
+			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
+		}
+
+
 
 		break;
 
@@ -739,10 +880,11 @@ void Standard::fill_actuator_outputs()
 		//fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		if(_params_colugo._param_c_debug == 4 || _params_colugo._param_c_debug == 3){
+		if(_params_colugo._param_c_debug == 4 || _params_colugo._param_c_debug == 3 || _params_colugo._param_c_debug == 2){
 			mc_out[actuator_controls_s::INDEX_FLAPS]        = -fw_in[actuator_controls_s::INDEX_PITCH];
 		}
 
+		//in fw mode -we are ALWAYS LOCKED!
 		colugoVal  = _params_colugo._param_c_wasp;
 		break;
 	}
@@ -783,8 +925,8 @@ void Standard::fill_actuator_outputs()
 	//dbg_vect_clg.x = mc_out[actuator_controls_s::INDEX_FLAPS];
 	//dbg_vect_clg.y = colugoVal;
 	//dbg_vect_clg.z = fw_in[actuator_controls_s::INDEX_PITCH];
-	dbg_vect_clg.x = _colugo_trans_to_fw._reached_blend_atlist_once;
-	dbg_vect_clg.y = _colugo_trans_to_fw.blend_speed_reached_time/1000000;
+	//dbg_vect_clg.x = _colugo_trans_to_fw._reached_blend_atlist_once;
+	//dbg_vect_clg.y = _colugo_trans_to_fw.blend_speed_reached_time/1000000;
 	dbg_vect_clg.timestamp = hrt_absolute_time();
 	orb_publish(ORB_ID(debug_vect), pub_dbg_vect, &dbg_vect_clg);
 }
