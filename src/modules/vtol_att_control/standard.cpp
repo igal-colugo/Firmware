@@ -98,7 +98,7 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	//debug
 	/* advertise debug vect */
 
-	strncpy(dbg_vect_clg.name, "Clg3D", 10);
+	//strncpy(dbg_vect_clg.name, "Clg3D", 10);
 	dbg_vect_clg.x = 1.0f;
 	dbg_vect_clg.y = 2.0f;
 	dbg_vect_clg.z = 3.0f;
@@ -928,7 +928,7 @@ void Standard::fill_actuator_outputs()
 	//dbg_vect_clg.x = _colugo_trans_to_fw._reached_blend_atlist_once;
 	//dbg_vect_clg.y = _colugo_trans_to_fw.blend_speed_reached_time/1000000;
 	dbg_vect_clg.timestamp = hrt_absolute_time();
-	orb_publish(ORB_ID(debug_vect), pub_dbg_vect, &dbg_vect_clg);
+	orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &dbg_vect_clg);
 }
 
 void Standard::waiting_on_tecs()

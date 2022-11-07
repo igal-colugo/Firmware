@@ -116,6 +116,9 @@ void LoggedTopics::add_default_topics()
 	add_topic("vehicle_status");
 	add_topic("vehicle_status_flags");
 	add_optional_topic("vtol_vehicle_status", 200);
+	//colugo debug...
+	add_optional_topic("debug_vect_clg", 250);
+	add_optional_topic("colugo_actuator", 250);
 	add_topic("wind", 1000);
 
 	// multi topics
