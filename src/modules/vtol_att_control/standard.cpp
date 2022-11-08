@@ -103,6 +103,12 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	dbg_vect_clg.y = 2.0f;
 	dbg_vect_clg.z = 3.0f;
 
+	//for mav purpuses...
+	strncpy(dbg_vect_for_mav.name, "Clg dbg", 10);
+	dbg_vect_for_mav.x = 4.0;
+	dbg_vect_for_mav.x = 5.0;
+	dbg_vect_for_mav.x = 6.0;
+
 }
 
 void
@@ -171,6 +177,12 @@ Standard::parameters_update()
 
 	param_get(_params_handles_colugo._param_c_tm_to_pos2, &v);
 	_params_colugo._param_c_tm_to_pos2 = math::constrain(v, 0.0f, 100.0f);
+
+
+	dbg_vect_for_mav.x = _params_colugo._param_c_tm_to_col_pos1;
+	dbg_vect_for_mav.y = _params_colugo._param_c_tm_to_pos1;
+	dbg_vect_for_mav.z = _params_colugo._param_c_tm_to_pos2;
+
 }
 
 void Standard::publishColugoActuatorIfneeded(float val)
@@ -292,6 +304,14 @@ void Standard::update_vtol_state()
 			}
 
 			transition_to_fw |= can_transition_on_ground();
+
+			if(_params_colugo._param_c_debug == 2){
+				updateColugoFwTransitionStage();
+				//make sure colugo is locked... too
+				transition_to_fw &= (_colugo_fw_trans_stage == COLUGO_FW_TRANS_STAGE::TRANS_TIME_SCND_POS);
+
+			}
+
 
 			if (transition_to_fw) {
 				_vtol_schedule.flight_mode = vtol_mode::FW_MODE;
@@ -618,7 +638,7 @@ float Standard::getColugoActuatorToFwTransition()
 	return res;
 }
 
-void Standard::updateTransitionStage(){
+void Standard::updateColugoFwTransitionStage(){
 	if(_vtol_schedule.flight_mode == vtol_mode::TRANSITION_TO_FW){
 
 		float time_since_thr_reached = (float)(hrt_absolute_time() - _colugo_trans_to_fw.throttle_trans_reached_time);
@@ -659,7 +679,14 @@ void Standard::updateTransitionStage(){
 			break;
 
 			case COLUGO_FW_TRANS_STAGE::TRANS_TIME_SCND_POS:
+			//wait one more sec for lock to finish...
+			if (time_since_thr_reached > ((_params_colugo._param_c_tm_to_pos2 + 1) * 1000000)){
+					_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_ALLOW_FW;
+				}
 			break;
+			case COLUGO_FW_TRANS_STAGE::TRANS_ALLOW_FW:
+			break;
+
 
 		}
 
@@ -746,7 +773,7 @@ void Standard::fill_actuator_outputs()
 		}
 
 		else if(_params_colugo._param_c_debug == 2){//time based - not blend speed
-			updateTransitionStage();
+			updateColugoFwTransitionStage();
 
 			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
@@ -855,7 +882,7 @@ void Standard::fill_actuator_outputs()
 			//dbg_vect_clg.z = 0.0f;
 		}
 		if(_params_colugo._param_c_debug == 2){
-			updateTransitionStage();
+			updateColugoFwTransitionStage();
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
 			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}
@@ -929,8 +956,16 @@ void Standard::fill_actuator_outputs()
 	//dbg_vect_clg.y = _colugo_trans_to_fw.blend_speed_reached_time/1000000;
 	dbg_vect_clg.timestamp = hrt_absolute_time();
 	orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &dbg_vect_clg);
+	publishDebugForMavIfneeded();
 }
 
+void Standard::publishDebugForMavIfneeded(){
+	if(_params_colugo._param_c_debug > 0){
+		dbg_vect_for_mav.timestamp = hrt_absolute_time();
+	orb_publish(ORB_ID(debug_vect), pub_dbg_vect_for_mav, &dbg_vect_for_mav);
+
+	}
+}
 void Standard::waiting_on_tecs()
 {
 	// keep thrust from transition

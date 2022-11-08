@@ -60,6 +60,7 @@
 //#include <string.h>
 //#include <uORB/topics/debug_value.h>
 #include <uORB/topics/debug_vect_clg.h>
+#include <uORB/topics/debug_vect.h>
 
 
 class Standard : public VtolType
@@ -155,7 +156,8 @@ private:
 		TRANS_REACHED_THROTLE,
 		TRANS_COLUGO_ACT_TIME_FIRST_POS,
 		TRANS_CONTROL_ACT_TIME_FIRST_POS,
-		TRANS_TIME_SCND_POS
+		TRANS_TIME_SCND_POS,
+		TRANS_ALLOW_FW
 	}_colugo_fw_trans_stage;
 
 	struct {
@@ -174,14 +176,16 @@ private:
 
 	//ColugoTransHelper _colugo_trans_helper;// = ColugoTransHelper();
     	uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
-
+	//my debug logs...
 	struct debug_vect_clg_s dbg_vect_clg;
-	orb_advert_t pub_dbg_vect_clg
-	 = orb_advertise(ORB_ID(debug_vect_clg), &dbg_vect_clg);
-
+	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &dbg_vect_clg);
+	//debug for mavlink...
+	struct debug_vect_s dbg_vect_for_mav;
+	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &dbg_vect_for_mav);
 	void parameters_update() override;
 	//cologo staff
 	void publishColugoActuatorIfneeded(float val);
+	void publishDebugForMavIfneeded();
 	void resetColugoTransitionStruct();
 	/*
 get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
@@ -223,7 +227,7 @@ get the postion of colugo actuator from mc to fw trasition based on time past af
 	float getColugoActuatorToFwTransition2();
 
 //colugo go through the trasitions stages to fw
-	void updateTransitionStage();
+	void updateColugoFwTransitionStage();
 
 };
 #endif
