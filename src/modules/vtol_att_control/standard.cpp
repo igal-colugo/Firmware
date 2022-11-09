@@ -47,7 +47,6 @@
 #include <float.h>
 #include <uORB/topics/landing_gear.h>
 #include <uORB/topics/colugo_actuator.h>
-#include <colugo/colugoTransHelper.h>
 
 //#include <mathlib/mathlib.h>
 
@@ -679,7 +678,7 @@ void Standard::updateColugoFwTransitionStage(){
 
 			case COLUGO_FW_TRANS_STAGE::TRANS_TIME_SCND_POS:
 			//wait one more sec for lock to finish...
-			if (time_since_thr_reached > ((_params_colugo._param_c_tm_to_pos2 + 1) * 1000000)){
+			if (time_since_thr_reached > ((_params_colugo._param_c_tm_to_pos2 + 0.5f) * 1000000)){
 					_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_ALLOW_FW;
 				}
 			break;
