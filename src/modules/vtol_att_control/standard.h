@@ -111,6 +111,7 @@ private:
 		float _param_c_tm_to_pos1;
 		float _param_c_tm_to_col_pos1;
 		float _param_c_tm_to_pos2;
+		float _param_c_tr_fw_srv_slew;
 
 	} _params_colugo;
 
@@ -128,6 +129,7 @@ private:
 		param_t _param_c_tm_to_pos1;
 		param_t _param_c_tm_to_col_pos1;
 		param_t _param_c_tm_to_pos2;
+		param_t _param_c_tr_fw_srv_slew;
 
 	} _params_handles_colugo;
 
@@ -156,6 +158,7 @@ private:
 		TRANS_REACHED_THROTLE,
 		TRANS_COLUGO_ACT_TIME_FIRST_POS,
 		TRANS_CONTROL_ACT_TIME_FIRST_POS,
+		TRANS_CONTROL_ACT_TIME_FIRST_POS_ENDED,
 		TRANS_TIME_SCND_POS,
 		TRANS_ALLOW_FW
 	}_colugo_fw_trans_stage;
@@ -220,6 +223,9 @@ get the postion of pitch control from mc to fw trasition based on time past afte
 get the postion of flaps control from mc to fw trasition based on time past after reaching transition throttle
 */
 	float getColugoToFwFlapsTransitionTimeBased2();
+
+	/*returns relative postion acording to _param_c_tr_fw_srv_slew parameter*/
+	float getColugoSlewedPosition(float startPos, float endPos);
 
 /*
 get the postion of colugo actuator from mc to fw trasition based on time past after reaching transition throttle

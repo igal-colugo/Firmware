@@ -140,7 +140,7 @@ parameters:
             description:
                 short: 'Time to position #2'
                 long: |
-                    'time gap, in seconds since 'transition throttle' reached, to go to position #2 (flaps, elevator, andcolugo actuator).'                    
+                    'time gap, in seconds since 'transition throttle' reached, to go to position #2 (flaps, elevator, and colugo actuator).'                    
             type: float
             decimal: 2
             increment: 0.01
@@ -148,3 +148,16 @@ parameters:
             min: 0.1
             max: 100.0
             default: 4.0
+            
+        C_TR_FW_SRV_SLEW:
+            description:
+                short: 'Servo slew rate to position #1'
+                long: |
+                    'slew rate, in seconds, for flaps and elevator servos, to go from 'MC position' to FW transition position #1.'                    
+            type: float
+            decimal: 2
+            increment: 0.01
+            unit: s
+            min: 0.0
+            max: 10.0
+            default: 1.0
