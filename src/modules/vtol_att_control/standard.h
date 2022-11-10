@@ -48,6 +48,20 @@
 #include "vtol_type.h"
 #include <parameters/param.h>
 #include <drivers/drv_hrt.h>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionCallback.hpp>
+#include <uORB/Publication.hpp>
+#include <uORB/topics/colugo_actuator.h>
+//#include <../lib/colugo/colugoTransHelper.h>
+
+//debug
+//#include <uORB/topics/debug_key_value.h>
+//#include <uORB/uORB.h>
+//#include <string.h>
+//#include <uORB/topics/debug_value.h>
+#include <uORB/topics/debug_vect_clg.h>
+#include <uORB/topics/debug_vect.h>
+
 
 class Standard : public VtolType
 {
@@ -83,6 +97,54 @@ private:
 		param_t reverse_delay;
 	} _params_handles_standard;
 
+
+	struct {
+		int32_t _param_c_debug;
+		float 	_param_c_wafp;
+		float 	_param_c_wasp;
+		float 	_param_c_pi_fp;
+		float 	_param_c_pi_sp;
+		float	_param_c_pi_mc_pos;
+		float 	_param_c_fl_fp;
+		float 	_param_c_fl_sp;
+		float	_param_c_fl_mc_pos;
+		float _param_c_tm_to_pos1;
+		float _param_c_tm_to_col_pos1;
+		float _param_c_tm_to_pos2;
+		float _param_c_tr_fw_srv_slew;
+
+	} _params_colugo;
+
+
+	struct {
+		param_t _param_c_debug;
+		param_t _param_c_wafp;
+		param_t _param_c_wasp;
+		param_t _param_c_pi_fp;
+		param_t _param_c_pi_sp;
+		param_t _param_c_pi_mc_pos;
+		param_t _param_c_fl_fp;
+		param_t _param_c_fl_sp;
+		param_t _param_c_fl_mc_pos;
+		param_t _param_c_tm_to_pos1;
+		param_t _param_c_tm_to_col_pos1;
+		param_t _param_c_tm_to_pos2;
+		param_t _param_c_tr_fw_srv_slew;
+
+	} _params_handles_colugo;
+
+//	bool _fw_trans_latch = false;
+
+	struct
+	{
+		bool _reached_blend_atlist_once;
+		bool _reached_trans_atlist_once;
+		hrt_abstime blend_speed_reached_time;// at what time did we reached blend speed
+		hrt_abstime throttle_trans_reached_time;
+
+	} _colugo_trans_to_fw;
+
+
 	enum class vtol_mode {
 		MC_MODE = 0,
 		TRANSITION_TO_FW,
@@ -90,15 +152,88 @@ private:
 		FW_MODE
 	};
 
+	enum class COLUGO_FW_TRANS_STAGE{
+		TRANS_IDLE = 0,
+		TRANS_START,
+		TRANS_REACHED_THROTLE,
+		TRANS_COLUGO_ACT_TIME_FIRST_POS,
+		TRANS_CONTROL_ACT_TIME_FIRST_POS,
+		TRANS_CONTROL_ACT_TIME_FIRST_POS_ENDED,
+		TRANS_TIME_SCND_POS,
+		TRANS_ALLOW_FW
+	}_colugo_fw_trans_stage;
+
 	struct {
 		vtol_mode flight_mode;			// indicates in which mode the vehicle is in
 		hrt_abstime transition_start;	// at what time did we start a transition (front- or backtransition)
+		//hrt_abstime blend_speed_treached;// at what time did we reached blend speed
+		//hrt_abstime blend_speed_reached;//time after reaching blend speed for actuator posiotion 1
+		//bool need_update_blend_time_reached;//bool latch helper for intermidiate time
 	} _vtol_schedule;
 
+	const float COLUGO_ACTUATOR_MC_POS{-1.0f};
+	//float _colugoActuatorPos{COLUGO_ACTUATOR_MC_POS};
 	float _pusher_throttle{0.0f};
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
 
+	//ColugoTransHelper _colugo_trans_helper;// = ColugoTransHelper();
+    	uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
+	//my debug logs...
+	struct debug_vect_clg_s dbg_vect_clg;
+	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &dbg_vect_clg);
+	//debug for mavlink...
+	struct debug_vect_s dbg_vect_for_mav;
+	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &dbg_vect_for_mav);
 	void parameters_update() override;
+	//cologo staff
+	void publishColugoActuatorIfneeded(float val);
+	void publishDebugForMavIfneeded();
+	void resetColugoTransitionStruct();
+	/*
+get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
+*/
+	float getColugoToFwPitchTransition();
+
+	/*
+get the postion of flaps control for mc to fw trasition (to move the free wing to correct location before lock)
+*/
+	float getColugoToFwFlapsTransition();
+	float getColugoActuatorToFwTransition();
+
+	//is the airspeed is higher than blend air speed
+	bool isAirspeedAbovePos1ForTransition();
+	//is the airspeed is higher than transition air speed
+	bool isAirspeedAbovePos2ForTransition();
+	//is time since trasition command > _param_c_tm_to_pos1
+	bool isTimeToColugoPos1();
+
+	//same as getColugoToFwFlapsTransition - but pos #1 is time based
+	float getColugoToFwFlapsTransitionTimeBased();
+
+	//same as getColugoToFwPitchTransition - but pos #1 is time based
+	float getColugoToFwPitchTransitionTimeBased();
+
+/*
+get the postion of pitch control from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoToFwPitchTransitionTimeBased2();
+
+/*
+get the postion of flaps control from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoToFwFlapsTransitionTimeBased2();
+
+	/*returns relative postion acording to _param_c_tr_fw_srv_slew parameter*/
+	float getColugoSlewedPosition(float startPos, float endPos);
+
+/*
+get the postion of colugo actuator from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoActuatorToFwTransition2();
+
+//colugo go through the trasitions stages to fw
+	void updateColugoFwTransitionStage();
+
 };
 #endif

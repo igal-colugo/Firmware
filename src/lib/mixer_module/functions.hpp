@@ -44,6 +44,7 @@
 #include <uORB/topics/actuator_servos.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/landing_gear.h>
+#include <uORB/topics/colugo_actuator.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 
@@ -237,6 +238,23 @@ public:
 private:
 	uORB::Subscription _topic{ORB_ID(landing_gear)};
 	float _data{-1.f};
+};
+
+/**
+ * Functions: Colugo
+ */
+class FunctionColugoActuator : public FunctionProviderBase
+{
+public:
+    FunctionColugoActuator() = default;
+    static FunctionProviderBase *allocate(const Context &context) { return new FunctionColugoActuator(); }
+
+    void update() override;
+    float value(OutputFunction func) override { return _data; }
+
+private:
+    uORB::Subscription _topic{ORB_ID(colugo_actuator)};
+    float _data{-1.f};
 };
 
 /**

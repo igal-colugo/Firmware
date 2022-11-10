@@ -7,7 +7,7 @@
 
 . ${R}etc/init.d/rc.vtol_defaults
 
-param set-default SYS_CTRL_ALLOC 1
+# param set-default SYS_CTRL_ALLOC 1
 param set-default CA_AIRFRAME 2
 
 param set-default CA_ROTOR_COUNT 5
@@ -27,7 +27,7 @@ param set-default CA_ROTOR4_AX 1.0
 param set-default CA_ROTOR4_AZ 0.0
 param set-default CA_ROTOR4_PX 0.2
 
-param set-default CA_SV_CS_COUNT 4
+param set-default CA_SV_CS_COUNT 3
 param set-default CA_SV_CS0_TYPE 1
 param set-default CA_SV_CS0_TRQ_R -0.5
 param set-default CA_SV_CS1_TYPE 2
@@ -42,8 +42,6 @@ param set-default PWM_MAIN_FUNC5 105
 param set-default PWM_MAIN_FUNC6 201
 param set-default PWM_MAIN_FUNC7 202
 param set-default PWM_MAIN_FUNC8 203
-param set-default PWM_MAIN_FUNC9 11000
-param set-default PWM_MAIN_FUNC10 205
 
 param set-default FW_L1_PERIOD 12
 param set-default FW_MAN_P_MAX 30
@@ -78,22 +76,8 @@ param set-default VT_FWD_THRUST_EN 4
 param set-default VT_F_TRANS_THR 0.75
 param set-default VT_MOT_ID 1234
 param set-default VT_FW_MOT_OFFID 1234
-param set-default VT_B_TRANS_DUR 18
+param set-default VT_B_TRANS_DUR 8
 param set-default VT_TYPE 2
-param set-default VT_ARSP_BLEND 7.0
-param set-default VT_ARSP_TRANS 13.0
-param set-default VT_TRANS_TIMEOUT 25.0
-param set-default VT_TRANS_MIN_TM 8.0
-param set-default VT_F_TR_OL_TM 9.0
-param set-default VT_F_TRANS_DUR 12.0
-param set-default C_DEBUG 2
-param set-default C_PI_FP 0.1
-param set-default C_PI_SP 0.2
-param set-default C_FL_FP 0.8
-param set-default C_FL_SP -0.8
-param set-default C_WAFP -0.8
-param set-default C_WASP 0.8
-param set-default FW_FLAPS_TO_SCL 0.5
 
 set MIXER_FILE etc/mixers-sitl/standard_vtol_sitl.main.mix
 set MIXER custom

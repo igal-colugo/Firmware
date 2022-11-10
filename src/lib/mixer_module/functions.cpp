@@ -97,6 +97,20 @@ void FunctionLandingGear::update()
 	}
 }
 
+void FunctionColugoActuator::update()
+{
+    //test...
+    colugo_actuator_s colugo_act;
+
+    if (_topic.update(&colugo_act)) {
+
+            _data = colugo_act.actuator_state;
+
+
+    }
+}
+
+
 FunctionManualRC::FunctionManualRC()
 {
 	for (int i = 0; i < num_data_points; ++i) {

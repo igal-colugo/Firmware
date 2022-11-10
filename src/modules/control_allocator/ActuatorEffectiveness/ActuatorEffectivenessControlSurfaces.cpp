@@ -111,6 +111,8 @@ void ActuatorEffectivenessControlSurfaces::updateParams()
 
 		case Type::LeftFlaps:
 		case Type::RightFlaps:
+		case Type::LeftFlaperon:
+		case Type::RightFlaperon:
 			torque.setZero();
 			break;
 
@@ -145,10 +147,12 @@ void ActuatorEffectivenessControlSurfaces::applyFlapsAndAirbrakes(float flaps_co
 		switch (_params[i].type) {
 		// TODO: check sign
 		case ActuatorEffectivenessControlSurfaces::Type::LeftFlaps:
+		case ActuatorEffectivenessControlSurfaces::Type::LeftFlaperon:
 			actuator_sp(i + first_actuator_idx) += flaps_control;
 			break;
 
 		case ActuatorEffectivenessControlSurfaces::Type::RightFlaps:
+		case ActuatorEffectivenessControlSurfaces::Type::RightFlaperon:
 			actuator_sp(i + first_actuator_idx) -= flaps_control;
 			break;
 
