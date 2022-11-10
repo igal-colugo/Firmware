@@ -539,11 +539,12 @@ float Standard::getColugoSlewedPosition(float startPos, float endPos){
 
 		progress = math::constrain(progress, 0.0f, 1.0f);
 		float servRelativePos = fullRange * progress;
-
+		dbg_vect_for_mav.x = progress;
 		//dbg_vect_for_mav.y = partialTime;
 		//dbg_vect_for_mav.x = (hrt_absolute_time() - _colugo_trans_to_fw.throttle_trans_reached_time) * 1e-6f;
 		res = startPos + servRelativePos;
 	}
+
 
 	return res;
 }
@@ -979,9 +980,8 @@ void Standard::fill_actuator_outputs()
 	//dbg_vect_clg.x = _colugo_trans_to_fw._reached_blend_atlist_once;
 	//dbg_vect_clg.y = _colugo_trans_to_fw.blend_speed_reached_time/1000000;
 
-
-	dbg_vect_for_mav.z = mc_out[actuator_controls_s::INDEX_FLAPS];
 	dbg_vect_for_mav.y = (float)_colugo_fw_trans_stage;
+	dbg_vect_for_mav.z = mc_out[actuator_controls_s::INDEX_FLAPS];
 	dbg_vect_clg.timestamp = hrt_absolute_time();
 	orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &dbg_vect_clg);
 	publishDebugForMavIfneeded();
