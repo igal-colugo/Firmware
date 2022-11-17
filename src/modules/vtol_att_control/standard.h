@@ -176,11 +176,11 @@ private:
 	//ColugoTransHelper _colugo_trans_helper;// = ColugoTransHelper();
     	uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
 	//my debug logs...
-	struct debug_vect_clg_s dbg_vect_clg;
-	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &dbg_vect_clg);
+	struct debug_vect_clg_s _dbg_vect_clg;
+	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &_dbg_vect_clg);
 	//debug for mavlink...
-	struct debug_vect_s dbg_vect_for_mav;
-	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &dbg_vect_for_mav);
+	struct debug_vect_s _dbg_vect_for_mav;
+	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &_dbg_vect_for_mav);
 	void parameters_update() override;
 	//cologo staff
 	void publishColugoActuatorIfneeded(float val);

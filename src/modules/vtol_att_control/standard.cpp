@@ -92,15 +92,15 @@ Standard::Standard(VtolAttitudeControl *attc) :
 
 	//debug
 	/* advertise colugo debug vect */
-	dbg_vect_clg.x = 1.0f;
-	dbg_vect_clg.y = 2.0f;
-	dbg_vect_clg.z = 3.0f;
+	_dbg_vect_clg.x = 1.0f;
+	_dbg_vect_clg.y = 2.0f;
+	_dbg_vect_clg.z = 3.0f;
 
 	//for mav purpuses...
-	strncpy(dbg_vect_for_mav.name, "Clg dbg", 10);
-	dbg_vect_for_mav.x = 4.0;
-	dbg_vect_for_mav.y = 5.0;
-	dbg_vect_for_mav.z = 6.0;
+	strncpy(_dbg_vect_for_mav.name, "Clg dbg", 10);
+	_dbg_vect_for_mav.x = 4.0;
+	_dbg_vect_for_mav.y = 5.0;
+	_dbg_vect_for_mav.z = 6.0;
 
 }
 
@@ -312,11 +312,12 @@ void Standard::update_vtol_state()
 		}
 	}
 
-	dbg_vect_for_mav.z = mc_weight;
+	_dbg_vect_for_mav.z = mc_weight;
+	_dbg_vect_clg.y     = mc_weight;
 
-	_mc_roll_weight = mc_weight;
-	_mc_pitch_weight = mc_weight;
-	_mc_yaw_weight = mc_weight;
+	_mc_roll_weight     = mc_weight;
+	_mc_pitch_weight    = mc_weight;
+	_mc_yaw_weight      = mc_weight;
 	_mc_throttle_weight = mc_weight;
 
 	// map specific control phases to simple control modes
@@ -382,7 +383,7 @@ void Standard::update_transition_state()
 		} else if (_params->airspeed_disabled || !PX4_ISFINITE(_airspeed_validated->calibrated_airspeed_m_s)) {
 			mc_weight = 1.0f - time_since_trans_start / getMinimumFrontTransitionTime();
 			mc_weight = math::constrain(2.0f * mc_weight, 0.0f, 1.0f);
-			dbg_vect_for_mav.x = mc_weight;
+			_dbg_vect_for_mav.x = mc_weight;
 
 		}
 
@@ -443,7 +444,7 @@ void Standard::update_transition_state()
 
 	mc_weight = math::constrain(mc_weight, 0.0f, 1.0f);
 
-	dbg_vect_for_mav.z = mc_weight;
+	_dbg_vect_for_mav.z = mc_weight;
 
 	_mc_roll_weight = mc_weight;
 	_mc_pitch_weight = mc_weight;
@@ -462,57 +463,6 @@ void Standard::update_fw_state()
 {
 	VtolType::update_fw_state();
 }
-/*
-bool Standard::isAirspeedAbovePos1ForTransition()
-{
-	//bool res = math::isInRange(_airspeed_validated->calibrated_airspeed_m_s, _params->airspeed_blend, 11.0f);
-	bool res = _airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend;
-
-	if(res && !_colugo_trans_to_fw._reached_blend_atlist_once){
-		_colugo_trans_to_fw._reached_blend_atlist_once = true;
-		_colugo_trans_to_fw.blend_speed_reached_time = hrt_absolute_time();
-	}
-	return _colugo_trans_to_fw._reached_blend_atlist_once;
-}
-*/
-/*
-bool Standard::isAirspeedAbovePos1ForTransition()
-{
-	if(_airspeed_validated->calibrated_airspeed_m_s > _params->airspeed_blend && !_colugo_trans_to_fw._reached_blend_atlist_once){
-		_colugo_trans_to_fw._reached_blend_atlist_once = true;
-		_colugo_trans_to_fw.blend_speed_reached_time = hrt_absolute_time();
-	}
-	return _colugo_trans_to_fw._reached_blend_atlist_once;
-}
-
-
-bool Standard::isAirspeedAbovePos2ForTransition()
-{
-	if(_airspeed_validated->calibrated_airspeed_m_s > _params->transition_airspeed){
-		_colugo_trans_to_fw._reached_trans_atlist_once = true;
-	}
-
-	return _colugo_trans_to_fw._reached_trans_atlist_once;
-}
-*/
-/*
-get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
-*/
-/*
-float Standard::getColugoToFwPitchTransition()
-{
-	float res = _params_colugo._param_c_pi_mc_pos;
-
-	if (isAirspeedAbovePos2ForTransition()) {
-		res = _params_colugo._param_c_pi_sp;
-	}
-	else if (isAirspeedAbovePos1ForTransition()) {
-		res = _params_colugo._param_c_pi_fp;
-	}
-
-	return res;
-}
-*/
 
 float Standard::getColugoToFwPitchTransitionTimeBased2(){
 	float res = _params_colugo._param_c_pi_mc_pos;
@@ -573,109 +523,7 @@ float Standard::getColugoActuatorToFwTransition2(){
 	}
 	return res;
 }
-/*
-float Standard::getColugoToFwPitchTransitionTimeBased()
-{
-	float res = _params_colugo._param_c_pi_mc_pos;
 
-	if (isAirspeedAbovePos2ForTransition() && isTimeToColugoPos1()) {
-		res = _params_colugo._param_c_pi_sp;
-	}
-	else if (isTimeToColugoPos1()) {
-		res = _params_colugo._param_c_pi_fp;
-	}
-
-	return res;
-}
-*/
-/*
-get the postion of flaps control for mc to fw trasition (to move the free wing to correct location before lock)
-*/
-/*
-float Standard::getColugoToFwFlapsTransition()
-{
-	float res = _params_colugo._param_c_fl_mc_pos;
-
-	if (isAirspeedAbovePos2ForTransition()) {
-		res = _params_colugo._param_c_fl_sp;
-	}
-	else if (isAirspeedAbovePos1ForTransition()) {
-		res = _params_colugo._param_c_fl_fp;
-
-	}
-	return res;
-}
-*/
-/*
-float Standard::getColugoToFwFlapsTransitionTimeBased()
-{
-	float res = _params_colugo._param_c_fl_mc_pos;
-
-
-	if (isAirspeedAbovePos2ForTransition() && isTimeToColugoPos1()) {
-		res = _params_colugo._param_c_fl_sp;
-	}
-	else if (isTimeToColugoPos1()) {
-		res = _params_colugo._param_c_fl_fp;
-
-	}
-	return res;
-}
-*/
-/*
-bool Standard::isTimeToColugoPos1(){
-	//first we need to make sure we are in transition to FW & blending time is up to date.
-	bool res = false;//(_vtol_schedule.flight_mode == vtol_mode::TRANSITION_TO_FW) && _colugo_trans_to_fw._reached_blend_atlist_once;
-	//now make sure enough time past...
-	//dbg_vect.y = _colugo_trans_to_fw._reached_blend_atlist_once;
-	if(_colugo_trans_to_fw._reached_blend_atlist_once){
-		float time_since_blend_reached = (float)(hrt_absolute_time() - _colugo_trans_to_fw.blend_speed_reached_time);
-
-		res = time_since_blend_reached > (_params_colugo._param_c_tm_to_pos1 * 1000000);
-		//dbg_vect_clg.z = time_since_blend_reached/1000000;
-
-		//dbg_vect.z = time_since_blend_reached;
-
-	}
-
-
-	//dbg_vect_clg.y = colugoVal;
-	//dbg_vect_clg.z = res;
-
-
-
-	//dbg_vect.x = res;
-
-	return res;
-}
-*/
-
-/*
-get the postion of the colugo acctuator mc to fw trasition (to move the wing lock pin to correct location)
-*/
-/*
-float Standard::getColugoActuatorToFwTransition()
-{
-	float res = COLUGO_ACTUATOR_MC_POS;
-	bool enoughTime = false;
-
-	if(_colugo_trans_to_fw._reached_blend_atlist_once){
-		float time_since_blend_reached = (float)(hrt_absolute_time() - _colugo_trans_to_fw.blend_speed_reached_time);
-
-		enoughTime = time_since_blend_reached > ((_params_colugo._param_c_tm_to_pos1 + 2) * 1000000);
-
-	}
-
-	if (isAirspeedAbovePos2ForTransition() && enoughTime) {
-		res = _params_colugo._param_c_wasp;
-	}
-	//first postiotion is after reaching blend speed
-	else if (isAirspeedAbovePos1ForTransition()) {
-		res = _params_colugo._param_c_wafp;
-	}
-	return res;
-}
-*/
 void Standard::updateColugoFwTransitionStage(){
 //	dbg_vect_for_mav.x += 1;
 
@@ -917,6 +765,7 @@ void Standard::fill_actuator_outputs()
 	_thrust_setpoint_0->xyz[0] = fw_out[actuator_controls_s::INDEX_THROTTLE];
 	_thrust_setpoint_0->xyz[1] = 0.f;
 	_thrust_setpoint_0->xyz[2] = -mc_out[actuator_controls_s::INDEX_THROTTLE];
+	_dbg_vect_clg.x = _thrust_setpoint_0->xyz[2];
 
 	_thrust_setpoint_1->timestamp = hrt_absolute_time();
 	_thrust_setpoint_1->timestamp_sample = _actuators_fw_in->timestamp_sample;
@@ -939,17 +788,17 @@ void Standard::fill_actuator_outputs()
 	//dbg_vect_clg.x = _colugo_trans_to_fw._reached_blend_atlist_once;
 	//dbg_vect_clg.y = _colugo_trans_to_fw.blend_speed_reached_time/1000000;
 
-	dbg_vect_for_mav.y = (float)_colugo_fw_trans_stage;
+	_dbg_vect_for_mav.y = (float)_colugo_fw_trans_stage;
 
-	dbg_vect_clg.timestamp = hrt_absolute_time();
-	orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &dbg_vect_clg);
+	_dbg_vect_clg.timestamp = hrt_absolute_time();
+	orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &_dbg_vect_clg);
 	publishDebugForMavIfneeded();
 }
 
 void Standard::publishDebugForMavIfneeded(){
 	if(_params_colugo._param_c_debug > 0){
-		dbg_vect_for_mav.timestamp = hrt_absolute_time();
-	orb_publish(ORB_ID(debug_vect), pub_dbg_vect_for_mav, &dbg_vect_for_mav);
+		_dbg_vect_for_mav.timestamp = hrt_absolute_time();
+	orb_publish(ORB_ID(debug_vect), pub_dbg_vect_for_mav, &_dbg_vect_for_mav);
 
 	}
 }
