@@ -135,14 +135,7 @@ private:
 
 //	bool _fw_trans_latch = false;
 
-	struct
-	{
-		bool _reached_blend_atlist_once;
-		bool _reached_trans_atlist_once;
-		hrt_abstime blend_speed_reached_time;// at what time did we reached blend speed
-		hrt_abstime throttle_trans_reached_time;
 
-	} _colugo_trans_to_fw;
 
 
 	enum class vtol_mode {
@@ -151,6 +144,12 @@ private:
 		TRANSITION_TO_MC,
 		FW_MODE
 	};
+
+	struct
+	{
+		hrt_abstime throttle_trans_reached_time;
+
+	} _colugo_trans_to_fw;
 
 	enum class COLUGO_FW_TRANS_STAGE{
 		TRANS_IDLE = 0,
@@ -166,9 +165,6 @@ private:
 	struct {
 		vtol_mode flight_mode;			// indicates in which mode the vehicle is in
 		hrt_abstime transition_start;	// at what time did we start a transition (front- or backtransition)
-		//hrt_abstime blend_speed_treached;// at what time did we reached blend speed
-		//hrt_abstime blend_speed_reached;//time after reaching blend speed for actuator posiotion 1
-		//bool need_update_blend_time_reached;//bool latch helper for intermidiate time
 	} _vtol_schedule;
 
 	const float COLUGO_ACTUATOR_MC_POS{-1.0f};
@@ -180,39 +176,38 @@ private:
 	//ColugoTransHelper _colugo_trans_helper;// = ColugoTransHelper();
     	uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
 	//my debug logs...
-	struct debug_vect_clg_s dbg_vect_clg;
-	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &dbg_vect_clg);
+	struct debug_vect_clg_s _dbg_vect_clg;
+	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &_dbg_vect_clg);
 	//debug for mavlink...
-	struct debug_vect_s dbg_vect_for_mav;
-	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &dbg_vect_for_mav);
+	struct debug_vect_s _dbg_vect_for_mav;
+	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &_dbg_vect_for_mav);
 	void parameters_update() override;
 	//cologo staff
 	void publishColugoActuatorIfneeded(float val);
 	void publishDebugForMavIfneeded();
-	void resetColugoTransitionStruct();
 	/*
 get the postion of pitch control for mc to fw trasition (to move the free wing to correct location before lock)
 */
-	float getColugoToFwPitchTransition();
+	//float getColugoToFwPitchTransition();
 
 	/*
 get the postion of flaps control for mc to fw trasition (to move the free wing to correct location before lock)
 */
-	float getColugoToFwFlapsTransition();
-	float getColugoActuatorToFwTransition();
+	//float getColugoToFwFlapsTransition();
+	//float getColugoActuatorToFwTransition();
 
 	//is the airspeed is higher than blend air speed
-	bool isAirspeedAbovePos1ForTransition();
+	//bool isAirspeedAbovePos1ForTransition();
 	//is the airspeed is higher than transition air speed
-	bool isAirspeedAbovePos2ForTransition();
+	//bool isAirspeedAbovePos2ForTransition();
 	//is time since trasition command > _param_c_tm_to_pos1
-	bool isTimeToColugoPos1();
+	//bool isTimeToColugoPos1();
 
 	//same as getColugoToFwFlapsTransition - but pos #1 is time based
-	float getColugoToFwFlapsTransitionTimeBased();
+	//float getColugoToFwFlapsTransitionTimeBased();
 
 	//same as getColugoToFwPitchTransition - but pos #1 is time based
-	float getColugoToFwPitchTransitionTimeBased();
+	//float getColugoToFwPitchTransitionTimeBased();
 
 /*
 get the postion of pitch control from mc to fw trasition based on time past after reaching transition throttle
