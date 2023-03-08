@@ -96,7 +96,9 @@ bool FlightTaskTransition::update()
 	// tiltrotors and standard vtol will overrride roll and pitch setpoint but keep vertical thrust setpoint
 	bool ret = FlightTask::update();
 
-	_position_setpoint.setAll(NAN);
+	//float colugoTest = _position_setpoint(2);
+ 	_position_setpoint.setAll(NAN);
+	//_position_setpoint(2) -= colugoTest - 100;
 
 	// calculate a horizontal acceleration vector which corresponds to an attitude composed of pitch up by _param_pitch_cruise_degrees
 	// and zero roll angle
