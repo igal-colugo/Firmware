@@ -52,7 +52,8 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/topics/colugo_actuator.h>
-//#include <../lib/colugo/colugoTransHelper.h>
+#include <colugo/colugoTransHelper.hpp>
+
 
 //debug
 //#include <uORB/topics/debug_key_value.h>
@@ -132,6 +133,8 @@ private:
 		param_t _param_c_tr_fw_srv_slew;
 
 	} _params_handles_colugo;
+
+	colugoTransHelper* _cth;
 
 //	bool _fw_trans_latch = false;
 

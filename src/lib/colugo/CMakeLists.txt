@@ -33,3 +33,8 @@
 
 # colugo paramters
 set_property(GLOBAL APPEND PROPERTY PX4_MODULE_CONFIG_FILES ${CMAKE_CURRENT_SOURCE_DIR}/colugo_params.yaml)
+
+px4_add_library(colugoTransHelper
+colugoTransHelper.hpp
+colugoTransHelper.cpp
+)

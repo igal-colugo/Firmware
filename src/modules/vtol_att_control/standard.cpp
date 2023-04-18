@@ -523,7 +523,7 @@ float Standard::getColugoActuatorToFwTransition2(){
 	}
 	return res;
 }
-
+//@note transition
 void Standard::updateColugoFwTransitionStage(){
 //	dbg_vect_for_mav.x += 1;
 
