@@ -70,6 +70,7 @@ VtolType::VtolType(VtolAttitudeControl *att_controller) :
 	_thrust_setpoint_0 = _attc->get_thrust_setpoint_0();
 	_thrust_setpoint_1 = _attc->get_thrust_setpoint_1();
 	_local_pos = _attc->get_local_pos();
+	//@note setpoint in vtol of all
 	_local_pos_sp = _attc->get_local_pos_sp();
 	_airspeed_validated = _attc->get_airspeed();
 	_tecs_status = _attc->get_tecs_status();

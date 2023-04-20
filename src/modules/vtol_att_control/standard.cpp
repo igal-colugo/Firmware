@@ -176,20 +176,6 @@ Standard::parameters_update()
 
 }
 
-void Standard::publishColugoActuatorIfneeded(float val)
-{
-	if(_params_colugo._param_c_debug != 0){
-		//if(fabsf(val - _colugoActuatorPos) > FLT_EPSILON){
-			//_colugoActuatorPos = val;
-			colugo_actuator_s colugo_act{};
-			colugo_act.actuator_state = val;
-			colugo_act.timestamp = hrt_absolute_time();
-			_colugo_actuator_pub.publish(colugo_act);
-		//}
-
-	}
-
-}
 
 
 void Standard::update_vtol_state()
@@ -241,6 +227,7 @@ void Standard::update_vtol_state()
 			// speed exit condition: use ground if valid, otherwise airspeed
 			bool exit_backtransition_speed_condition = false;
 
+			//@note local_pos
 			if (_local_pos->v_xy_valid) {
 				const Dcmf R_to_body(Quatf(_v_att->q).inversed());
 				const Vector3f vel = R_to_body * Vector3f(_local_pos->vx, _local_pos->vy, _local_pos->vz);
@@ -311,6 +298,8 @@ void Standard::update_vtol_state()
 			}
 		}
 	}
+
+
 
 	_dbg_vect_for_mav.z = mc_weight;
 	_dbg_vect_clg.y     = mc_weight;
@@ -401,7 +390,7 @@ void Standard::update_transition_state()
 			}
 		}
 
-		if(_params_colugo._param_c_debug == 4){
+		if(_params_colugo._param_c_debug >= 4){
 		//if we are still not in full lock stage- dont reduce mc weight....
 			mc_weight = (_colugo_fw_trans_stage >= COLUGO_FW_TRANS_STAGE::TRANS_ALLOW_FW) ?
 			mc_weight : 1.0f;
@@ -600,7 +589,7 @@ void Standard::updateColugoFwTransitionStage(){
  */
 void Standard::fill_actuator_outputs()
 {
-	float colugoVal = COLUGO_ACTUATOR_MC_POS;
+
 	auto &mc_in = _actuators_mc_in->control;
 	auto &fw_in = _actuators_fw_in->control;
 
@@ -636,9 +625,9 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}
 
-		colugoVal = COLUGO_ACTUATOR_MC_POS;//unlocked in MC mode ONLY!
+		_cth->setColugoActuatorPos(COLUGO_ACTUATOR_MC_POS);//unlocked in MC mode ONLY!
 		break;
-
+//@note TRANSITION_TO_FW
 	case vtol_mode::TRANSITION_TO_FW:{
 		if(_params_colugo._param_c_debug == 1){
 			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
@@ -665,6 +654,8 @@ void Standard::fill_actuator_outputs()
 		|| _params_colugo._param_c_debug == 4){//time based and throttle- not blend speed
 			updateColugoFwTransitionStage();
 
+			_local_pos_sp->vz = -5.0;
+
 			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
 			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
@@ -684,7 +675,7 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_THROTTLE] = _pusher_throttle;
 			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
 			mc_out[actuator_controls_s::INDEX_FLAPS]    = getColugoToFwFlapsTransitionTimeBased2();
-			colugoVal  				    = getColugoActuatorToFwTransition2();
+			_cth->setColugoActuatorPos(getColugoActuatorToFwTransition2());
 			break;
 		}
 
@@ -716,7 +707,7 @@ void Standard::fill_actuator_outputs()
 			updateColugoFwTransitionStage();
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
 			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
-			colugoVal  = _params_colugo._param_c_wasp;//locked - until fully mc mode...
+			_cth->setColugoActuatorPos(_params_colugo._param_c_wasp);//locked - until fully mc mode...
 		}
 		break;
 
@@ -744,7 +735,7 @@ void Standard::fill_actuator_outputs()
 		}
 
 		//in fw mode -we are ALWAYS LOCKED!
-		colugoVal  = _params_colugo._param_c_wasp;
+		_cth->setColugoActuatorPos(_params_colugo._param_c_wasp);
 		break;
 	}
 
@@ -778,15 +769,9 @@ void Standard::fill_actuator_outputs()
 
 	_actuators_out_0->timestamp = _actuators_out_1->timestamp = hrt_absolute_time();
 
-	publishColugoActuatorIfneeded(colugoVal);
-
-	//debug
-	/* send one vector */
-	//dbg_vect_clg.x = mc_out[actuator_controls_s::INDEX_FLAPS];
-	//dbg_vect_clg.y = colugoVal;
-	//dbg_vect_clg.z = fw_in[actuator_controls_s::INDEX_PITCH];
-	//dbg_vect_clg.x = _colugo_trans_to_fw._reached_blend_atlist_once;
-	//dbg_vect_clg.y = _colugo_trans_to_fw.blend_speed_reached_time/1000000;
+	if(_params_colugo._param_c_debug != 0){
+		_cth->publishColugoActuator();
+	}
 
 	_dbg_vect_for_mav.y = (float)_colugo_fw_trans_stage;
 

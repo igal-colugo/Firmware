@@ -60,6 +60,7 @@ set(msg_files
 	collision_constraints.msg
 	collision_report.msg
         colugo_actuator.msg
+        colugo_transition.msg
 	commander_state.msg
 	control_allocator_status.msg
 	cpuload.msg

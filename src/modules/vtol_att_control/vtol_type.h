@@ -224,6 +224,7 @@ public:
 	struct actuator_controls_s			*_actuators_mc_in;			//actuator controls from mc_rate_control
 	struct actuator_controls_s			*_actuators_fw_in;			//actuator controls from fw_att_control
 	struct vehicle_local_position_s			*_local_pos;
+	//@note setpoiont
 	struct vehicle_local_position_setpoint_s	*_local_pos_sp;
 	struct airspeed_validated_s 				*_airspeed_validated;					// airspeed
 	struct tecs_status_s				*_tecs_status;

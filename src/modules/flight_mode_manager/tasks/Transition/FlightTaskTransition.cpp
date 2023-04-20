@@ -89,9 +89,11 @@ bool FlightTaskTransition::activate(const vehicle_local_position_setpoint_s &las
 
 
 }
-
+//@note FlightTaskTransition
 bool FlightTaskTransition::update()
 {
+
+
 	// tailsitters will override attitude and thrust setpoint
 	// tiltrotors and standard vtol will overrride roll and pitch setpoint but keep vertical thrust setpoint
 	bool ret = FlightTask::update();
@@ -106,8 +108,23 @@ bool FlightTaskTransition::update()
 
 	// slowly move vertical velocity setpoint to zero
 	_vel_z_filter.setParameters(math::constrain(_deltatime, 0.01f, 0.1f), _vel_z_filter_time_const);
-	_velocity_setpoint(2) = _vel_z_filter.update(0.0f);
-
+	//_velocity_setpoint(2) = _vel_z_filter.update(0.0f);
+//_velocity_setpoint(2) = -3;//colugo
 	_yaw_setpoint = NAN;
+
+
+	colugo_transition_s colugo_trans;
+
+    if (_colugo_transition_sub.update(&colugo_trans)) {
+
+            COLUGO_FW_VTRANS_STAGE transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
+	    if(transState == COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START){
+		_velocity_setpoint(2) = CST_TRANSITION_VS_M_S;
+
+	    }
+
+
+    }
+
 	return ret;
 }
