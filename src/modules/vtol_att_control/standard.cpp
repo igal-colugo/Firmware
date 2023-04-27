@@ -288,6 +288,9 @@ void Standard::update_vtol_state()
 				//make sure colugo is locked... too
 				transition_to_fw &= (_colugo_fw_trans_stage == COLUGO_FW_TRANS_STAGE::TRANS_ALLOW_FW);
 			}
+			if(_params_colugo._param_c_debug == 5){
+				transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
+			}
 
 
 			if (transition_to_fw) {
@@ -301,7 +304,6 @@ void Standard::update_vtol_state()
 
 
 
-	_dbg_vect_for_mav.z = mc_weight;
 	_dbg_vect_clg.y     = mc_weight;
 
 	_mc_roll_weight     = mc_weight;
@@ -327,6 +329,10 @@ void Standard::update_vtol_state()
 		_vtol_mode = mode::TRANSITION_TO_MC;
 		break;
 	}
+
+	_dbg_vect_for_mav.y = (float)_vtol_mode;
+
+	_cth.updateColugoTransitionState(_airspeed_validated->calibrated_airspeed_m_s, _vtol_mode, _vtol_schedule.transition_start);
 }
 
 void Standard::update_transition_state()
@@ -372,7 +378,6 @@ void Standard::update_transition_state()
 		} else if (_params->airspeed_disabled || !PX4_ISFINITE(_airspeed_validated->calibrated_airspeed_m_s)) {
 			mc_weight = 1.0f - time_since_trans_start / getMinimumFrontTransitionTime();
 			mc_weight = math::constrain(2.0f * mc_weight, 0.0f, 1.0f);
-			_dbg_vect_for_mav.x = mc_weight;
 
 		}
 
@@ -390,9 +395,16 @@ void Standard::update_transition_state()
 			}
 		}
 
-		if(_params_colugo._param_c_debug >= 4){
+		if(_params_colugo._param_c_debug == 4){
 		//if we are still not in full lock stage- dont reduce mc weight....
 			mc_weight = (_colugo_fw_trans_stage >= COLUGO_FW_TRANS_STAGE::TRANS_ALLOW_FW) ?
+			mc_weight : 1.0f;
+
+		}
+
+		if(_params_colugo._param_c_debug == 5){
+		//if we are still not in full lock stage- dont reduce mc weight....
+			mc_weight = (_cth.getInnerState() >= COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW) ?
 			mc_weight : 1.0f;
 
 		}
@@ -432,8 +444,6 @@ void Standard::update_transition_state()
 	}
 
 	mc_weight = math::constrain(mc_weight, 0.0f, 1.0f);
-
-	_dbg_vect_for_mav.z = mc_weight;
 
 	_mc_roll_weight = mc_weight;
 	_mc_pitch_weight = mc_weight;
@@ -618,14 +628,15 @@ void Standard::fill_actuator_outputs()
 
 		if(_params_colugo._param_c_debug == 2
 		|| _params_colugo._param_c_debug == 3
-		|| _params_colugo._param_c_debug == 4){
+		|| _params_colugo._param_c_debug == 4
+		|| _params_colugo._param_c_debug == 5){
 			//updateTransitionStage();
 			_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_IDLE;
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
 			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
 		}
 
-		_cth->setColugoActuatorPos(COLUGO_ACTUATOR_MC_POS);//unlocked in MC mode ONLY!
+		_cth.setColugoActuatorPos(COLUGO_ACTUATOR_MC_POS);//unlocked in MC mode ONLY!
 		break;
 //@note TRANSITION_TO_FW
 	case vtol_mode::TRANSITION_TO_FW:{
@@ -654,8 +665,6 @@ void Standard::fill_actuator_outputs()
 		|| _params_colugo._param_c_debug == 4){//time based and throttle- not blend speed
 			updateColugoFwTransitionStage();
 
-			_local_pos_sp->vz = -5.0;
-
 			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
 			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
@@ -675,8 +684,42 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_THROTTLE] = _pusher_throttle;
 			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
 			mc_out[actuator_controls_s::INDEX_FLAPS]    = getColugoToFwFlapsTransitionTimeBased2();
-			_cth->setColugoActuatorPos(getColugoActuatorToFwTransition2());
+			_cth.setColugoActuatorPos(getColugoActuatorToFwTransition2());
 			break;
+		}
+
+		else if(_params_colugo._param_c_debug == 5){
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
+			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
+			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
+
+			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+			fw_out[actuator_controls_s::INDEX_PITCH]    = getColugoToFwPitchTransitionTimeBased2();
+			//default behavior for debug 2
+			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
+			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
+			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
+
+			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
+			fw_out[actuator_controls_s::INDEX_PITCH]    = getColugoToFwPitchTransitionTimeBased2();
+			//default behavior for debug 2
+			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;
+
+			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE] = _cth.getPusherThr(_pusher_throttle);
+			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
+			mc_out[actuator_controls_s::INDEX_FLAPS]    = getColugoToFwFlapsTransitionTimeBased2();
+			_cth.setColugoActuatorPos(getColugoActuatorToFwTransition2());
+			break;
+
+
+
+
 		}
 
 
@@ -707,7 +750,7 @@ void Standard::fill_actuator_outputs()
 			updateColugoFwTransitionStage();
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _params_colugo._param_c_fl_mc_pos;
 			fw_out[actuator_controls_s::INDEX_PITCH] = _params_colugo._param_c_pi_mc_pos;
-			_cth->setColugoActuatorPos(_params_colugo._param_c_wasp);//locked - until fully mc mode...
+			_cth.setColugoActuatorPos(_params_colugo._param_c_wasp);//locked - until fully mc mode...
 		}
 		break;
 
@@ -735,7 +778,7 @@ void Standard::fill_actuator_outputs()
 		}
 
 		//in fw mode -we are ALWAYS LOCKED!
-		_cth->setColugoActuatorPos(_params_colugo._param_c_wasp);
+		_cth.setColugoActuatorPos(_params_colugo._param_c_wasp);
 		break;
 	}
 
@@ -770,10 +813,11 @@ void Standard::fill_actuator_outputs()
 	_actuators_out_0->timestamp = _actuators_out_1->timestamp = hrt_absolute_time();
 
 	if(_params_colugo._param_c_debug != 0){
-		_cth->publishColugoActuator();
+		_dbg_vect_for_mav.x = (float)_cth.getInnerState();
+
+		_cth.publishColugoActuator();
 	}
 
-	_dbg_vect_for_mav.y = (float)_colugo_fw_trans_stage;
 
 	_dbg_vect_clg.timestamp = hrt_absolute_time();
 	orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &_dbg_vect_clg);

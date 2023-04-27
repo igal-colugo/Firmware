@@ -45,7 +45,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/colugo_transition.h>
 #include <drivers/drv_hrt.h>
-#include <lib/colugo/colugoTransHelper.hpp>
+#include <vtol_att_control/colugoTransHelper.h>
 
 using namespace time_literals;
 

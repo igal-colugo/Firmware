@@ -52,8 +52,7 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
 
-#include <uORB/topics/colugo_transition.h>
-#include <colugo/colugoTransHelper.hpp>
+#include "colugoTransHelper.h"
 #include <uORB/topics/debug_vect_clg.h>
 #include <uORB/topics/debug_vect.h>
 
@@ -128,7 +127,7 @@ private:
 
 	} _params_handles_colugo;
 
-	colugoTransHelper* _cth;
+
 
 //	bool _fw_trans_latch = false;
 
@@ -149,6 +148,7 @@ private:
 	} _colugo_trans_to_fw;
 
 
+	colugoTransHelper _cth{};
 	COLUGO_FW_TRANS_STAGE _colugo_fw_trans_stage;
 
 	struct {
@@ -160,9 +160,6 @@ private:
 	float _pusher_throttle{0.0f};
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
-
-
-	uORB::Publication<colugo_transition_s> _colugo_transition_pub{ORB_ID(colugo_transition)};
 	//my debug logs...
 	struct debug_vect_clg_s _dbg_vect_clg;
 	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &_dbg_vect_clg);
