@@ -1,13 +1,41 @@
 #include "colugoTransHelper.h"
 
+#include <mathlib/math/Limits.hpp>
+
 colugoTransHelper::colugoTransHelper() {
     // Constructor code here
+    	_params_handles_colugo._param_c_wafp  = param_find("C_WAFP");
+	_params_handles_colugo._param_c_wasp  = param_find("C_WASP");
+	_params_handles_colugo._param_c_pi_fp = param_find("C_PI_FP");
+	_params_handles_colugo._param_c_pi_sp = param_find("C_PI_SP");
+	_params_handles_colugo._param_c_pi_mc_pos = param_find("C_PI_MC_POS");
+	_params_handles_colugo._param_c_fl_fp = param_find("C_FL_FP");
+	_params_handles_colugo._param_c_fl_sp = param_find("C_FL_SP");
+	_params_handles_colugo._param_c_fl_mc_pos = param_find("C_FL_MC_POS");
+	_params_handles_colugo._param_c_tm_to_pos1 = param_find("C_TM_TO_POS1");
+	_params_handles_colugo._param_c_tm_to_col_pos1 = param_find("C_TM_TO_COL_POS1");
+	_params_handles_colugo._param_c_tm_to_pos2 = param_find("C_TM_TO_POS2");
+	_params_handles_colugo._param_c_tr_fw_srv_slew = param_find("C_TR_FW_SRV_SLEW");
+
+	_params_handles_colugo._param_c_debug = param_find("C_DEBUG");
 }
 //@note colugoTransHelper
-void colugoTransHelper::setColugoActuatorPos(float newVal) {
-	_wingLockActuatorPos = newVal;
+void colugoTransHelper::setColugoActuatorPos() {
+	float res = COLUGO_ACTUATOR_MC_POS;
+	if(_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_SEMI_LOCK_POS){
+		res = _params_colugo._param_c_wafp;
+	}
+	if(_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_LOCK_SPEED){
+		res = _params_colugo._param_c_wasp;
+	}
+	_wingLockActuatorPos = res;
 }
-
+void colugoTransHelper::lockColugoActuator(){
+	if(fabsf(_wingLockActuatorPos - _params_colugo._param_c_wasp) > FLT_EPSILON){
+		_wingLockActuatorPos = _params_colugo._param_c_wasp;
+		publishColugoActuator();
+	}
+}
 
 void colugoTransHelper::publishColugoActuator()
 {
@@ -96,3 +124,53 @@ void colugoTransHelper::updateInnerStage(){
 float colugoTransHelper::getPusherThr(float thr){
 	return COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START == _transStage ? 0 : thr;
 }
+
+
+////////////////////////////
+//colugo parametes update
+void colugoTransHelper::parameters_update(){
+//colugo debug
+	int32_t d;
+	param_get(_params_handles_colugo._param_c_debug, &d);
+	_params_colugo._param_c_debug = d;
+
+	/*params for transition from mc to fw*/
+	float v;
+	param_get(_params_handles_colugo._param_c_wafp, &v);
+	_params_colugo._param_c_wafp = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_wasp, &v);
+	_params_colugo._param_c_wasp = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_pi_fp, &v);
+	_params_colugo._param_c_pi_fp = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_pi_sp, &v);
+	_params_colugo._param_c_pi_sp = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_fl_fp, &v);
+	_params_colugo._param_c_fl_fp = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_fl_sp, &v);
+	_params_colugo._param_c_fl_sp = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_fl_mc_pos, &v);
+	_params_colugo._param_c_fl_mc_pos = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_pi_mc_pos, &v);
+	_params_colugo._param_c_pi_mc_pos = math::constrain(v, -1.0f, 1.0f);
+
+	param_get(_params_handles_colugo._param_c_tm_to_pos1, &v);
+	_params_colugo._param_c_tm_to_pos1 = math::constrain(v, 0.0f, 100.0f);
+
+	param_get(_params_handles_colugo._param_c_tm_to_col_pos1, &v);
+	_params_colugo._param_c_tm_to_col_pos1 = math::constrain(v, 0.0f, 100.0f);
+
+	param_get(_params_handles_colugo._param_c_tm_to_pos2, &v);
+	_params_colugo._param_c_tm_to_pos2 = math::constrain(v, 0.0f, 100.0f);
+
+	param_get(_params_handles_colugo._param_c_tr_fw_srv_slew, &v);
+	_params_colugo._param_c_tr_fw_srv_slew = math::constrain(v, 0.0f, 10.0f);
+/////////////////////////
+}
+

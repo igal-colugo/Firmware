@@ -92,40 +92,7 @@ private:
 	} _params_handles_standard;
 
 
-	struct {
-		int32_t _param_c_debug;
-		float 	_param_c_wafp;
-		float 	_param_c_wasp;
-		float 	_param_c_pi_fp;
-		float 	_param_c_pi_sp;
-		float	_param_c_pi_mc_pos;
-		float 	_param_c_fl_fp;
-		float 	_param_c_fl_sp;
-		float	_param_c_fl_mc_pos;
-		float _param_c_tm_to_pos1;
-		float _param_c_tm_to_col_pos1;
-		float _param_c_tm_to_pos2;
-		float _param_c_tr_fw_srv_slew;
 
-	} _params_colugo;
-
-
-	struct {
-		param_t _param_c_debug;
-		param_t _param_c_wafp;
-		param_t _param_c_wasp;
-		param_t _param_c_pi_fp;
-		param_t _param_c_pi_sp;
-		param_t _param_c_pi_mc_pos;
-		param_t _param_c_fl_fp;
-		param_t _param_c_fl_sp;
-		param_t _param_c_fl_mc_pos;
-		param_t _param_c_tm_to_pos1;
-		param_t _param_c_tm_to_col_pos1;
-		param_t _param_c_tm_to_pos2;
-		param_t _param_c_tr_fw_srv_slew;
-
-	} _params_handles_colugo;
 
 
 

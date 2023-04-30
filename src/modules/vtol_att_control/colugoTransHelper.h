@@ -4,6 +4,7 @@
 #include <uORB/Publication.hpp>
 #include <uORB/topics/colugo_actuator.h>
 #include <uORB/topics/colugo_transition.h>
+#include <parameters/param.h>
 
 static const float CST_TRANSITION_VS_M_S = -2.6;
 
@@ -39,13 +40,65 @@ public:
 
     colugoTransHelper();
 
-    void setColugoActuatorPos(float newVal);
+    void setColugoActuatorPos();
     void publishColugoActuator();
     void updateColugoTransitionState(float airSpd, mode fm, hrt_abstime tt);
     float getPusherThr(float thr);
     COLUGO_FW_VTRANS_STAGE getInnerState(){return _transStage;};
+    void parameters_update();
+    int32_t getColugoDebugVal(){return _params_colugo._param_c_debug;};
+    float getColugoPiMcPos(){return _params_colugo._param_c_pi_mc_pos;};
+    float getColugoPiFp(){return _params_colugo._param_c_pi_fp;};
+    float getColugoPiSp(){return _params_colugo._param_c_pi_sp;};
+    float getColugoTrFwSrvSlew(){return _params_colugo._param_c_tr_fw_srv_slew;};
+    float getColugoTmToPos1(){return _params_colugo._param_c_tm_to_pos1;};
+    float getColugoFlapsMcPos(){return _params_colugo._param_c_fl_mc_pos;};
+    float getColugoFlapsFrstPos(){return _params_colugo._param_c_fl_fp;};
+    float getColugoFlapsScndPos(){return _params_colugo._param_c_fl_sp;};
+    float getColugoLockTimeToPos1(){return _params_colugo._param_c_tm_to_col_pos1;};
+    float getColugoTimeToPos2(){return _params_colugo._param_c_tm_to_pos2;};
+    float getColugoLockTransToFwFrstPos(){return _params_colugo._param_c_wafp;};
+    float getColugoLockTransToFwScndPos(){return _params_colugo._param_c_wasp;};
+    void lockColugoActuator();
+
 
 private:
+
+	struct {
+		int32_t _param_c_debug;
+		float 	_param_c_wafp;
+		float 	_param_c_wasp;
+		float 	_param_c_pi_fp;
+		float 	_param_c_pi_sp;
+		float	_param_c_pi_mc_pos;
+		float 	_param_c_fl_fp;
+		float 	_param_c_fl_sp;
+		float	_param_c_fl_mc_pos;
+		float _param_c_tm_to_pos1;
+		float _param_c_tm_to_col_pos1;
+		float _param_c_tm_to_pos2;
+		float _param_c_tr_fw_srv_slew;
+
+	} _params_colugo;
+
+
+	struct {
+		param_t _param_c_debug;
+		param_t _param_c_wafp;
+		param_t _param_c_wasp;
+		param_t _param_c_pi_fp;
+		param_t _param_c_pi_sp;
+		param_t _param_c_pi_mc_pos;
+		param_t _param_c_fl_fp;
+		param_t _param_c_fl_sp;
+		param_t _param_c_fl_mc_pos;
+		param_t _param_c_tm_to_pos1;
+		param_t _param_c_tm_to_col_pos1;
+		param_t _param_c_tm_to_pos2;
+		param_t _param_c_tr_fw_srv_slew;
+
+	} _params_handles_colugo;
+
         //position of the wing lock actuator - range: -1.0 ~ 1.0
     float _wingLockActuatorPos = COLUGO_ACTUATOR_MC_POS;
     uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
