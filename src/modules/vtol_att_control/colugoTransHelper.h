@@ -6,10 +6,10 @@
 #include <uORB/topics/colugo_transition.h>
 #include <parameters/param.h>
 
-static const float CST_TRANSITION_VS_M_S = -2.6;
+//static const float CST_TRANSITION_VS_M_S = -2.6;
 
-static const float CST_VERTICAL_TRANS_S = 10.0;//VERTICAL TRASITION TIME IN SECONDS
-static const float CST_LOCK_AIRSPEED = 9.0;//horizontal airspeed for final lock of the wing
+//static const float CST_VERTICAL_TRANS_S = 10.0;//VERTICAL TRASITION TIME IN SECONDS
+//static const float CST_LOCK_AIRSPEED = 9.0;//horizontal airspeed for final lock of the wing
 static const float CST_LOCKING_TIME_S = 1.2;//allowed time in seconds for the lock pin to reach final postion
 
 static const float COLUGO_ACTUATOR_MC_POS{-1.0f};
@@ -27,10 +27,10 @@ enum class COLUGO_FW_TRANS_STAGE{
 	};
 enum class COLUGO_FW_VTRANS_STAGE{
 		VTRANS_IDLE = 0,
-		VTRANS_VERTICAL_START,
-		VTRANS_REACHED_SEMI_LOCK_POS,
-        	VTRANS_FARWARD_START,
-		VTRANS_REACHED_LOCK_SPEED,
+		VTRANS_VERTICAL_START,//starting vertical ascend
+		VTRANS_REACHED_SEMI_LOCK_POS, // finished 90% of time ascending colugo lock goes to semi out position
+        	VTRANS_FARWARD_START,//starting pusher motor, surfaces slew to transition position
+		VTRANS_REACHED_LOCK_SPEED,//reached blend speed colugo pin goes to fully lock position
 		VTRANS_ALLOW_FW
 	};
 
@@ -60,6 +60,9 @@ public:
     float getColugoLockTransToFwFrstPos(){return _params_colugo._param_c_wafp;};
     float getColugoLockTransToFwScndPos(){return _params_colugo._param_c_wasp;};
     void lockColugoActuator();
+    float getColugoTransToFwSlewedPitch();
+    float getColugoTransToFwSlewedFlaps();
+
 
 
 private:
@@ -78,6 +81,10 @@ private:
 		float _param_c_tm_to_col_pos1;
 		float _param_c_tm_to_pos2;
 		float _param_c_tr_fw_srv_slew;
+		float _param_airspeed_blend;
+		float _param_c_z_tr_spd_ms;
+		float _param_c_z_tr_time_s;
+		float _param_c_z_lck_tming;
 
 	} _params_colugo;
 
@@ -96,6 +103,10 @@ private:
 		param_t _param_c_tm_to_col_pos1;
 		param_t _param_c_tm_to_pos2;
 		param_t _param_c_tr_fw_srv_slew;
+		param_t _param_airspeed_blend;
+		param_t _param_c_z_tr_spd_ms;
+		param_t _param_c_z_tr_time_s;
+		param_t _param_c_z_lck_tming;
 
 	} _params_handles_colugo;
 
@@ -104,10 +115,11 @@ private:
     uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
     uORB::Publication<colugo_transition_s> _colugo_transition_pub{ORB_ID(colugo_transition)};
     mode _currentMode;
-    hrt_abstime _startTime, _reachedLockSpeedTime;
+    hrt_abstime _startTime, _reachedLockSpeedTime, _FarwardStageStartTime;
     COLUGO_FW_VTRANS_STAGE _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
     float _airspeed;
 
 	//methods
     void updateInnerStage();
+    float getSlewedPosition(float startPos, float endPos);
 };

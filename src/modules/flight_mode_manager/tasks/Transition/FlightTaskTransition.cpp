@@ -119,7 +119,7 @@ bool FlightTaskTransition::update()
 
             COLUGO_FW_VTRANS_STAGE transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
 	    if(transState == COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START){
-		_velocity_setpoint(2) = CST_TRANSITION_VS_M_S;
+		_velocity_setpoint(2) = colugo_trans.vz;
 		_acceleration_setpoint.xy() = matrix::Vector2f(0.0f, 0.0f);
 
 	    }

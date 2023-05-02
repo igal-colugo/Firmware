@@ -27,7 +27,7 @@ param set-default CA_ROTOR4_AX 1.0
 param set-default CA_ROTOR4_AZ 0.0
 param set-default CA_ROTOR4_PX 0.2
 
-param set-default CA_SV_CS_COUNT 4
+param set-default CA_SV_CS_COUNT 3
 param set-default CA_SV_CS0_TYPE 1
 param set-default CA_SV_CS0_TRQ_R -0.5
 param set-default CA_SV_CS1_TYPE 2
@@ -43,7 +43,6 @@ param set-default PWM_MAIN_FUNC6 201
 param set-default PWM_MAIN_FUNC7 202
 param set-default PWM_MAIN_FUNC8 203
 param set-default PWM_MAIN_FUNC9 11000
-param set-default PWM_MAIN_FUNC10 205
 
 param set-default FW_L1_PERIOD 12
 param set-default FW_MAN_P_MAX 30
@@ -86,7 +85,7 @@ param set-default VT_TRANS_TIMEOUT 25.0
 param set-default VT_TRANS_MIN_TM 8.0
 param set-default VT_F_TR_OL_TM 9.0
 param set-default VT_F_TRANS_DUR 12.0
-param set-default C_DEBUG 2
+param set-default C_DEBUG 5
 param set-default C_PI_FP 0.1
 param set-default C_PI_SP 0.2
 param set-default C_FL_FP 0.8

@@ -185,10 +185,7 @@ void Standard::update_vtol_state()
 
 			const bool exit_backtransition_time_condition = time_since_trans_start > _params->back_trans_duration;
 
-			//make sure we wait before transiton atlist .. for exit_backtransition_colugo_time_condition secs
-			const bool exit_backtransition_colugo_time_condition = time_since_trans_start > _params->back_trans_duration * 0.8f;
-
-			if ((can_transition_on_ground() || exit_backtransition_speed_condition || exit_backtransition_time_condition) && (exit_backtransition_colugo_time_condition)) {
+			if (can_transition_on_ground() || exit_backtransition_speed_condition || exit_backtransition_time_condition) {
 				_vtol_schedule.flight_mode = vtol_mode::MC_MODE;
 			}
 		}
@@ -275,9 +272,6 @@ void Standard::update_vtol_state()
 		_vtol_mode = mode::TRANSITION_TO_MC;
 		break;
 	}
-
-	_dbg_vect_for_mav.y = (float)_vtol_mode;
-
 	_cth.updateColugoTransitionState(_airspeed_validated->calibrated_airspeed_m_s, _vtol_mode, _vtol_schedule.transition_start);
 }
 
@@ -628,38 +622,28 @@ void Standard::fill_actuator_outputs()
 			break;
 		}
 
+		//@note TRANSITION_TO_FW
 		else if(_cth.getColugoDebugVal() == 5){
-			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
+
+			mc_out[actuator_controls_s::INDEX_ROLL]         = 0;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
 			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
 			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
-			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
-			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-			fw_out[actuator_controls_s::INDEX_PITCH]    = getColugoToFwPitchTransitionTimeBased2();
-			//default behavior for debug 2
-			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;
-			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
-			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
-			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
-			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
-			mc_out[actuator_controls_s::INDEX_LANDING_GEAR] = landing_gear_s::GEAR_UP;
 
-			// FW out = FW in, with VTOL transition controlling throttle and airbrakes
-			fw_out[actuator_controls_s::INDEX_PITCH]    = getColugoToFwPitchTransitionTimeBased2();
-			//default behavior for debug 2
-			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;
+			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;//fw_in[actuator_controls_s::INDEX_ROLL];
 
+			//@note debug
+			_dbg_vect_for_mav.y = _cth.getColugoTransToFwSlewedPitch();
+			fw_out[actuator_controls_s::INDEX_PITCH]    = _dbg_vect_for_mav.y;
 			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE] = _cth.getPusherThr(_pusher_throttle);
 			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
-			mc_out[actuator_controls_s::INDEX_FLAPS]    = getColugoToFwFlapsTransitionTimeBased2();
+			//@note debug2
+			_dbg_vect_for_mav.z = _cth.getColugoTransToFwSlewedFlaps();
+			mc_out[actuator_controls_s::INDEX_FLAPS]    = _dbg_vect_for_mav.z;
 			_cth.setColugoActuatorPos();
 			break;
-
-
-
-
 		}
 
 

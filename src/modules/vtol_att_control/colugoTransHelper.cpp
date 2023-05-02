@@ -6,16 +6,20 @@ colugoTransHelper::colugoTransHelper() {
     // Constructor code here
     	_params_handles_colugo._param_c_wafp  = param_find("C_WAFP");
 	_params_handles_colugo._param_c_wasp  = param_find("C_WASP");
-	_params_handles_colugo._param_c_pi_fp = param_find("C_PI_FP");
-	_params_handles_colugo._param_c_pi_sp = param_find("C_PI_SP");
-	_params_handles_colugo._param_c_pi_mc_pos = param_find("C_PI_MC_POS");
-	_params_handles_colugo._param_c_fl_fp = param_find("C_FL_FP");
-	_params_handles_colugo._param_c_fl_sp = param_find("C_FL_SP");
-	_params_handles_colugo._param_c_fl_mc_pos = param_find("C_FL_MC_POS");
-	_params_handles_colugo._param_c_tm_to_pos1 = param_find("C_TM_TO_POS1");
+	_params_handles_colugo._param_c_pi_fp          = param_find("C_PI_FP");
+	_params_handles_colugo._param_c_pi_sp          = param_find("C_PI_SP");
+	_params_handles_colugo._param_c_pi_mc_pos      = param_find("C_PI_MC_POS");
+	_params_handles_colugo._param_c_fl_fp          = param_find("C_FL_FP");
+	_params_handles_colugo._param_c_fl_sp 	       = param_find("C_FL_SP");
+	_params_handles_colugo._param_c_fl_mc_pos      = param_find("C_FL_MC_POS");
+	_params_handles_colugo._param_c_tm_to_pos1     = param_find("C_TM_TO_POS1");
 	_params_handles_colugo._param_c_tm_to_col_pos1 = param_find("C_TM_TO_COL_POS1");
-	_params_handles_colugo._param_c_tm_to_pos2 = param_find("C_TM_TO_POS2");
+	_params_handles_colugo._param_c_tm_to_pos2     = param_find("C_TM_TO_POS2");
 	_params_handles_colugo._param_c_tr_fw_srv_slew = param_find("C_TR_FW_SRV_SLEW");
+	_params_handles_colugo._param_airspeed_blend   = param_find("VT_ARSP_BLEND");
+	_params_handles_colugo._param_c_z_tr_spd_ms    = param_find("C_Z_TR_SPD_MS");
+	_params_handles_colugo._param_c_z_tr_time_s    = param_find("C_Z_TR_TIME_S");
+	_params_handles_colugo._param_c_z_lck_tming    = param_find("C_Z_LCK_TMING");
 
 	_params_handles_colugo._param_c_debug = param_find("C_DEBUG");
 }
@@ -81,17 +85,21 @@ void colugoTransHelper::updateInnerStage(){
 	switch (_transStage)
 	{
 	case COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START:
-		if(debugDiff > ((CST_VERTICAL_TRANS_S * 0.8f) * 1000000)){
+		if(debugDiff > ((_params_colugo._param_c_z_tr_time_s * _params_colugo._param_c_z_lck_tming * 0.01f) * 1000000)){
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_SEMI_LOCK_POS;
 		}
 		break;
 	case COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_SEMI_LOCK_POS:
-		if(debugDiff > (CST_VERTICAL_TRANS_S * 1000000)){
+		if(debugDiff > (_params_colugo._param_c_z_tr_time_s * 1000000)){
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START;
+			_FarwardStageStartTime = hrt_absolute_time();
 		}
 		break;
 	case COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START:
-		if(_airspeed > CST_LOCK_AIRSPEED){
+	//speed is high enough to cuople wing to colugo pin...
+		if(_airspeed >  _params_colugo._param_airspeed_blend
+		//past enough time for movment of flaps and elevator to final postion for lock
+		&& ((hrt_absolute_time() - _FarwardStageStartTime) * 1e-6f) > (getColugoTrFwSrvSlew() * 1.1f)){
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_LOCK_SPEED;
 			_reachedLockSpeedTime = hrt_absolute_time();
 
@@ -114,6 +122,7 @@ void colugoTransHelper::updateInnerStage(){
 	if(COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE != _transStage){
 		colugo_transition_s colugo_trans{};
 		colugo_trans.transition_state = static_cast<uint8_t>(_transStage);
+		colugo_trans.vz = _params_colugo._param_c_z_tr_spd_ms;
 		colugo_trans.timestamp = hrt_absolute_time();
 		_colugo_transition_pub.publish(colugo_trans);
 	}
@@ -171,6 +180,67 @@ void colugoTransHelper::parameters_update(){
 
 	param_get(_params_handles_colugo._param_c_tr_fw_srv_slew, &v);
 	_params_colugo._param_c_tr_fw_srv_slew = math::constrain(v, 0.0f, 10.0f);
+
+	param_get(_params_handles_colugo._param_c_z_tr_spd_ms, &v);
+	_params_colugo._param_c_z_tr_spd_ms = math::constrain(v, 0.0f, 100.0f);
+
+	param_get(_params_handles_colugo._param_c_z_tr_time_s, &v);
+	_params_colugo._param_c_z_tr_time_s = math::constrain(v, 0.0f, 100.0f);
+
+	param_get(_params_handles_colugo._param_c_z_lck_tming, &v);
+	_params_colugo._param_c_z_lck_tming = math::constrain(v, 0.0f, 100.0f);
+
+	param_get(_params_handles_colugo._param_airspeed_blend, &v);
+	_params_colugo._param_airspeed_blend = math::constrain(v, 0.0f, 100.0f);
 /////////////////////////
+}
+
+
+float colugoTransHelper::getColugoTransToFwSlewedPitch(){
+	float res = getColugoPiMcPos();// _params_colugo._param_c_pi_mc_pos;
+	if(_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
+		res = getSlewedPosition(
+				getColugoPiMcPos(),// _params_colugo._param_c_pi_mc_pos,
+		 		getColugoPiFp()//_params_colugo._param_c_pi_fp
+		 		);
+	}
+	if(_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_LOCK_SPEED){
+		res = getColugoPiSp();// _params_colugo._param_c_pi_sp;
+	}
+	return res;
+}
+float colugoTransHelper::getColugoTransToFwSlewedFlaps(){
+	float res = getColugoFlapsMcPos();
+	if(_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
+		res = getSlewedPosition(
+			getColugoFlapsMcPos(),
+			getColugoFlapsFrstPos());
+	}
+	if(_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_LOCK_SPEED){
+		res =  getColugoFlapsScndPos();//_params_colugo._param_c_fl_sp;
+	}
+	return res;
+}
+
+float colugoTransHelper::getSlewedPosition(float startPos, float endPos){
+	float res = endPos;
+	//that means we want some kind of slew...
+	if (getColugoTrFwSrvSlew() > 0)
+	{
+
+		//range...
+		float fullRange = endPos - startPos;
+
+		float partialTime = (hrt_absolute_time() - _FarwardStageStartTime) * 1e-6f;
+
+		float progress = (partialTime / getColugoTrFwSrvSlew());
+
+		progress = math::constrain(progress, 0.0f, 1.0f);
+		float servRelativePos = fullRange * progress;
+		res = startPos + servRelativePos;
+	}
+
+
+	return res;
 }
 
