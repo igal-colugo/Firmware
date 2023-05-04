@@ -51,7 +51,6 @@ void colugoTransHelper::publishColugoActuator()
 }
 
 void colugoTransHelper::updateColugoTransitionState(float airSpd, mode fm, hrt_abstime tt){
-
 	_airspeed = airSpd;
 		switch (fm)
 		{
@@ -72,7 +71,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, mode fm, hrt_a
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
 			break;
 		case mode::ROTARY_WING:
-		/* code */
+			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
 			break;
 
 	default:
@@ -122,7 +121,7 @@ void colugoTransHelper::updateInnerStage(){
 	if(COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE != _transStage){
 		colugo_transition_s colugo_trans{};
 		colugo_trans.transition_state = static_cast<uint8_t>(_transStage);
-		colugo_trans.vz = _params_colugo._param_c_z_tr_spd_ms;
+		colugo_trans.vz = -_params_colugo._param_c_z_tr_spd_ms;
 		colugo_trans.timestamp = hrt_absolute_time();
 		_colugo_transition_pub.publish(colugo_trans);
 	}

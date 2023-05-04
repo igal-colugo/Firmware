@@ -272,7 +272,12 @@ void Standard::update_vtol_state()
 		_vtol_mode = mode::TRANSITION_TO_MC;
 		break;
 	}
-	_cth.updateColugoTransitionState(_airspeed_validated->calibrated_airspeed_m_s, _vtol_mode, _vtol_schedule.transition_start);
+
+	if(_cth.getColugoDebugVal() == 5){
+		_cth.updateColugoTransitionState(_airspeed_validated->calibrated_airspeed_m_s, _vtol_mode, _vtol_schedule.transition_start);
+
+	}
+
 }
 
 void Standard::update_transition_state()
@@ -625,23 +630,18 @@ void Standard::fill_actuator_outputs()
 		//@note TRANSITION_TO_FW
 		else if(_cth.getColugoDebugVal() == 5){
 
-			mc_out[actuator_controls_s::INDEX_ROLL]         = 0;
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
 			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
 			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
 			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
 
 
 			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;//fw_in[actuator_controls_s::INDEX_ROLL];
-
-			//@note debug
-			_dbg_vect_for_mav.y = _cth.getColugoTransToFwSlewedPitch();
-			fw_out[actuator_controls_s::INDEX_PITCH]    = _dbg_vect_for_mav.y;
+			fw_out[actuator_controls_s::INDEX_PITCH]    = _cth.getColugoTransToFwSlewedPitch();
 			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE] = _cth.getPusherThr(_pusher_throttle);
 			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
-			//@note debug2
-			_dbg_vect_for_mav.z = _cth.getColugoTransToFwSlewedFlaps();
-			mc_out[actuator_controls_s::INDEX_FLAPS]    = _dbg_vect_for_mav.z;
+			mc_out[actuator_controls_s::INDEX_FLAPS]    = _cth.getColugoTransToFwSlewedFlaps();
 			_cth.setColugoActuatorPos();
 			break;
 		}
@@ -712,6 +712,11 @@ void Standard::fill_actuator_outputs()
 		break;
 	}
 
+
+	//@note debug
+	_dbg_vect_for_mav.y = mc_out[actuator_controls_s::INDEX_ROLL];
+	_dbg_vect_for_mav.x = mc_out[actuator_controls_s::INDEX_PITCH];
+
 	_torque_setpoint_0->timestamp = hrt_absolute_time();
 	_torque_setpoint_0->timestamp_sample = _actuators_mc_in->timestamp_sample;
 	_torque_setpoint_0->xyz[0] = mc_out[actuator_controls_s::INDEX_ROLL];
@@ -743,8 +748,6 @@ void Standard::fill_actuator_outputs()
 	_actuators_out_0->timestamp = _actuators_out_1->timestamp = hrt_absolute_time();
 
 	if(_cth.getColugoDebugVal() != 0){
-		_dbg_vect_for_mav.x = (float)_cth.getInnerState();
-
 		_cth.publishColugoActuator();
 	}
 
