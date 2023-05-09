@@ -130,7 +130,7 @@ void colugoTransHelper::updateInnerStage(){
 
 //while we are in vertical lift stage - dont push farward...
 float colugoTransHelper::getPusherThr(float thr){
-	return COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START == _transStage ? 0 : thr;
+	return COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START >= _transStage ? 0 : thr;
 }
 
 
