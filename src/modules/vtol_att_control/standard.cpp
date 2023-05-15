@@ -278,6 +278,8 @@ void Standard::update_vtol_state()
 
 	}
 
+	_dbg_vect_for_mav.z = static_cast<float>(_vtol_schedule.flight_mode);
+
 }
 
 void Standard::update_transition_state()
@@ -675,7 +677,8 @@ void Standard::fill_actuator_outputs()
 			updateColugoFwTransitionStage();
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
 			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
-			_cth.setColugoActuatorPos();//(_params_colugo._param_c_wasp);//locked - until fully mc mode...
+			//in fw mode -we are ALWAYS LOCKED!
+			_cth.lockColugoActuator();//locked - until fully mc mode...
 		}
 
 
