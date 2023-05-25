@@ -78,6 +78,7 @@ void FlightTask::_checkEkfResetCounters()
 
 const vehicle_local_position_setpoint_s FlightTask::getPositionSetpoint()
 {
+	//@note igal - look here
 	/* fill position setpoint message */
 	vehicle_local_position_setpoint_s vehicle_local_position_setpoint{};
 	vehicle_local_position_setpoint.timestamp = hrt_absolute_time();
@@ -104,6 +105,7 @@ const vehicle_local_position_setpoint_s FlightTask::getPositionSetpoint()
 
 void FlightTask::_resetSetpoints()
 {
+	//@note all points to test
 	_position_setpoint.setNaN();
 	_velocity_setpoint.setNaN();
 	_acceleration_setpoint.setNaN();

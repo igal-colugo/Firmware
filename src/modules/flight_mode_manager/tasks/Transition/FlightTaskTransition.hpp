@@ -73,4 +73,9 @@ private:
 
 	void updateParameters();
 
+	//colugo bullshit
+	int32_t _c_debug = 0;
+	COLUGO_FW_VTRANS_STAGE _transState = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
+	matrix::Vector3f _last_pos{};
+
 };
