@@ -1,20 +1,17 @@
 {
-        "astyle.astylerc": "${workspaceFolder}/Tools/astyle/astylerc",
-        "astyle.c.enable": true,
-        "astyle.cpp.enable": true,
         "breadcrumbs.enabled": true,
         "C_Cpp.autoAddFileAssociations": false,
         "C_Cpp.clang_format_fallbackStyle": "none",
         "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
         "C_Cpp.default.cppStandard": "c++14",
         "C_Cpp.default.cStandard": "c11",
-        "C_Cpp.formatting": "Disabled",
-        "C_Cpp.intelliSenseEngine": "Default",
+        "C_Cpp.formatting": "clangFormat",
+        "C_Cpp.intelliSenseEngine": "default",
         "C_Cpp.vcpkg.enabled": false,
         "C_Cpp.workspaceParsingPriority": "low",
         "cmake.buildBeforeRun": true,
         "cmake.buildDirectory": "${workspaceFolder}/build/${variant:CONFIG}",
-        "cmake.configureOnOpen": true,
+        "cmake.configureOnOpen": false,
         "cmake.ctest.parallelJobs": 1,
         "cmake.skipConfigureIfCachePresent": true,
         "cmakeExplorer.buildDir": "${workspaceFolder}/build/px4_sitl_test",
@@ -29,8 +26,7 @@
                 "nuttx",
                 "esc"
         ],
-        "debug.toolBarLocation": "docked",
-        "editor.defaultFormatter": "chiehyu.vscode-astyle",
+        "debug.toolBarLocation": "floating",
         "editor.dragAndDrop": false,
         "editor.insertSpaces": false,
         "editor.minimap.maxColumn": 120,
@@ -136,5 +132,5 @@
         "yaml.schemas": {
                 "${workspaceFolder}/validation/module_schema.yaml": "${workspaceFolder}/src/modules/*/module.yaml"
         },
-        "cortex-debug.openocdPath": "${env:PICO_SDK_PATH}/../openocd/src/openocd"       // Added for rp2040
+        "cortex-debug.openocdPath": "${env:PICO_SDK_PATH}/../openocd/src/openocd" // Added for rp2040
 }

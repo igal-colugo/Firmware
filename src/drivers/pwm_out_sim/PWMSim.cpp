@@ -41,270 +41,283 @@
 
 #include <px4_platform_common/sem.hpp>
 
-PWMSim::PWMSim(bool hil_mode_enabled) :
-	CDev(PWM_OUTPUT0_DEVICE_PATH),
-	OutputModuleInterface(MODULE_NAME, px4::wq_configurations::hp_default)
+PWMSim::PWMSim(bool hil_mode_enabled) : CDev(PWM_OUTPUT0_DEVICE_PATH), OutputModuleInterface(MODULE_NAME, px4::wq_configurations::hp_default)
 {
-	_mixing_output.setAllDisarmedValues(PWM_SIM_DISARMED_MAGIC);
-	_mixing_output.setAllFailsafeValues(PWM_SIM_FAILSAFE_MAGIC);
-	_mixing_output.setAllMinValues(PWM_SIM_PWM_MIN_MAGIC);
-	_mixing_output.setAllMaxValues(PWM_SIM_PWM_MAX_MAGIC);
+    _mixing_output.setAllDisarmedValues(PWM_SIM_DISARMED_MAGIC);
+    _mixing_output.setAllFailsafeValues(PWM_SIM_FAILSAFE_MAGIC);
+    _mixing_output.setAllMinValues(PWM_SIM_PWM_MIN_MAGIC);
+    _mixing_output.setAllMaxValues(PWM_SIM_PWM_MAX_MAGIC);
 
-	_mixing_output.setIgnoreLockdown(hil_mode_enabled);
+    _mixing_output.setIgnoreLockdown(hil_mode_enabled);
 
-	CDev::init();
+    CDev::init();
 }
 
-void
-PWMSim::Run()
+void PWMSim::Run()
 {
-	if (should_exit()) {
-		ScheduleClear();
-		_mixing_output.unregister();
+    if (should_exit())
+    {
+        ScheduleClear();
+        _mixing_output.unregister();
 
-		exit_and_cleanup();
-		return;
-	}
+        exit_and_cleanup();
+        return;
+    }
 
-	SmartLock lock_guard(_lock);
+    SmartLock lock_guard(_lock);
 
-	_mixing_output.update();
+    _mixing_output.update();
 
-	// check for parameter updates
-	if (_parameter_update_sub.updated()) {
-		parameter_update_s pupdate;
-		_parameter_update_sub.copy(&pupdate);
-		updateParams();
-	}
+    // check for parameter updates
+    if (_parameter_update_sub.updated())
+    {
+        parameter_update_s pupdate;
+        _parameter_update_sub.copy(&pupdate);
+        updateParams();
+    }
 
-	// check at end of cycle (updateSubscriptions() can potentially change to a different WorkQueue thread)
-	_mixing_output.updateSubscriptions(true);
+    // check at end of cycle (updateSubscriptions() can potentially change to a different WorkQueue thread)
+    _mixing_output.updateSubscriptions(true);
 }
 
-bool
-PWMSim::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs,
-		      unsigned num_control_groups_updated)
+//@note pwm simulator outputs
+bool PWMSim::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs, unsigned num_control_groups_updated)
 {
-	// Only publish once we receive actuator_controls (important for lock-step to work correctly)
-	if (num_control_groups_updated > 0) {
-		actuator_outputs_s actuator_outputs{};
-		actuator_outputs.noutputs = num_outputs;
+    // Only publish once we receive actuator_controls (important for lock-step to work correctly)
+    if (num_control_groups_updated > 0)
+    {
+        actuator_outputs_s actuator_outputs{};
+        actuator_outputs.noutputs = num_outputs;
 
-		const uint32_t reversible_outputs = _mixing_output.reversibleOutputs();
+        const uint32_t reversible_outputs = _mixing_output.reversibleOutputs();
 
-		for (int i = 0; i < (int)num_outputs; i++) {
-			if (outputs[i] != PWM_SIM_DISARMED_MAGIC) {
+        for (int i = 0; i < (int) num_outputs; i++)
+        {
+            if (outputs[i] != PWM_SIM_DISARMED_MAGIC)
+            {
 
-				OutputFunction function = _mixing_output.outputFunction(i);
-				bool is_reversible = reversible_outputs & (1u << i);
-				float output = outputs[i];
+                OutputFunction function = _mixing_output.outputFunction(i);
+                bool is_reversible = reversible_outputs & (1u << i);
+                float output = outputs[i];
 
-				if (((int)function >= (int)OutputFunction::Motor1 && (int)function <= (int)OutputFunction::MotorMax)
-				    && !is_reversible) {
-					// Scale non-reversible motors to [0, 1]
-					actuator_outputs.output[i] = (output - PWM_SIM_PWM_MIN_MAGIC) / (PWM_SIM_PWM_MAX_MAGIC - PWM_SIM_PWM_MIN_MAGIC);
+                if (((int) function >= (int) OutputFunction::Motor1 && (int) function <= (int) OutputFunction::MotorMax) && !is_reversible)
+                {
+                    // Scale non-reversible motors to [0, 1]
+                    actuator_outputs.output[i] = (output - PWM_SIM_PWM_MIN_MAGIC) / (PWM_SIM_PWM_MAX_MAGIC - PWM_SIM_PWM_MIN_MAGIC);
+                }
+                else
+                {
+                    // Scale everything else to [-1, 1]
+                    const float pwm_center = (PWM_SIM_PWM_MAX_MAGIC + PWM_SIM_PWM_MIN_MAGIC) / 2.f;
+                    const float pwm_delta = (PWM_SIM_PWM_MAX_MAGIC - PWM_SIM_PWM_MIN_MAGIC) / 2.f;
+                    actuator_outputs.output[i] = (output - pwm_center) / pwm_delta;
+                }
+            }
+        }
 
-				} else {
-					// Scale everything else to [-1, 1]
-					const float pwm_center = (PWM_SIM_PWM_MAX_MAGIC + PWM_SIM_PWM_MIN_MAGIC) / 2.f;
-					const float pwm_delta = (PWM_SIM_PWM_MAX_MAGIC - PWM_SIM_PWM_MIN_MAGIC) / 2.f;
-					actuator_outputs.output[i] = (output - pwm_center) / pwm_delta;
-				}
-			}
-		}
+        actuator_outputs.timestamp = hrt_absolute_time();
+        _actuator_outputs_sim_pub.publish(actuator_outputs);
+        return true;
+    }
 
-		actuator_outputs.timestamp = hrt_absolute_time();
-		_actuator_outputs_sim_pub.publish(actuator_outputs);
-		return true;
-	}
-
-	return false;
+    return false;
 }
 
-int
-PWMSim::ioctl(device::file_t *filp, int cmd, unsigned long arg)
+int PWMSim::ioctl(device::file_t *filp, int cmd, unsigned long arg)
 {
-	SmartLock lock_guard(_lock);
+    SmartLock lock_guard(_lock);
 
-	int ret = OK;
+    int ret = OK;
 
-	switch (cmd) {
-	case PWM_SERVO_ARM:
-		break;
+    switch (cmd)
+    {
+    case PWM_SERVO_ARM:
+        break;
 
-	case PWM_SERVO_DISARM:
-		break;
+    case PWM_SERVO_DISARM:
+        break;
 
-	case PWM_SERVO_SET_MIN_PWM: {
-			struct pwm_output_values *pwm = (struct pwm_output_values *)arg;
+    case PWM_SERVO_SET_MIN_PWM: {
+        struct pwm_output_values *pwm = (struct pwm_output_values *) arg;
 
-			for (unsigned i = 0; i < pwm->channel_count; i++) {
-				if (i < OutputModuleInterface::MAX_ACTUATORS && !_mixing_output.useDynamicMixing()) {
-					_mixing_output.minValue(i) = pwm->values[i];
-				}
-			}
+        for (unsigned i = 0; i < pwm->channel_count; i++)
+        {
+            if (i < OutputModuleInterface::MAX_ACTUATORS && !_mixing_output.useDynamicMixing())
+            {
+                _mixing_output.minValue(i) = pwm->values[i];
+            }
+        }
 
-			break;
-		}
+        break;
+    }
 
-	case PWM_SERVO_SET_MAX_PWM: {
-			struct pwm_output_values *pwm = (struct pwm_output_values *)arg;
+    case PWM_SERVO_SET_MAX_PWM: {
+        struct pwm_output_values *pwm = (struct pwm_output_values *) arg;
 
-			for (unsigned i = 0; i < pwm->channel_count; i++) {
-				if (i < OutputModuleInterface::MAX_ACTUATORS && !_mixing_output.useDynamicMixing()) {
-					_mixing_output.maxValue(i) = pwm->values[i];
-				}
-			}
+        for (unsigned i = 0; i < pwm->channel_count; i++)
+        {
+            if (i < OutputModuleInterface::MAX_ACTUATORS && !_mixing_output.useDynamicMixing())
+            {
+                _mixing_output.maxValue(i) = pwm->values[i];
+            }
+        }
 
-			break;
-		}
+        break;
+    }
 
-	case PWM_SERVO_SET_UPDATE_RATE:
-		// PWMSim does not limit the update rate
-		break;
+    case PWM_SERVO_SET_UPDATE_RATE:
+        // PWMSim does not limit the update rate
+        break;
 
-	case PWM_SERVO_SET_SELECT_UPDATE_RATE:
-		break;
+    case PWM_SERVO_SET_SELECT_UPDATE_RATE:
+        break;
 
-	case PWM_SERVO_GET_DEFAULT_UPDATE_RATE:
-		*(uint32_t *)arg = 9999;
-		break;
+    case PWM_SERVO_GET_DEFAULT_UPDATE_RATE:
+        *(uint32_t *) arg = 9999;
+        break;
 
-	case PWM_SERVO_GET_UPDATE_RATE:
-		*(uint32_t *)arg = 9999;
-		break;
+    case PWM_SERVO_GET_UPDATE_RATE:
+        *(uint32_t *) arg = 9999;
+        break;
 
-	case PWM_SERVO_GET_SELECT_UPDATE_RATE:
-		*(uint32_t *)arg = 0;
-		break;
+    case PWM_SERVO_GET_SELECT_UPDATE_RATE:
+        *(uint32_t *) arg = 0;
+        break;
 
-	case PWM_SERVO_GET_FAILSAFE_PWM: {
-			struct pwm_output_values *pwm = (struct pwm_output_values *)arg;
+    case PWM_SERVO_GET_FAILSAFE_PWM: {
+        struct pwm_output_values *pwm = (struct pwm_output_values *) arg;
 
-			for (unsigned i = 0; i < OutputModuleInterface::MAX_ACTUATORS; i++) {
-				pwm->values[i] = _mixing_output.failsafeValue(i);
-			}
+        for (unsigned i = 0; i < OutputModuleInterface::MAX_ACTUATORS; i++)
+        {
+            pwm->values[i] = _mixing_output.failsafeValue(i);
+        }
 
-			pwm->channel_count = OutputModuleInterface::MAX_ACTUATORS;
-			break;
-		}
+        pwm->channel_count = OutputModuleInterface::MAX_ACTUATORS;
+        break;
+    }
 
-	case PWM_SERVO_GET_DISARMED_PWM: {
-			struct pwm_output_values *pwm = (struct pwm_output_values *)arg;
+    case PWM_SERVO_GET_DISARMED_PWM: {
+        struct pwm_output_values *pwm = (struct pwm_output_values *) arg;
 
-			for (unsigned i = 0; i < OutputModuleInterface::MAX_ACTUATORS; i++) {
-				pwm->values[i] = _mixing_output.disarmedValue(i);
-			}
+        for (unsigned i = 0; i < OutputModuleInterface::MAX_ACTUATORS; i++)
+        {
+            pwm->values[i] = _mixing_output.disarmedValue(i);
+        }
 
-			pwm->channel_count = OutputModuleInterface::MAX_ACTUATORS;
-			break;
-		}
+        pwm->channel_count = OutputModuleInterface::MAX_ACTUATORS;
+        break;
+    }
 
-	case PWM_SERVO_GET_MIN_PWM: {
-			struct pwm_output_values *pwm = (struct pwm_output_values *)arg;
+    case PWM_SERVO_GET_MIN_PWM: {
+        struct pwm_output_values *pwm = (struct pwm_output_values *) arg;
 
-			for (unsigned i = 0; i < OutputModuleInterface::MAX_ACTUATORS; i++) {
-				pwm->values[i] = _mixing_output.minValue(i);
-			}
+        for (unsigned i = 0; i < OutputModuleInterface::MAX_ACTUATORS; i++)
+        {
+            pwm->values[i] = _mixing_output.minValue(i);
+        }
 
-			pwm->channel_count = OutputModuleInterface::MAX_ACTUATORS;
-			break;
-		}
+        pwm->channel_count = OutputModuleInterface::MAX_ACTUATORS;
+        break;
+    }
 
-	case PWM_SERVO_GET_MAX_PWM: {
-			struct pwm_output_values *pwm = (struct pwm_output_values *)arg;
+    case PWM_SERVO_GET_MAX_PWM: {
+        struct pwm_output_values *pwm = (struct pwm_output_values *) arg;
 
-			for (unsigned i = 0; i < OutputModuleInterface::MAX_ACTUATORS; i++) {
-				pwm->values[i] = _mixing_output.maxValue(i);
-			}
+        for (unsigned i = 0; i < OutputModuleInterface::MAX_ACTUATORS; i++)
+        {
+            pwm->values[i] = _mixing_output.maxValue(i);
+        }
 
-			pwm->channel_count = OutputModuleInterface::MAX_ACTUATORS;
-			break;
-		}
+        pwm->channel_count = OutputModuleInterface::MAX_ACTUATORS;
+        break;
+    }
 
-	case PWM_SERVO_GET_RATEGROUP(0) ... PWM_SERVO_GET_RATEGROUP(PWM_OUTPUT_MAX_CHANNELS - 1): {
-			// no restrictions on output grouping
-			unsigned channel = cmd - PWM_SERVO_GET_RATEGROUP(0);
+    case PWM_SERVO_GET_RATEGROUP(0)... PWM_SERVO_GET_RATEGROUP(PWM_OUTPUT_MAX_CHANNELS - 1): {
+        // no restrictions on output grouping
+        unsigned channel = cmd - PWM_SERVO_GET_RATEGROUP(0);
 
-			*(uint32_t *)arg = (1 << channel);
-			break;
-		}
+        *(uint32_t *) arg = (1 << channel);
+        break;
+    }
 
-	case PWM_SERVO_GET_COUNT:
-		*(unsigned *)arg = OutputModuleInterface::MAX_ACTUATORS;
-		break;
+    case PWM_SERVO_GET_COUNT:
+        *(unsigned *) arg = OutputModuleInterface::MAX_ACTUATORS;
+        break;
 
-	case MIXERIOCRESET:
-		_mixing_output.resetMixer();
-		break;
+    case MIXERIOCRESET:
+        _mixing_output.resetMixer();
+        break;
 
-	case MIXERIOCLOADBUF: {
-			const char *buf = (const char *)arg;
-			unsigned buflen = strlen(buf);
-			ret = _mixing_output.loadMixer(buf, buflen);
-			break;
-		}
+    case MIXERIOCLOADBUF: {
+        const char *buf = (const char *) arg;
+        unsigned buflen = strlen(buf);
+        ret = _mixing_output.loadMixer(buf, buflen);
+        break;
+    }
 
-	default:
-		ret = -ENOTTY;
-		break;
-	}
+    default:
+        ret = -ENOTTY;
+        break;
+    }
 
-	return ret;
+    return ret;
 }
 
-int
-PWMSim::task_spawn(int argc, char *argv[])
+int PWMSim::task_spawn(int argc, char *argv[])
 {
-	bool hil_mode = false;
+    bool hil_mode = false;
 
-	int myoptind = 1;
-	int ch;
-	const char *myoptarg = nullptr;
+    int myoptind = 1;
+    int ch;
+    const char *myoptarg = nullptr;
 
-	while ((ch = px4_getopt(argc, argv, "m:", &myoptind, &myoptarg)) != EOF) {
-		switch (ch) {
-		case 'm':
-			hil_mode = strcmp(myoptarg, "hil") == 0;
-			break;
+    while ((ch = px4_getopt(argc, argv, "m:", &myoptind, &myoptarg)) != EOF)
+    {
+        switch (ch)
+        {
+        case 'm':
+            hil_mode = strcmp(myoptarg, "hil") == 0;
+            break;
 
-		default:
-			return print_usage("unrecognized flag");
-		}
-	}
+        default:
+            return print_usage("unrecognized flag");
+        }
+    }
 
-	PWMSim *instance = new PWMSim(hil_mode);
+    PWMSim *instance = new PWMSim(hil_mode);
 
-	if (!instance) {
-		PX4_ERR("alloc failed");
-		return -1;
-	}
+    if (!instance)
+    {
+        PX4_ERR("alloc failed");
+        return -1;
+    }
 
-	_object.store(instance);
-	_task_id = task_id_is_work_queue;
-	instance->ScheduleNow();
-	return 0;
+    _object.store(instance);
+    _task_id = task_id_is_work_queue;
+    instance->ScheduleNow();
+    return 0;
 }
 
 int PWMSim::custom_command(int argc, char *argv[])
 {
-	return print_usage("unknown command");
+    return print_usage("unknown command");
 }
 
 int PWMSim::print_status()
 {
-	_mixing_output.printStatus();
-	return 0;
+    _mixing_output.printStatus();
+    return 0;
 }
 
 int PWMSim::print_usage(const char *reason)
 {
-	if (reason) {
-		PX4_WARN("%s\n", reason);
-	}
+    if (reason)
+    {
+        PX4_WARN("%s\n", reason);
+    }
 
-	PRINT_MODULE_DESCRIPTION(
-		R"DESCR_STR(
+    PRINT_MODULE_DESCRIPTION(
+        R"DESCR_STR(
 ### Description
 Driver for simulated PWM outputs.
 
@@ -316,15 +329,15 @@ It is used in SITL and HITL.
 
 )DESCR_STR");
 
-	PRINT_MODULE_USAGE_NAME("pwm_out_sim", "driver");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("start", "Start the module");
-	PRINT_MODULE_USAGE_PARAM_STRING('m', "sim", "hil|sim", "Mode", true);
-	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
+    PRINT_MODULE_USAGE_NAME("pwm_out_sim", "driver");
+    PRINT_MODULE_USAGE_COMMAND_DESCR("start", "Start the module");
+    PRINT_MODULE_USAGE_PARAM_STRING('m', "sim", "hil|sim", "Mode", true);
+    PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
 
-	return 0;
+    return 0;
 }
 
 extern "C" __EXPORT int pwm_out_sim_main(int argc, char *argv[])
 {
-	return PWMSim::main(argc, argv);
+    return PWMSim::main(argc, argv);
 }
