@@ -53,6 +53,8 @@
 
 #include "dataman.h"
 
+//@note dataman module
+
 __BEGIN_DECLS
 __EXPORT int dataman_main(int argc, char *argv[]);
 __END_DECLS

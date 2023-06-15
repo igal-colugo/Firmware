@@ -63,6 +63,8 @@
 #include <px4_platform_common/atomic.h>
 #include <px4_platform_common/module.h>
 
+//@note gimbal module
+
 using namespace time_literals;
 using namespace gimbal;
 

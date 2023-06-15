@@ -35,6 +35,8 @@
 
 #include <px4_platform_common/sem.hpp>
 
+//@note pwm_out module
+
 pthread_mutex_t pwm_out_module_mutex = PTHREAD_MUTEX_INITIALIZER;
 static px4::atomic<PWMOut *> _objects[PWM_OUT_MAX_INSTANCES]{};
 static px4::atomic_bool _require_arming[PWM_OUT_MAX_INSTANCES]{};

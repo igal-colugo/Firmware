@@ -79,24 +79,24 @@
 #include <uORB/topics/mavlink_log.h>
 #include <uORB/topics/tune_control.h>
 
+//@note commander module
+
 typedef enum VEHICLE_MODE_FLAG
 {
-    VEHICLE_MODE_FLAG_CUSTOM_MODE_ENABLED = 1, /* 0b00000001 Reserved for future use. | */
-    VEHICLE_MODE_FLAG_TEST_ENABLED = 2, /* 0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not
-                                           be used for stable implementations. | */
-    VEHICLE_MODE_FLAG_AUTO_ENABLED = 4, /* 0b00000100 autonomous mode enabled, system finds its own goal positions. Guided flag can be set or not,
-                                           depends on the actual implementation. | */
-    VEHICLE_MODE_FLAG_GUIDED_ENABLED = 8,     /* 0b00001000 guided mode enabled, system flies MISSIONs / mission items. | */
-    VEHICLE_MODE_FLAG_STABILIZE_ENABLED = 16, /* 0b00010000 system stabilizes electronically its attitude (and optionally position). It needs however
-                                                 further control inputs to move around. | */
-    VEHICLE_MODE_FLAG_HIL_ENABLED =
-        32, /* 0b00100000 hardware in the loop simulation. All motors / actuators are blocked, but internal software is full operational. | */
+    VEHICLE_MODE_FLAG_CUSTOM_MODE_ENABLED = 1,   /* 0b00000001 Reserved for future use. | */
+    VEHICLE_MODE_FLAG_TEST_ENABLED = 2,          /* 0b00000010 system has a test mode enabled. This flag is intended for temporary system tests and should not
+                                                    be used for stable implementations. | */
+    VEHICLE_MODE_FLAG_AUTO_ENABLED = 4,          /* 0b00000100 autonomous mode enabled, system finds its own goal positions. Guided flag can be set or not,
+                                                    depends on the actual implementation. | */
+    VEHICLE_MODE_FLAG_GUIDED_ENABLED = 8,        /* 0b00001000 guided mode enabled, system flies MISSIONs / mission items. | */
+    VEHICLE_MODE_FLAG_STABILIZE_ENABLED = 16,    /* 0b00010000 system stabilizes electronically its attitude (and optionally position). It needs however
+                                                    further control inputs to move around. | */
+    VEHICLE_MODE_FLAG_HIL_ENABLED = 32,          /* 0b00100000 hardware in the loop simulation. All motors / actuators are blocked, but internal software is full operational. | */
     VEHICLE_MODE_FLAG_MANUAL_INPUT_ENABLED = 64, /* 0b01000000 remote control input is enabled. | */
-    VEHICLE_MODE_FLAG_SAFETY_ARMED =
-        128, /* 0b10000000 MAV safety set to armed. Motors are enabled / running / can start. Ready to fly. Additional note: this flag is to be ignore
-                when sent in the command MAV_CMD_DO_SET_MODE and MAV_CMD_COMPONENT_ARM_DISARM shall be used instead. The flag can still be used to
-                report the armed state. | */
-    VEHICLE_MODE_FLAG_ENUM_END = 129, /*  | */
+    VEHICLE_MODE_FLAG_SAFETY_ARMED = 128,        /* 0b10000000 MAV safety set to armed. Motors are enabled / running / can start. Ready to fly. Additional note: this flag is to be ignore
+                                                    when sent in the command MAV_CMD_DO_SET_MODE and MAV_CMD_COMPONENT_ARM_DISARM shall be used instead. The flag can still be used to
+                                                    report the armed state. | */
+    VEHICLE_MODE_FLAG_ENUM_END = 129,            /*  | */
 } VEHICLE_MODE_FLAG;
 
 #if defined(BOARD_HAS_POWER_CONTROL)
@@ -166,9 +166,8 @@ static int power_button_state_notification_cb(board_power_button_state_notificat
 #endif // BOARD_HAS_POWER_CONTROL
 
 #ifndef CONSTRAINED_FLASH
-static bool send_vehicle_command(const uint32_t cmd, const float param1 = NAN, const float param2 = NAN, const float param3 = NAN,
-                                 const float param4 = NAN, const double param5 = static_cast<double>(NAN),
-                                 const double param6 = static_cast<double>(NAN), const float param7 = NAN)
+static bool send_vehicle_command(const uint32_t cmd, const float param1 = NAN, const float param2 = NAN, const float param3 = NAN, const float param4 = NAN,
+                                 const double param5 = static_cast<double>(NAN), const double param6 = static_cast<double>(NAN), const float param7 = NAN)
 {
     vehicle_command_s vcmd{};
     vcmd.command = cmd;
@@ -191,9 +190,8 @@ static bool send_vehicle_command(const uint32_t cmd, const float param1 = NAN, c
     return vcmd_pub.publish(vcmd);
 }
 
-static bool broadcast_vehicle_command(const uint32_t cmd, const float param1 = NAN, const float param2 = NAN, const float param3 = NAN,
-                                      const float param4 = NAN, const double param5 = static_cast<double>(NAN),
-                                      const double param6 = static_cast<double>(NAN), const float param7 = NAN)
+static bool broadcast_vehicle_command(const uint32_t cmd, const float param1 = NAN, const float param2 = NAN, const float param3 = NAN, const float param4 = NAN,
+                                      const double param5 = static_cast<double>(NAN), const double param6 = static_cast<double>(NAN), const float param7 = NAN)
 {
     vehicle_command_s vcmd{};
     vcmd.command = cmd;
@@ -310,12 +308,10 @@ int Commander::custom_command(int argc, char *argv[])
         vehicle_control_mode_s vehicle_control_mode{};
         vehicle_control_mode_sub.copy(&vehicle_control_mode);
 
-        bool preflight_check_res =
-            PreFlightCheck::preflightCheck(nullptr, vehicle_status, vehicle_status_flags, vehicle_control_mode, true, true, 30_s);
+        bool preflight_check_res = PreFlightCheck::preflightCheck(nullptr, vehicle_status, vehicle_status_flags, vehicle_control_mode, true, true, 30_s);
         PX4_INFO("Preflight check: %s", preflight_check_res ? "OK" : "FAILED");
 
-        bool prearm_check_res = PreFlightCheck::preArmCheck(nullptr, vehicle_status_flags, vehicle_control_mode, safety_s{},
-                                                            PreFlightCheck::arm_requirements_t{}, vehicle_status);
+        bool prearm_check_res = PreFlightCheck::preArmCheck(nullptr, vehicle_status_flags, vehicle_control_mode, safety_s{}, PreFlightCheck::arm_requirements_t{}, vehicle_status);
         PX4_INFO("Prearm check: %s", prearm_check_res ? "OK" : "FAILED");
 
         print_health_flags(vehicle_status);
@@ -348,8 +344,7 @@ int Commander::custom_command(int argc, char *argv[])
             param2 = 21196.f;
         }
 
-        send_vehicle_command(vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM, static_cast<float>(vehicle_command_s::ARMING_ACTION_DISARM),
-                             param2);
+        send_vehicle_command(vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM, static_cast<float>(vehicle_command_s::ARMING_ACTION_DISARM), param2);
 
         return 0;
     }
@@ -375,11 +370,10 @@ int Commander::custom_command(int argc, char *argv[])
         uORB::Subscription vehicle_status_sub{ORB_ID(vehicle_status)};
         vehicle_status_s vehicle_status{};
         vehicle_status_sub.copy(&vehicle_status);
-        send_vehicle_command(vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION,
-                             (float) (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING
-                                          ? vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW
-                                          : vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC),
-                             0.0f);
+        send_vehicle_command(
+            vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION,
+            (float) (vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING ? vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW : vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC),
+            0.0f);
 
         return 0;
     }
@@ -459,8 +453,7 @@ int Commander::custom_command(int argc, char *argv[])
             return 1;
         }
 
-        bool ret =
-            send_vehicle_command(vehicle_command_s::VEHICLE_CMD_DO_FLIGHTTERMINATION, strcmp(argv[1], "off") ? 2.0f : 0.0f /* lockdown */, 0.0f);
+        bool ret = send_vehicle_command(vehicle_command_s::VEHICLE_CMD_DO_FLIGHTTERMINATION, strcmp(argv[1], "off") ? 2.0f : 0.0f /* lockdown */, 0.0f);
 
         return (ret ? 0 : 1);
     }
@@ -523,10 +516,9 @@ extern "C" __EXPORT int commander_main(int argc, char *argv[])
 
 bool Commander::shutdown_if_allowed()
 {
-    return TRANSITION_DENIED !=
-           _arm_state_machine.arming_state_transition(_status, _vehicle_control_mode, _safety, vehicle_status_s::ARMING_STATE_SHUTDOWN, _armed,
-                                                      false /* fRunPreArmChecks */, &_mavlink_log_pub, _status_flags, _arm_requirements,
-                                                      hrt_elapsed_time(&_boot_timestamp), arm_disarm_reason_t::shutdown);
+    return TRANSITION_DENIED != _arm_state_machine.arming_state_transition(_status, _vehicle_control_mode, _safety, vehicle_status_s::ARMING_STATE_SHUTDOWN, _armed,
+                                                                           false /* fRunPreArmChecks */, &_mavlink_log_pub, _status_flags, _arm_requirements,
+                                                                           hrt_elapsed_time(&_boot_timestamp), arm_disarm_reason_t::shutdown);
 }
 
 static constexpr const char *arm_disarm_reason_str(arm_disarm_reason_t calling_reason)
@@ -807,28 +799,23 @@ transition_result_t Commander::arm(arm_disarm_reason_t calling_reason, bool run_
             if (_vehicle_control_mode.flag_control_climb_rate_enabled && !_status.rc_signal_lost && _is_throttle_above_center)
             {
                 mavlink_log_critical(&_mavlink_log_pub, "Arming denied: throttle above center\t");
-                events::send(events::ID("commander_arm_denied_throttle_center"), {events::Log::Critical, events::LogInternal::Info},
-                             "Arming denied: throttle above center");
+                events::send(events::ID("commander_arm_denied_throttle_center"), {events::Log::Critical, events::LogInternal::Info}, "Arming denied: throttle above center");
                 tune_negative(true);
                 return TRANSITION_DENIED;
             }
 
-            if (!_vehicle_control_mode.flag_control_climb_rate_enabled && !_status.rc_signal_lost && !_is_throttle_low &&
-                _status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROVER)
+            if (!_vehicle_control_mode.flag_control_climb_rate_enabled && !_status.rc_signal_lost && !_is_throttle_low && _status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROVER)
             {
                 mavlink_log_critical(&_mavlink_log_pub, "Arming denied: high throttle\t");
-                events::send(events::ID("commander_arm_denied_throttle_high"), {events::Log::Critical, events::LogInternal::Info},
-                             "Arming denied: high throttle");
+                events::send(events::ID("commander_arm_denied_throttle_high"), {events::Log::Critical, events::LogInternal::Info}, "Arming denied: high throttle");
                 tune_negative(true);
                 return TRANSITION_DENIED;
             }
         }
-        else if (calling_reason == arm_disarm_reason_t::rc_stick || calling_reason == arm_disarm_reason_t::rc_switch ||
-                 calling_reason == arm_disarm_reason_t::rc_button)
+        else if (calling_reason == arm_disarm_reason_t::rc_stick || calling_reason == arm_disarm_reason_t::rc_switch || calling_reason == arm_disarm_reason_t::rc_button)
         {
             mavlink_log_critical(&_mavlink_log_pub, "Arming denied: switch to manual mode first\t");
-            events::send(events::ID("commander_arm_denied_not_manual"), {events::Log::Critical, events::LogInternal::Info},
-                         "Arming denied: switch to manual mode first");
+            events::send(events::ID("commander_arm_denied_not_manual"), {events::Log::Critical, events::LogInternal::Info}, "Arming denied: switch to manual mode first");
             tune_negative(true);
             return TRANSITION_DENIED;
         }
@@ -836,16 +823,14 @@ transition_result_t Commander::arm(arm_disarm_reason_t calling_reason, bool run_
         if ((_param_geofence_action.get() == geofence_result_s::GF_ACTION_RTL) && !_status_flags.home_position_valid)
         {
             mavlink_log_critical(&_mavlink_log_pub, "Arming denied: Geofence RTL requires valid home\t");
-            events::send(events::ID("commander_arm_denied_geofence_rtl"), {events::Log::Critical, events::LogInternal::Info},
-                         "Arming denied: Geofence RTL requires valid home");
+            events::send(events::ID("commander_arm_denied_geofence_rtl"), {events::Log::Critical, events::LogInternal::Info}, "Arming denied: Geofence RTL requires valid home");
             tune_negative(true);
             return TRANSITION_DENIED;
         }
     }
 
-    transition_result_t arming_res = _arm_state_machine.arming_state_transition(
-        _status, _vehicle_control_mode, _safety, vehicle_status_s::ARMING_STATE_ARMED, _armed, run_preflight_checks, &_mavlink_log_pub, _status_flags,
-        _arm_requirements, hrt_elapsed_time(&_boot_timestamp), calling_reason);
+    transition_result_t arming_res = _arm_state_machine.arming_state_transition(_status, _vehicle_control_mode, _safety, vehicle_status_s::ARMING_STATE_ARMED, _armed, run_preflight_checks,
+                                                                                &_mavlink_log_pub, _status_flags, _arm_requirements, hrt_elapsed_time(&_boot_timestamp), calling_reason);
 
     if (arming_res == TRANSITION_CHANGED)
     {
@@ -868,34 +853,30 @@ transition_result_t Commander::disarm(arm_disarm_reason_t calling_reason, bool f
     if (!forced)
     {
         const bool landed = (_vehicle_land_detected.landed || _vehicle_land_detected.maybe_landed || is_ground_rover(_status));
-        const bool mc_manual_thrust_mode = _status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING &&
-                                           _vehicle_control_mode.flag_control_manual_enabled &&
-                                           !_vehicle_control_mode.flag_control_climb_rate_enabled;
-        const bool commanded_by_rc = (calling_reason == arm_disarm_reason_t::rc_stick) || (calling_reason == arm_disarm_reason_t::rc_switch) ||
-                                     (calling_reason == arm_disarm_reason_t::rc_button);
+        const bool mc_manual_thrust_mode =
+            _status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING && _vehicle_control_mode.flag_control_manual_enabled && !_vehicle_control_mode.flag_control_climb_rate_enabled;
+        const bool commanded_by_rc =
+            (calling_reason == arm_disarm_reason_t::rc_stick) || (calling_reason == arm_disarm_reason_t::rc_switch) || (calling_reason == arm_disarm_reason_t::rc_button);
 
         if (!landed && !(mc_manual_thrust_mode && commanded_by_rc))
         {
             if (calling_reason != arm_disarm_reason_t::rc_stick)
             {
                 mavlink_log_critical(&_mavlink_log_pub, "Disarming denied! Not landed\t");
-                events::send(events::ID("commander_disarming_denied_not_landed"), {events::Log::Critical, events::LogInternal::Info},
-                             "Disarming denied, not landed");
+                events::send(events::ID("commander_disarming_denied_not_landed"), {events::Log::Critical, events::LogInternal::Info}, "Disarming denied, not landed");
             }
 
             return TRANSITION_DENIED;
         }
     }
 
-    transition_result_t arming_res = _arm_state_machine.arming_state_transition(
-        _status, _vehicle_control_mode, _safety, vehicle_status_s::ARMING_STATE_STANDBY, _armed, false, &_mavlink_log_pub, _status_flags,
-        _arm_requirements, hrt_elapsed_time(&_boot_timestamp), calling_reason);
+    transition_result_t arming_res = _arm_state_machine.arming_state_transition(_status, _vehicle_control_mode, _safety, vehicle_status_s::ARMING_STATE_STANDBY, _armed, false,
+                                                                                &_mavlink_log_pub, _status_flags, _arm_requirements, hrt_elapsed_time(&_boot_timestamp), calling_reason);
 
     if (arming_res == TRANSITION_CHANGED)
     {
         mavlink_log_info(&_mavlink_log_pub, "Disarmed by %s\t", arm_disarm_reason_str(calling_reason));
-        events::send<events::px4::enums::arm_disarm_reason_t>(events::ID("commander_disarmed_by"), events::Log::Info, "Disarmed by {1}",
-                                                              calling_reason);
+        events::send<events::px4::enums::arm_disarm_reason_t>(events::ID("commander_disarmed_by"), events::Log::Info, "Disarmed by {1}", calling_reason);
 
         if (_param_com_force_safety.get())
         {
@@ -950,8 +931,7 @@ Commander::~Commander()
 bool Commander::handle_command(const vehicle_command_s &cmd)
 {
     /* only handle commands that are meant to be handled by this system and component, or broadcast */
-    if (((cmd.target_system != _status.system_id) && (cmd.target_system != 0)) ||
-        ((cmd.target_component != _status.component_id) && (cmd.target_component != 0)))
+    if (((cmd.target_system != _status.system_id) && (cmd.target_system != 0)) || ((cmd.target_component != _status.component_id) && (cmd.target_component != 0)))
     {
         return false;
     }
@@ -985,8 +965,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
                 /* EVENT
                  * @description Check for a valid position estimate
                  */
-                events::send(events::ID("commander_reposition_rejected"), {events::Log::Error, events::LogInternal::Info},
-                             "Reposition command rejected");
+                events::send(events::ID("commander_reposition_rejected"), {events::Log::Error, events::LogInternal::Info}, "Reposition command rejected");
             }
         }
         else
@@ -1128,8 +1107,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
         if (arming_action != vehicle_command_s::ARMING_ACTION_ARM && arming_action != vehicle_command_s::ARMING_ACTION_DISARM)
         {
             mavlink_log_critical(&_mavlink_log_pub, "Unsupported ARM_DISARM param: %.3f\t", (double) cmd.param1);
-            events::send<float>(events::ID("commander_unsupported_arm_disarm_param"), events::Log::Error, "Unsupported ARM_DISARM param: {1:.3}",
-                                cmd.param1);
+            events::send<float>(events::ID("commander_unsupported_arm_disarm_param"), events::Log::Error, "Unsupported ARM_DISARM param: {1:.3}", cmd.param1);
         }
         else
         {
@@ -1140,8 +1118,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
             if (!forced)
             {
                 // Flick to in-air restore first if this comes from an onboard system and from IO
-                if (cmd.source_system == _status.system_id && cmd.source_component == _status.component_id && cmd_from_io &&
-                    (arming_action == vehicle_command_s::ARMING_ACTION_ARM))
+                if (cmd.source_system == _status.system_id && cmd.source_component == _status.component_id && cmd_from_io && (arming_action == vehicle_command_s::ARMING_ACTION_ARM))
                 {
                     _status.arming_state = vehicle_status_s::ARMING_STATE_IN_AIR_RESTORE;
                 }
@@ -1169,8 +1146,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
 
                 /* update home position on arming if at least 500 ms from commander start spent to avoid setting home on in-air restart */
                 if ((arming_action == vehicle_command_s::ARMING_ACTION_ARM) && (arming_res == TRANSITION_CHANGED) &&
-                    (hrt_absolute_time() > (_boot_timestamp + INAIR_RESTART_HOLDOFF_INTERVAL)) &&
-                    (_param_com_home_en.get() && !_home_pub.get().manual_home))
+                    (hrt_absolute_time() > (_boot_timestamp + INAIR_RESTART_HOLDOFF_INTERVAL)) && (_param_com_home_en.get() && !_home_pub.get().manual_home))
                 {
                     set_home_position();
                 }
@@ -1323,8 +1299,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
             /* EVENT
              * @description Check for a valid position estimate
              */
-            events::send(events::ID("commander_takeoff_denied"), {events::Log::Critical, events::LogInternal::Info},
-                         "Takeoff denied! Please disarm and retry");
+            events::send(events::ID("commander_takeoff_denied"), {events::Log::Critical, events::LogInternal::Info}, "Takeoff denied! Please disarm and retry");
             cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
         }
     }
@@ -1362,8 +1337,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
             /* EVENT
              * @description Check for a valid position estimate
              */
-            events::send(events::ID("commander_landing_current_pos_denied"), {events::Log::Critical, events::LogInternal::Info},
-                         "Landing denied! Please land manually");
+            events::send(events::ID("commander_landing_current_pos_denied"), {events::Log::Critical, events::LogInternal::Info}, "Landing denied! Please land manually");
             cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
         }
     }
@@ -1382,8 +1356,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
             /* EVENT
              * @description Check for a valid position estimate
              */
-            events::send(events::ID("commander_landing_prec_land_denied"), {events::Log::Critical, events::LogInternal::Info},
-                         "Precision landing denied! Please land manually");
+            events::send(events::ID("commander_landing_prec_land_denied"), {events::Log::Critical, events::LogInternal::Info}, "Precision landing denied! Please land manually");
             cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
         }
     }
@@ -1402,8 +1375,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
             {
 
                 // switch to AUTO_MISSION and ARM
-                if ((TRANSITION_DENIED !=
-                     main_state_transition(_status, commander_state_s::MAIN_STATE_AUTO_MISSION, _status_flags, _internal_state)) &&
+                if ((TRANSITION_DENIED != main_state_transition(_status, commander_state_s::MAIN_STATE_AUTO_MISSION, _status_flags, _internal_state)) &&
                     (TRANSITION_DENIED != arm(arm_disarm_reason_t::mission_start)))
                 {
 
@@ -1416,16 +1388,14 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
                     /* EVENT
                      * @description Check for a valid position estimate
                      */
-                    events::send(events::ID("commander_mission_start_denied"), {events::Log::Critical, events::LogInternal::Info},
-                                 "Mission start denied");
+                    events::send(events::ID("commander_mission_start_denied"), {events::Log::Critical, events::LogInternal::Info}, "Mission start denied");
                 }
             }
         }
         else
         {
             mavlink_log_critical(&_mavlink_log_pub, "Mission start denied! No valid mission\t");
-            events::send(events::ID("commander_mission_start_denied_no_mission"), {events::Log::Critical, events::LogInternal::Info},
-                         "Mission start denied! No valid mission");
+            events::send(events::ID("commander_mission_start_denied_no_mission"), {events::Log::Critical, events::LogInternal::Info}, "Mission start denied! No valid mission");
         }
     }
     break;
@@ -1436,8 +1406,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
         {
             cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_FAILED;
             mavlink_log_critical(&_mavlink_log_pub, "Control high latency failed! Telemetry unavailable\t");
-            events::send(events::ID("commander_ctrl_high_latency_failed"), {events::Log::Critical, events::LogInternal::Info},
-                         "Control high latency failed! Telemetry unavailable");
+            events::send(events::ID("commander_ctrl_high_latency_failed"), {events::Log::Critical, events::LogInternal::Info}, "Control high latency failed! Telemetry unavailable");
         }
     }
     break;
@@ -1542,8 +1511,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
 
     case vehicle_command_s::VEHICLE_CMD_PREFLIGHT_CALIBRATION: {
 
-        if ((_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) || _status.arming_state == vehicle_status_s::ARMING_STATE_SHUTDOWN ||
-            _worker_thread.isBusy())
+        if ((_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) || _status.arming_state == vehicle_status_s::ARMING_STATE_SHUTDOWN || _worker_thread.isBusy())
         {
 
             // reject if armed or shutting down
@@ -1553,12 +1521,11 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
         {
 
             /* try to go to INIT/PREFLIGHT arming state */
-            if (TRANSITION_DENIED == _arm_state_machine.arming_state_transition(
-                                         _status, _vehicle_control_mode, safety_s{}, vehicle_status_s::ARMING_STATE_INIT, _armed,
-                                         false /* fRunPreArmChecks */, &_mavlink_log_pub, _status_flags,
-                                         PreFlightCheck::arm_requirements_t{}, // arming requirements not relevant for switching to ARMING_STATE_INIT
-                                         30_s,                                 // time since boot not relevant for switching to ARMING_STATE_INIT
-                                         (cmd.from_external ? arm_disarm_reason_t::command_external : arm_disarm_reason_t::command_internal)))
+            if (TRANSITION_DENIED == _arm_state_machine.arming_state_transition(_status, _vehicle_control_mode, safety_s{}, vehicle_status_s::ARMING_STATE_INIT, _armed,
+                                                                                false /* fRunPreArmChecks */, &_mavlink_log_pub, _status_flags,
+                                                                                PreFlightCheck::arm_requirements_t{}, // arming requirements not relevant for switching to ARMING_STATE_INIT
+                                                                                30_s,                                 // time since boot not relevant for switching to ARMING_STATE_INIT
+                                                                                (cmd.from_external ? arm_disarm_reason_t::command_external : arm_disarm_reason_t::command_internal)))
             {
 
                 answer_command(cmd, vehicle_command_s::VEHICLE_CMD_RESULT_DENIED);
@@ -1677,8 +1644,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
 
     case vehicle_command_s::VEHICLE_CMD_FIXED_MAG_CAL_YAW: {
         // Magnetometer quick calibration using world magnetic model and known heading
-        if ((_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) || (_status.arming_state == vehicle_status_s::ARMING_STATE_SHUTDOWN) ||
-            _worker_thread.isBusy())
+        if ((_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) || (_status.arming_state == vehicle_status_s::ARMING_STATE_SHUTDOWN) || _worker_thread.isBusy())
         {
 
             // reject if armed or shutting down
@@ -1717,8 +1683,7 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
 
     case vehicle_command_s::VEHICLE_CMD_PREFLIGHT_STORAGE: {
 
-        if ((_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) || _status.arming_state == vehicle_status_s::ARMING_STATE_SHUTDOWN ||
-            _worker_thread.isBusy())
+        if ((_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) || _status.arming_state == vehicle_status_s::ARMING_STATE_SHUTDOWN || _worker_thread.isBusy())
         {
 
             // reject if armed or shutting down
@@ -1935,9 +1900,8 @@ void Commander::executeActionRequest(const action_request_s &action_request)
     arm_disarm_reason_t arm_disarm_reason{};
 
     // Silently ignore RC actions during RC calibration
-    if (_status_flags.rc_calibration_in_progress &&
-        (action_request.source == action_request_s::SOURCE_RC_STICK_GESTURE || action_request.source == action_request_s::SOURCE_RC_SWITCH ||
-         action_request.source == action_request_s::SOURCE_RC_BUTTON || action_request.source == action_request_s::SOURCE_RC_MODE_SLOT))
+    if (_status_flags.rc_calibration_in_progress && (action_request.source == action_request_s::SOURCE_RC_STICK_GESTURE || action_request.source == action_request_s::SOURCE_RC_SWITCH ||
+                                                     action_request.source == action_request_s::SOURCE_RC_BUTTON || action_request.source == action_request_s::SOURCE_RC_MODE_SLOT))
     {
         return;
     }
@@ -2045,8 +2009,8 @@ bool Commander::hasMovedFromCurrentHomeLocation()
 
     if (_home_pub.get().valid_lpos && _local_position_sub.get().xy_valid && _local_position_sub.get().z_valid)
     {
-        mavlink_wpm_distance_to_point_local(_home_pub.get().x, _home_pub.get().y, _home_pub.get().z, _local_position_sub.get().x,
-                                            _local_position_sub.get().y, _local_position_sub.get().z, &home_dist_xy, &home_dist_z);
+        mavlink_wpm_distance_to_point_local(_home_pub.get().x, _home_pub.get().y, _home_pub.get().z, _local_position_sub.get().x, _local_position_sub.get().y, _local_position_sub.get().z,
+                                            &home_dist_xy, &home_dist_z);
 
         eph = _local_position_sub.get().eph;
         epv = _local_position_sub.get().epv;
@@ -2057,8 +2021,7 @@ bool Commander::hasMovedFromCurrentHomeLocation()
         {
             const vehicle_global_position_s &gpos = _global_position_sub.get();
 
-            get_distance_to_point_global_wgs84(_home_pub.get().lat, _home_pub.get().lon, _home_pub.get().alt, gpos.lat, gpos.lon, gpos.alt,
-                                               &home_dist_xy, &home_dist_z);
+            get_distance_to_point_global_wgs84(_home_pub.get().lat, _home_pub.get().lon, _home_pub.get().alt, gpos.lat, gpos.lon, gpos.alt, &home_dist_xy, &home_dist_z);
 
             eph = gpos.eph;
             epv = gpos.epv;
@@ -2071,8 +2034,7 @@ bool Commander::hasMovedFromCurrentHomeLocation()
             const double lon = static_cast<double>(gps.lon) * 1e-7;
             const float alt = static_cast<float>(gps.alt) * 1e-3f;
 
-            get_distance_to_point_global_wgs84(_home_pub.get().lat, _home_pub.get().lon, _home_pub.get().alt, lat, lon, alt, &home_dist_xy,
-                                               &home_dist_z);
+            get_distance_to_point_global_wgs84(_home_pub.get().lat, _home_pub.get().lon, _home_pub.get().alt, lat, lon, alt, &home_dist_xy, &home_dist_z);
 
             eph = gps.eph;
             epv = gps.epv;
@@ -2435,8 +2397,8 @@ void Commander::run()
                         /* EVENT
                          * @description <param>MAN_ARM_GESTURE</param> is now set to disable arm/disarm stick gesture.
                          */
-                        events::send(events::ID("rc_update_arm_stick_gesture_disabled_with_switch"),
-                                     {events::Log::Info, events::LogInternal::Disabled}, "Arm stick gesture disabled if arm switch in use");
+                        events::send(events::ID("rc_update_arm_stick_gesture_disabled_with_switch"), {events::Log::Info, events::LogInternal::Disabled},
+                                     "Arm stick gesture disabled if arm switch in use");
                 }
             }
 
@@ -2547,8 +2509,7 @@ void Commander::run()
                         {
                             set_home_position();
                         }
-                        else if (_param_com_home_in_air.get() &&
-                                 (!_home_pub.get().valid_lpos || !_home_pub.get().valid_hpos || !_home_pub.get().valid_alt))
+                        else if (_param_com_home_in_air.get() && (!_home_pub.get().valid_lpos || !_home_pub.get().valid_hpos || !_home_pub.get().valid_alt))
                         {
                             set_in_air_home_position();
                         }
@@ -2569,8 +2530,7 @@ void Commander::run()
 
             if (_safety_sub.copy(&_safety))
             {
-                set_health_flags(subsystem_info_s::SUBSYSTEM_TYPE_MOTORCONTROL, _safety.safety_switch_available, _safety.safety_off,
-                                 _safety.safety_switch_available, _status);
+                set_health_flags(subsystem_info_s::SUBSYSTEM_TYPE_MOTORCONTROL, _safety.safety_switch_available, _safety.safety_off, _safety.safety_switch_available, _status);
 
                 // disarm if safety is now on and still armed
                 if (_armed.armed && _safety.safety_switch_available && !_safety.safety_off && (_status.hil_state == vehicle_status_s::HIL_STATE_OFF))
@@ -2608,13 +2568,11 @@ void Commander::run()
             {
 
                 // Check if there has been any change while updating the flags
-                const auto new_vehicle_type =
-                    _vtol_status.vtol_in_rw_mode ? vehicle_status_s::VEHICLE_TYPE_ROTARY_WING : vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
+                const auto new_vehicle_type = _vtol_status.vtol_in_rw_mode ? vehicle_status_s::VEHICLE_TYPE_ROTARY_WING : vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
 
                 if (new_vehicle_type != _status.vehicle_type)
                 {
-                    _status.vehicle_type =
-                        _vtol_status.vtol_in_rw_mode ? vehicle_status_s::VEHICLE_TYPE_ROTARY_WING : vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
+                    _status.vehicle_type = _vtol_status.vtol_in_rw_mode ? vehicle_status_s::VEHICLE_TYPE_ROTARY_WING : vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
                     _status_changed = true;
                 }
 
@@ -2741,8 +2699,7 @@ void Commander::run()
             _auto_disarm_killed.set_state_and_update(false, hrt_absolute_time());
         }
 
-        if (_geofence_warning_action_on && _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_RTL &&
-            _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_LOITER &&
+        if (_geofence_warning_action_on && _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_RTL && _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_LOITER &&
             _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_LAND)
         {
 
@@ -2759,9 +2716,8 @@ void Commander::run()
         if (!_status_flags.calibration_enabled && _status.arming_state == vehicle_status_s::ARMING_STATE_INIT)
         {
 
-            _arm_state_machine.arming_state_transition(_status, _vehicle_control_mode, _safety, vehicle_status_s::ARMING_STATE_STANDBY, _armed,
-                                                       true /* fRunPreArmChecks */, &_mavlink_log_pub, _status_flags, _arm_requirements,
-                                                       hrt_elapsed_time(&_boot_timestamp), arm_disarm_reason_t::transition_to_standby);
+            _arm_state_machine.arming_state_transition(_status, _vehicle_control_mode, _safety, vehicle_status_s::ARMING_STATE_STANDBY, _armed, true /* fRunPreArmChecks */,
+                                                       &_mavlink_log_pub, _status_flags, _arm_requirements, hrt_elapsed_time(&_boot_timestamp), arm_disarm_reason_t::transition_to_standby);
         }
 
         /* start mission result check */
@@ -2788,8 +2744,7 @@ void Commander::run()
                     {
                         // navigator sends out the exact reason
                         mavlink_log_critical(&_mavlink_log_pub, "Mission cannot be completed\t");
-                        events::send(events::ID("commander_mission_cannot_be_completed"), {events::Log::Critical, events::LogInternal::Info},
-                                     "Mission cannot be completed");
+                        events::send(events::ID("commander_mission_cannot_be_completed"), {events::Log::Critical, events::LogInternal::Info}, "Mission cannot be completed");
                     }
                 }
 
@@ -2817,8 +2772,7 @@ void Commander::run()
 
             // Transition main state to loiter or auto-mission after takeoff is completed.
             if (_armed.armed && !_vehicle_land_detected.landed &&
-                (_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF ||
-                 _status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF) &&
+                (_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF || _status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF) &&
                 (mission_result.timestamp >= _status.nav_state_timestamp) && mission_result.finished)
             {
 
@@ -2862,8 +2816,7 @@ void Commander::run()
                 }
 
                 case (geofence_result_s::GF_ACTION_LOITER): {
-                    if (TRANSITION_CHANGED ==
-                        main_state_transition(_status, commander_state_s::MAIN_STATE_AUTO_LOITER, _status_flags, _internal_state))
+                    if (TRANSITION_CHANGED == main_state_transition(_status, commander_state_s::MAIN_STATE_AUTO_LOITER, _status_flags, _internal_state))
                     {
                         _geofence_loiter_on = true;
                     }
@@ -2896,8 +2849,7 @@ void Commander::run()
                     {
                         _flight_termination_triggered = true;
                         mavlink_log_critical(&_mavlink_log_pub, "Geofence violation! Flight terminated\t");
-                        events::send(events::ID("commander_geofence_termination"), {events::Log::Alert, events::LogInternal::Warning},
-                                     "Geofence violation! Flight terminated");
+                        events::send(events::ID("commander_geofence_termination"), {events::Log::Alert, events::LogInternal::Warning}, "Geofence violation! Flight terminated");
                         _armed.force_failsafe = true;
                         _status_changed = true;
                         send_parachute_command();
@@ -2954,8 +2906,7 @@ void Commander::run()
             {
                 // navigator only requests flight termination on GPS failure
                 mavlink_log_critical(&_mavlink_log_pub, "GPS failure: Flight terminated\t");
-                events::send(events::ID("commander_mission_termination"), {events::Log::Alert, events::LogInternal::Warning},
-                             "GPS failure: Flight terminated");
+                events::send(events::ID("commander_mission_termination"), {events::Log::Alert, events::LogInternal::Warning}, "GPS failure: Flight terminated");
                 _flight_termination_triggered = true;
                 _armed.force_failsafe = true;
                 _status_changed = true;
@@ -2966,8 +2917,7 @@ void Commander::run()
             {
                 _last_termination_message_sent = hrt_absolute_time();
                 mavlink_log_critical(&_mavlink_log_pub, "Flight termination active\t");
-                events::send(events::ID("commander_mission_termination_active"), {events::Log::Alert, events::LogInternal::Warning},
-                             "Flight termination active");
+                events::send(events::ID("commander_mission_termination_active"), {events::Log::Alert, events::LogInternal::Warning}, "Flight termination active");
             }
         }
 
@@ -2991,8 +2941,7 @@ void Commander::run()
                         {
                             float elapsed = hrt_elapsed_time(&_last_valid_manual_control_setpoint) * 1e-6f;
                             mavlink_log_info(&_mavlink_log_pub, "Manual control regained after %.1fs\t", (double) elapsed);
-                            events::send<float>(events::ID("commander_rc_regained"), events::Log::Info, "Manual control regained after {1:.1} s",
-                                                elapsed);
+                            events::send<float>(events::ID("commander_rc_regained"), events::Log::Info, "Manual control regained after {1:.1} s", elapsed);
                         }
 
                         set_health_flags(subsystem_info_s::SUBSYSTEM_TYPE_RCRECEIVER, true, true, _status_flags.rc_calibration_valid, _status);
@@ -3027,19 +2976,15 @@ void Commander::run()
                 }
             }
 
-            const bool override_enabled = ((_param_com_rc_override.get() & static_cast<int32_t>(RcOverrideBits::AUTO_MODE_BIT)) &&
-                                           _vehicle_control_mode.flag_control_auto_enabled) ||
-                                          ((_param_com_rc_override.get() & static_cast<int32_t>(RcOverrideBits::OFFBOARD_MODE_BIT)) &&
-                                           _vehicle_control_mode.flag_control_offboard_enabled);
+            const bool override_enabled = ((_param_com_rc_override.get() & static_cast<int32_t>(RcOverrideBits::AUTO_MODE_BIT)) && _vehicle_control_mode.flag_control_auto_enabled) ||
+                                          ((_param_com_rc_override.get() & static_cast<int32_t>(RcOverrideBits::OFFBOARD_MODE_BIT)) && _vehicle_control_mode.flag_control_offboard_enabled);
 
             // Abort autonomous mode and switch to position mode if sticks are moved significantly
             // but only if actually in air.
-            if ((_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) && !in_low_battery_failsafe_delay &&
-                !_geofence_warning_action_on && _armed.armed && !_status_flags.rc_calibration_in_progress && manual_control_setpoint.valid &&
-                manual_control_setpoint.sticks_moving && override_enabled)
+            if ((_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) && !in_low_battery_failsafe_delay && !_geofence_warning_action_on && _armed.armed &&
+                !_status_flags.rc_calibration_in_progress && manual_control_setpoint.valid && manual_control_setpoint.sticks_moving && override_enabled)
             {
-                const transition_result_t posctl_result =
-                    main_state_transition(_status, commander_state_s::MAIN_STATE_POSCTL, _status_flags, _internal_state);
+                const transition_result_t posctl_result = main_state_transition(_status, commander_state_s::MAIN_STATE_POSCTL, _status_flags, _internal_state);
 
                 if (posctl_result == TRANSITION_CHANGED)
                 {
@@ -3051,8 +2996,7 @@ void Commander::run()
                 else if (posctl_result == TRANSITION_DENIED)
                 {
                     // If transition to POSCTL was denied, then we can try again with ALTCTL.
-                    const transition_result_t altctl_result =
-                        main_state_transition(_status, commander_state_s::MAIN_STATE_ALTCTL, _status_flags, _internal_state);
+                    const transition_result_t altctl_result = main_state_transition(_status, commander_state_s::MAIN_STATE_ALTCTL, _status_flags, _internal_state);
 
                     if (altctl_result == TRANSITION_CHANGED)
                     {
@@ -3077,8 +3021,7 @@ void Commander::run()
             /* Check engine failure
              * only for fixed wing for now
              */
-            if (!_status_flags.circuit_breaker_engaged_enginefailure_check && _status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING &&
-                !_status.is_vtol && _armed.armed)
+            if (!_status_flags.circuit_breaker_engaged_enginefailure_check && _status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING && !_status.is_vtol && _armed.armed)
             {
 
                 actuator_controls_s actuator_controls{};
@@ -3087,8 +3030,7 @@ void Commander::run()
                 const float throttle = actuator_controls.control[actuator_controls_s::INDEX_THROTTLE];
                 const float current2throttle = _battery_current / throttle;
 
-                if (((throttle > _param_ef_throttle_thres.get()) && (current2throttle < _param_ef_current2throttle_thres.get())) ||
-                    _status.engine_failure)
+                if (((throttle > _param_ef_throttle_thres.get()) && (current2throttle < _param_ef_current2throttle_thres.get())) || _status.engine_failure)
                 {
 
                     const float elapsed = hrt_elapsed_time(&_timestamp_engine_healthy) / 1e6f;
@@ -3208,8 +3150,7 @@ void Commander::run()
                          * This can be configured with the parameter <param>COM_LKDOWN_TKO</param>.
                          * </profile>
                          */
-                        events::send(events::ID("commander_fd_lockdown"), {events::Log::Emergency, events::LogInternal::Warning},
-                                     "Critical failure detected: lockdown");
+                        events::send(events::ID("commander_fd_lockdown"), {events::Log::Emergency, events::LogInternal::Warning}, "Critical failure detected: lockdown");
                     }
                     else if (!_status_flags.circuit_breaker_flight_termination_disabled && !_flight_termination_triggered && !_lockdown_triggered)
                     {
@@ -3225,8 +3166,7 @@ void Commander::run()
                          * Flight termination can be disabled with the parameter <param>CBRK_FLIGHTTERM</param>.
                          * </profile>
                          */
-                        events::send(events::ID("commander_fd_terminate"), {events::Log::Emergency, events::LogInternal::Warning},
-                                     "Critical failure detected: terminate flight");
+                        events::send(events::ID("commander_fd_terminate"), {events::Log::Emergency, events::LogInternal::Warning}, "Critical failure detected: terminate flight");
                         send_parachute_command();
                     }
                 }
@@ -3235,8 +3175,7 @@ void Commander::run()
                 {
                     _status_changed = true;
                     _imbalanced_propeller_check_triggered = true;
-                    imbalanced_prop_failsafe(&_mavlink_log_pub, _status, _status_flags, &_internal_state,
-                                             (imbalanced_propeller_action_t) _param_com_imb_prop_act.get());
+                    imbalanced_prop_failsafe(&_mavlink_log_pub, _status, _status_flags, &_internal_state, (imbalanced_propeller_action_t) _param_com_imb_prop_act.get());
                 }
             }
         }
@@ -3258,8 +3197,8 @@ void Commander::run()
             if (!_armed.armed && _vehicle_land_detected.landed)
             {
                 const bool can_set_home_lpos_first_time = (!_home_pub.get().valid_lpos && _status_flags.local_position_valid);
-                const bool can_set_home_gpos_first_time = ((!_home_pub.get().valid_hpos || !_home_pub.get().valid_alt) &&
-                                                           (_status_flags.global_position_valid || _status_flags.gps_position_valid));
+                const bool can_set_home_gpos_first_time =
+                    ((!_home_pub.get().valid_hpos || !_home_pub.get().valid_alt) && (_status_flags.global_position_valid || _status_flags.gps_position_valid));
                 const bool can_set_home_alt_first_time = (!_home_pub.get().valid_alt && _local_position_sub.get().z_global);
 
                 if (can_set_home_lpos_first_time || can_set_home_gpos_first_time || can_set_home_alt_first_time || hasMovedFromCurrentHomeLocation())
@@ -3299,12 +3238,11 @@ void Commander::run()
         }
 
         /* now set navigation state according to failsafe and main state */
-        bool nav_state_changed = set_nav_state(
-            _status, _armed, _internal_state, &_mavlink_log_pub, static_cast<link_loss_actions_t>(_param_nav_dll_act.get()),
-            _mission_result_sub.get().finished, _mission_result_sub.get().stay_in_failsafe, _status_flags, _vehicle_land_detected.landed,
-            static_cast<link_loss_actions_t>(_param_nav_rcl_act.get()), static_cast<offboard_loss_actions_t>(_param_com_obl_act.get()),
-            static_cast<quadchute_actions_t>(_param_com_qc_act.get()), static_cast<offboard_loss_rc_actions_t>(_param_com_obl_rc_act.get()),
-            static_cast<position_nav_loss_actions_t>(_param_com_posctl_navl.get()), _param_com_rcl_act_t.get(), _param_com_rcl_except.get());
+        bool nav_state_changed = set_nav_state(_status, _armed, _internal_state, &_mavlink_log_pub, static_cast<link_loss_actions_t>(_param_nav_dll_act.get()),
+                                               _mission_result_sub.get().finished, _mission_result_sub.get().stay_in_failsafe, _status_flags, _vehicle_land_detected.landed,
+                                               static_cast<link_loss_actions_t>(_param_nav_rcl_act.get()), static_cast<offboard_loss_actions_t>(_param_com_obl_act.get()),
+                                               static_cast<quadchute_actions_t>(_param_com_qc_act.get()), static_cast<offboard_loss_rc_actions_t>(_param_com_obl_rc_act.get()),
+                                               static_cast<position_nav_loss_actions_t>(_param_com_posctl_navl.get()), _param_com_rcl_act_t.get(), _param_com_rcl_except.get());
 
         if (nav_state_changed)
         {
@@ -3384,8 +3322,7 @@ void Commander::run()
             if (!_armed.armed && !_status_flags.calibration_enabled)
             {
                 perf_begin(_preflight_check_perf);
-                bool preflight_check_res = PreFlightCheck::preflightCheck(nullptr, _status, _status_flags, _vehicle_control_mode, false, true,
-                                                                          hrt_elapsed_time(&_boot_timestamp));
+                bool preflight_check_res = PreFlightCheck::preflightCheck(nullptr, _status, _status_flags, _vehicle_control_mode, false, true, hrt_elapsed_time(&_boot_timestamp));
                 perf_end(_preflight_check_perf);
 
                 // skip arm authorization check until actual arming attempt
@@ -3423,8 +3360,7 @@ void Commander::run()
             set_tune(tune_control_s::TUNE_ID_ARMING_WARNING);
             _arm_tune_played = true;
         }
-        else if (!_status_flags.usb_connected && (_status.hil_state != vehicle_status_s::HIL_STATE_ON) &&
-                 (_battery_warning == battery_status_s::BATTERY_WARNING_CRITICAL))
+        else if (!_status_flags.usb_connected && (_status.hil_state != vehicle_status_s::HIL_STATE_ON) && (_battery_warning == battery_status_s::BATTERY_WARNING_CRITICAL))
         {
             /* play tune on battery critical */
             set_tune(tune_control_s::TUNE_ID_BATTERY_WARNING_FAST);
@@ -3716,8 +3652,8 @@ void Commander::control_status_leds(bool changed, const uint8_t battery_warning)
     }
 }
 
-bool Commander::check_posvel_validity(const bool data_valid, const float data_accuracy, const float required_accuracy,
-                                      const hrt_abstime &data_timestamp_us, hrt_abstime &last_fail_time_us, const bool was_valid)
+bool Commander::check_posvel_validity(const bool data_valid, const float data_accuracy, const float required_accuracy, const hrt_abstime &data_timestamp_us, hrt_abstime &last_fail_time_us,
+                                      const bool was_valid)
 {
     bool valid = was_valid;
     const bool data_stale = ((hrt_elapsed_time(&data_timestamp_us) > _param_com_pos_fs_delay.get() * 1_s) || (data_timestamp_us == 0));
@@ -3887,9 +3823,8 @@ void Commander::update_control_mode()
 
     _vehicle_control_mode.flag_multicopter_position_control_enabled =
         (_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) &&
-        (_vehicle_control_mode.flag_control_altitude_enabled || _vehicle_control_mode.flag_control_climb_rate_enabled ||
-         _vehicle_control_mode.flag_control_position_enabled || _vehicle_control_mode.flag_control_velocity_enabled ||
-         _vehicle_control_mode.flag_control_acceleration_enabled);
+        (_vehicle_control_mode.flag_control_altitude_enabled || _vehicle_control_mode.flag_control_climb_rate_enabled || _vehicle_control_mode.flag_control_position_enabled ||
+         _vehicle_control_mode.flag_control_velocity_enabled || _vehicle_control_mode.flag_control_acceleration_enabled);
 
     _vehicle_control_mode.timestamp = hrt_absolute_time();
     _control_mode_pub.publish(_vehicle_control_mode);
@@ -3912,8 +3847,7 @@ void Commander::print_reject_mode(uint8_t main_state)
         /* EVENT
          * @description Check for a valid position estimate
          */
-        events::send<events::px4::enums::navigation_mode_t>(events::ID("commander_modeswitch_not_avail"),
-                                                            {events::Log::Critical, events::LogInternal::Info},
+        events::send<events::px4::enums::navigation_mode_t>(events::ID("commander_modeswitch_not_avail"), {events::Log::Critical, events::LogInternal::Info},
                                                             "Switching to mode '{1}' is currently not possible", navigation_mode(main_state));
 
         /* only buzz if armed, because else we're driving people nuts indoors
@@ -4062,8 +3996,7 @@ void Commander::data_link_check()
                     if (!_armed.armed && !_status_flags.calibration_enabled)
                     {
                         // make sure to report preflight check failures to a connecting GCS
-                        PreFlightCheck::preflightCheck(&_mavlink_log_pub, _status, _status_flags, _vehicle_control_mode, true, false,
-                                                       hrt_elapsed_time(&_boot_timestamp));
+                        PreFlightCheck::preflightCheck(&_mavlink_log_pub, _status, _status_flags, _vehicle_control_mode, true, false, hrt_elapsed_time(&_boot_timestamp));
                     }
                 }
 
@@ -4139,8 +4072,8 @@ void Commander::data_link_check()
     }
 
     // ONBOARD CONTROLLER data link loss failsafe
-    if ((_datalink_last_heartbeat_onboard_controller > 0) &&
-        (hrt_elapsed_time(&_datalink_last_heartbeat_onboard_controller) > (_param_com_obc_loss_t.get() * 1_s)) && !_onboard_controller_lost)
+    if ((_datalink_last_heartbeat_onboard_controller > 0) && (hrt_elapsed_time(&_datalink_last_heartbeat_onboard_controller) > (_param_com_obc_loss_t.get() * 1_s)) &&
+        !_onboard_controller_lost)
     {
 
         mavlink_log_critical(&_mavlink_log_pub, "Connection to mission computer lost\t");
@@ -4164,8 +4097,7 @@ void Commander::data_link_check()
     if (_status_flags.avoidance_system_required && !_onboard_controller_lost)
     {
         // if heartbeats stop
-        if (!_avoidance_system_lost && (_datalink_last_heartbeat_avoidance_system > 0) &&
-            (hrt_elapsed_time(&_datalink_last_heartbeat_avoidance_system) > 5_s))
+        if (!_avoidance_system_lost && (_datalink_last_heartbeat_avoidance_system > 0) && (hrt_elapsed_time(&_datalink_last_heartbeat_avoidance_system) > 5_s))
         {
 
             _avoidance_system_lost = true;
@@ -4196,8 +4128,7 @@ void Commander::avoidance_check()
 
         if (dist_sens_sub.update(&distance_sensor))
         {
-            if ((distance_sensor.orientation != distance_sensor_s::ROTATION_DOWNWARD_FACING) &&
-                (distance_sensor.orientation != distance_sensor_s::ROTATION_UPWARD_FACING))
+            if ((distance_sensor.orientation != distance_sensor_s::ROTATION_DOWNWARD_FACING) && (distance_sensor.orientation != distance_sensor_s::ROTATION_UPWARD_FACING))
             {
 
                 _valid_distance_sensor_time_us = distance_sensor.timestamp;
@@ -4257,8 +4188,7 @@ void Commander::battery_status_check()
             if ((_last_connected_batteries & (1 << index)) && !battery.connected)
             {
                 mavlink_log_critical(&_mavlink_log_pub, "Battery %d disconnected. Land now! \t", index + 1);
-                events::send<uint8_t>(events::ID("commander_battery_disconnected"), {events::Log::Emergency, events::LogInternal::Warning},
-                                      "Battery {1} disconnected. Land now!", index + 1);
+                events::send<uint8_t>(events::ID("commander_battery_disconnected"), {events::Log::Emergency, events::LogInternal::Warning}, "Battery {1} disconnected. Land now!", index + 1);
                 // trigger a battery failsafe action if a battery disconnects in flight
                 worst_warning = battery_status_s::BATTERY_WARNING_CRITICAL;
             }
@@ -4266,11 +4196,9 @@ void Commander::battery_status_check()
             if ((battery.mode > 0) && (battery.mode != _last_battery_mode[index]))
             {
 
-                mavlink_log_critical(&_mavlink_log_pub, "Battery %d is in %s mode! \t", index + 1,
-                                     battery_mode_str(static_cast<battery_mode_t>(battery.mode)));
-                events::send<uint8_t, events::px4::enums::battery_mode_t>(
-                    events::ID("commander_battery_mode"), {events::Log::Critical, events::LogInternal::Warning}, "Battery {1} mode: {2}. Land now!",
-                    index + 1, static_cast<battery_mode_t>(battery.mode));
+                mavlink_log_critical(&_mavlink_log_pub, "Battery %d is in %s mode! \t", index + 1, battery_mode_str(static_cast<battery_mode_t>(battery.mode)));
+                events::send<uint8_t, events::px4::enums::battery_mode_t>(events::ID("commander_battery_mode"), {events::Log::Critical, events::LogInternal::Warning},
+                                                                          "Battery {1} mode: {2}. Land now!", index + 1, static_cast<battery_mode_t>(battery.mode));
             }
         }
 
@@ -4308,12 +4236,10 @@ void Commander::battery_status_check()
                     {
                         if (battery.faults & (1 << fault_index))
                         {
-                            mavlink_log_emergency(&_mavlink_log_pub, "Battery %d: %s. %s \t", index + 1,
-                                                  battery_fault_reason_str(static_cast<battery_fault_reason_t>(fault_index)),
+                            mavlink_log_emergency(&_mavlink_log_pub, "Battery %d: %s. %s \t", index + 1, battery_fault_reason_str(static_cast<battery_fault_reason_t>(fault_index)),
                                                   _armed.armed ? "Land now!" : "");
 
-                            events::px4::enums::suggested_action_t action =
-                                _armed.armed ? events::px4::enums::suggested_action_t::land : events::px4::enums::suggested_action_t::none;
+                            events::px4::enums::suggested_action_t action = _armed.armed ? events::px4::enums::suggested_action_t::land : events::px4::enums::suggested_action_t::none;
 
                             /* EVENT
                              * @description
@@ -4321,8 +4247,8 @@ void Commander::battery_status_check()
                              * Manufacturer error code: {4}
                              */
                             events::send<uint8_t, battery_fault_reason_t, events::px4::enums::suggested_action_t, uint32_t>(
-                                events::ID("commander_battery_fault"), {events::Log::Emergency, events::LogInternal::Warning},
-                                "Battery {1}: {2}. {3}", index + 1, static_cast<battery_fault_reason_t>(fault_index), action, battery.custom_faults);
+                                events::ID("commander_battery_fault"), {events::Log::Emergency, events::LogInternal::Warning}, "Battery {1}: {2}. {3}", index + 1,
+                                static_cast<battery_fault_reason_t>(fault_index), action, battery.custom_faults);
                         }
                     }
                 }
@@ -4331,8 +4257,7 @@ void Commander::battery_status_check()
             _last_battery_fault[index] = battery.faults;
             _last_battery_custom_fault[index] = battery.custom_faults;
 
-            if (PX4_ISFINITE(battery.time_remaining_s) &&
-                (!PX4_ISFINITE(worst_battery_time_s) || (PX4_ISFINITE(worst_battery_time_s) && (battery.time_remaining_s < worst_battery_time_s))))
+            if (PX4_ISFINITE(battery.time_remaining_s) && (!PX4_ISFINITE(worst_battery_time_s) || (PX4_ISFINITE(worst_battery_time_s) && (battery.time_remaining_s < worst_battery_time_s))))
             {
                 worst_battery_time_s = battery.time_remaining_s;
             }
@@ -4345,8 +4270,8 @@ void Commander::battery_status_check()
     rtl_time_estimate_s rtl_time_estimate{};
 
     // Compare estimate of RTL time to estimate of remaining flight time
-    if (_rtl_time_estimate_sub.copy(&rtl_time_estimate) && (hrt_absolute_time() - rtl_time_estimate.timestamp) < 2_s && rtl_time_estimate.valid &&
-        _armed.armed && !_vehicle_land_detected.ground_contact // not in any landing stage
+    if (_rtl_time_estimate_sub.copy(&rtl_time_estimate) && (hrt_absolute_time() - rtl_time_estimate.timestamp) < 2_s && rtl_time_estimate.valid && _armed.armed &&
+        !_vehicle_land_detected.ground_contact // not in any landing stage
         && !_rtl_time_actions_done && PX4_ISFINITE(worst_battery_time_s) && rtl_time_estimate.safe_time_estimate >= worst_battery_time_s &&
         _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_RTL && _internal_state.main_state != commander_state_s::MAIN_STATE_AUTO_LAND)
     {
@@ -4354,14 +4279,12 @@ void Commander::battery_status_check()
         if (main_state_transition(_status, commander_state_s::MAIN_STATE_AUTO_RTL, _status_flags, _internal_state) == TRANSITION_CHANGED)
         {
             mavlink_log_emergency(&_mavlink_log_pub, "Remaining flight time low, returning to land\t");
-            events::send(events::ID("commander_remaining_flight_time_rtl"), {events::Log::Critical, events::LogInternal::Info},
-                         "Remaining flight time low, returning to land");
+            events::send(events::ID("commander_remaining_flight_time_rtl"), {events::Log::Critical, events::LogInternal::Info}, "Remaining flight time low, returning to land");
         }
         else
         {
             mavlink_log_emergency(&_mavlink_log_pub, "Remaining flight time low, land now!\t");
-            events::send(events::ID("commander_remaining_flight_time_land"), {events::Log::Critical, events::LogInternal::Info},
-                         "Remaining flight time low, land now!");
+            events::send(events::ID("commander_remaining_flight_time_land"), {events::Log::Critical, events::LogInternal::Info}, "Remaining flight time low, land now!");
         }
 
         _rtl_time_actions_done = true;
@@ -4406,8 +4329,7 @@ void Commander::battery_status_check()
     {
         uint8_t failsafe_action = get_battery_failsafe_action(_internal_state, _battery_warning, (low_battery_action_t) _param_com_low_bat_act.get());
 
-        warn_user_about_battery(&_mavlink_log_pub, _battery_warning, failsafe_action, _param_com_bat_act_t.get(), main_state_str(failsafe_action),
-                                navigation_mode(failsafe_action));
+        warn_user_about_battery(&_mavlink_log_pub, _battery_warning, failsafe_action, _param_com_bat_act_t.get(), main_state_str(failsafe_action), navigation_mode(failsafe_action));
         _battery_failsafe_timestamp = hrt_absolute_time();
 
         // Switch to loiter to wait for the reaction delay
@@ -4442,8 +4364,7 @@ void Commander::battery_status_check()
             if (shutdown_if_allowed() && (px4_shutdown_request(400_ms) == 0))
             {
                 mavlink_log_critical(&_mavlink_log_pub, "Dangerously low battery! Shutting system down\t");
-                events::send(events::ID("commander_low_bat_shutdown"), {events::Log::Emergency, events::LogInternal::Warning},
-                             "Dangerously low battery! Shutting system down");
+                events::send(events::ID("commander_low_bat_shutdown"), {events::Log::Emergency, events::LogInternal::Warning}, "Dangerously low battery! Shutting system down");
 
                 while (1)
                 {
@@ -4456,8 +4377,7 @@ void Commander::battery_status_check()
                 /* EVENT
                  * @description Cannot shut down, most likely the system does not support it.
                  */
-                events::send(events::ID("commander_low_bat_shutdown_failed"), {events::Log::Emergency, events::LogInternal::Error},
-                             "Dangerously low battery! System shut down failed");
+                events::send(events::ID("commander_low_bat_shutdown_failed"), {events::Log::Emergency, events::LogInternal::Error}, "Dangerously low battery! System shut down failed");
             }
 
 #endif // BOARD_HAS_POWER_CONTROL
@@ -4571,8 +4491,7 @@ void Commander::estimator_check()
                     if (!_nav_test_passed)
                     {
                         // Both test ratios need to pass/fail together to change the nav test status
-                        const bool innovation_pass = (estimator_status.vel_test_ratio < 1.f) && (estimator_status.pos_test_ratio < 1.f) &&
-                                                     (estimator_status.vel_test_ratio > FLT_EPSILON) &&
+                        const bool innovation_pass = (estimator_status.vel_test_ratio < 1.f) && (estimator_status.pos_test_ratio < 1.f) && (estimator_status.vel_test_ratio > FLT_EPSILON) &&
                                                      (estimator_status.pos_test_ratio > FLT_EPSILON);
 
                         const bool innovation_fail = (estimator_status.vel_test_ratio >= 1.f) && (estimator_status.pos_test_ratio >= 1.f);
@@ -4601,8 +4520,7 @@ void Commander::estimator_check()
                                 // if the innovation test has failed continuously, declare the nav as failed
                                 _nav_test_failed = true;
                                 mavlink_log_emergency(&_mavlink_log_pub, "Navigation failure! Land and recalibrate sensors\t");
-                                events::send(events::ID("commander_navigation_failure"), events::Log::Emergency,
-                                             "Navigation failure! Land and recalibrate the sensors");
+                                events::send(events::ID("commander_navigation_failure"), events::Log::Emergency, "Navigation failure! Land and recalibrate the sensors");
                             }
                         }
                     }
@@ -4649,14 +4567,13 @@ void Commander::estimator_check()
 
         const vehicle_global_position_s &gpos = _global_position_sub.get();
 
-        _status_flags.global_position_valid = check_posvel_validity(xy_valid, gpos.eph, _param_com_pos_fs_eph.get(), gpos.timestamp,
-                                                                    _last_gpos_fail_time_us, _status_flags.global_position_valid);
+        _status_flags.global_position_valid =
+            check_posvel_validity(xy_valid, gpos.eph, _param_com_pos_fs_eph.get(), gpos.timestamp, _last_gpos_fail_time_us, _status_flags.global_position_valid);
 
-        _status_flags.local_position_valid = check_posvel_validity(xy_valid, lpos.eph, lpos_eph_threshold_adj, lpos.timestamp,
-                                                                   _last_lpos_fail_time_us, _status_flags.local_position_valid);
+        _status_flags.local_position_valid = check_posvel_validity(xy_valid, lpos.eph, lpos_eph_threshold_adj, lpos.timestamp, _last_lpos_fail_time_us, _status_flags.local_position_valid);
 
-        _status_flags.local_velocity_valid = check_posvel_validity(v_xy_valid, lpos.evh, _param_com_vel_fs_evh.get(), lpos.timestamp,
-                                                                   _last_lvel_fail_time_us, _status_flags.local_velocity_valid);
+        _status_flags.local_velocity_valid =
+            check_posvel_validity(v_xy_valid, lpos.evh, _param_com_vel_fs_evh.get(), lpos.timestamp, _last_lvel_fail_time_us, _status_flags.local_velocity_valid);
     }
 
     // altitude
@@ -4682,8 +4599,7 @@ void Commander::estimator_check()
     vehicle_angular_velocity_s angular_velocity{};
     _vehicle_angular_velocity_sub.copy(&angular_velocity);
     const bool condition_angular_velocity_time_valid = (angular_velocity.timestamp != 0) && (hrt_elapsed_time(&angular_velocity.timestamp) < 1_s);
-    const bool condition_angular_velocity_finite =
-        PX4_ISFINITE(angular_velocity.xyz[0]) && PX4_ISFINITE(angular_velocity.xyz[1]) && PX4_ISFINITE(angular_velocity.xyz[2]);
+    const bool condition_angular_velocity_finite = PX4_ISFINITE(angular_velocity.xyz[0]) && PX4_ISFINITE(angular_velocity.xyz[1]) && PX4_ISFINITE(angular_velocity.xyz[2]);
     const bool angular_velocity_valid = condition_angular_velocity_time_valid && condition_angular_velocity_finite;
 
     if (_status_flags.angular_velocity_valid && !angular_velocity_valid)
@@ -4754,8 +4670,8 @@ void Commander::offboard_control_update()
         {
             const offboard_control_mode_s &ocm = _offboard_control_mode_sub.get();
 
-            if (old.position != ocm.position || old.velocity != ocm.velocity || old.acceleration != ocm.acceleration ||
-                old.attitude != ocm.attitude || old.body_rate != ocm.body_rate || old.actuator != ocm.actuator)
+            if (old.position != ocm.position || old.velocity != ocm.velocity || old.acceleration != ocm.acceleration || old.attitude != ocm.attitude || old.body_rate != ocm.body_rate ||
+                old.actuator != ocm.actuator)
             {
 
                 _status_changed = true;
@@ -4832,10 +4748,8 @@ void Commander::esc_status_check()
                 {
                     snprintf(esc_fail_msg + strlen(esc_fail_msg), sizeof(esc_fail_msg) - strlen(esc_fail_msg), "ESC%d ", index + 1);
                     esc_fail_msg[sizeof(esc_fail_msg) - 1] = '\0';
-                    events::px4::enums::suggested_action_t action =
-                        _armed.armed ? events::px4::enums::suggested_action_t::land : events::px4::enums::suggested_action_t::none;
-                    events::send<uint8_t, events::px4::enums::suggested_action_t>(events::ID("commander_esc_offline"), events::Log::Critical,
-                                                                                  "ESC{1} offline. {2}", index + 1, action);
+                    events::px4::enums::suggested_action_t action = _armed.armed ? events::px4::enums::suggested_action_t::land : events::px4::enums::suggested_action_t::none;
+                    events::send<uint8_t, events::px4::enums::suggested_action_t>(events::ID("commander_esc_offline"), events::Log::Critical, "ESC{1} offline. {2}", index + 1, action);
                 }
             }
 
@@ -4876,12 +4790,10 @@ void Commander::esc_status_check()
                             action = events::px4::enums::suggested_action_t::land;
                         }
 
-                        mavlink_log_emergency(&_mavlink_log_pub, "ESC%d: %s. %s \t", index + 1, esc_fault_reason_str(fault_reason_index),
-                                              _armed.armed ? user_action : "");
+                        mavlink_log_emergency(&_mavlink_log_pub, "ESC%d: %s. %s \t", index + 1, esc_fault_reason_str(fault_reason_index), _armed.armed ? user_action : "");
 
                         events::send<uint8_t, events::px4::enums::esc_fault_reason_t, events::px4::enums::suggested_action_t>(
-                            events::ID("commander_esc_fault"), {events::Log::Emergency, events::LogInternal::Warning}, "ESC {1}: {2}. {3}", index + 1,
-                            fault_reason_index, action);
+                            events::ID("commander_esc_fault"), {events::Log::Emergency, events::LogInternal::Warning}, "ESC {1}: {2}. {3}", index + 1, fault_reason_index, action);
                     }
                 }
             }
@@ -4927,8 +4839,8 @@ void Commander::checkWindAndWarn()
         {
             mavlink_log_critical(&_mavlink_log_pub, "High wind speed detected (%.1f m/s), landing advised\t", (double) wind.norm());
 
-            events::send<float>(events::ID("commander_high_wind_warning"), {events::Log::Warning, events::LogInternal::Info},
-                                "High wind speed detected ({1:.1m/s}), landing advised", wind.norm());
+            events::send<float>(events::ID("commander_high_wind_warning"), {events::Log::Warning, events::LogInternal::Info}, "High wind speed detected ({1:.1m/s}), landing advised",
+                                wind.norm());
             _last_wind_warning = hrt_absolute_time();
         }
     }
@@ -4963,8 +4875,7 @@ The commander module contains the state machine for mode switching and failsafe 
     PRINT_MODULE_USAGE_COMMAND("land");
     PRINT_MODULE_USAGE_COMMAND_DESCR("transition", "VTOL transition");
     PRINT_MODULE_USAGE_COMMAND_DESCR("mode", "Change flight mode");
-    PRINT_MODULE_USAGE_ARG("manual|acro|offboard|stabilized|altctl|posctl|auto:mission|auto:loiter|auto:rtl|auto:takeoff|auto:land|auto:precland",
-                           "Flight mode", false);
+    PRINT_MODULE_USAGE_ARG("manual|acro|offboard|stabilized|altctl|posctl|auto:mission|auto:loiter|auto:rtl|auto:takeoff|auto:land|auto:precland", "Flight mode", false);
     PRINT_MODULE_USAGE_COMMAND("pair");
     PRINT_MODULE_USAGE_COMMAND("lockdown");
     PRINT_MODULE_USAGE_ARG("on|off", "Turn lockdown on or off", false);

@@ -41,6 +41,8 @@
 
 #include <px4_platform_common/sem.hpp>
 
+//@note pwm_out_sim module
+
 PWMSim::PWMSim(bool hil_mode_enabled) : CDev(PWM_OUTPUT0_DEVICE_PATH), OutputModuleInterface(MODULE_NAME, px4::wq_configurations::hp_default)
 {
     _mixing_output.setAllDisarmedValues(PWM_SIM_DISARMED_MAGIC);

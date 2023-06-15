@@ -38,35 +38,44 @@
 #include <px4_platform_common/log.h>
 #include <px4_platform_common/module.h>
 
-extern "C" { __EXPORT int uorb_main(int argc, char *argv[]); }
+//@note uORB module
+
+extern "C"
+{
+    __EXPORT int uorb_main(int argc, char *argv[]);
+}
 
 static void usage();
 
 int uorb_main(int argc, char *argv[])
 {
-	if (argc < 2) {
-		usage();
-		return -1;
-	}
+    if (argc < 2)
+    {
+        usage();
+        return -1;
+    }
 
-	if (!strcmp(argv[1], "start")) {
-		return uorb_start();
+    if (!strcmp(argv[1], "start"))
+    {
+        return uorb_start();
+    }
+    else if (!strcmp(argv[1], "status"))
+    {
+        return uorb_status();
+    }
+    else if (!strcmp(argv[1], "top"))
+    {
+        return uorb_top(argv + 2, argc - 2);
+    }
 
-	} else if (!strcmp(argv[1], "status")) {
-		return uorb_status();
-
-	} else if (!strcmp(argv[1], "top")) {
-		return uorb_top(argv + 2, argc - 2);
-	}
-
-	usage();
-	return 0;
+    usage();
+    return 0;
 }
 
 void usage()
 {
-	PRINT_MODULE_DESCRIPTION(
-		R"DESCR_STR(
+    PRINT_MODULE_DESCRIPTION(
+        R"DESCR_STR(
 ### Description
 uORB is the internal pub-sub messaging system, used for communication between modules.
 
@@ -86,10 +95,10 @@ Monitor topic publication rates. Besides `top`, this is an important command for
 $ uorb top
 )DESCR_STR");
 
-	PRINT_MODULE_USAGE_NAME("uorb", "communication");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("status", "Print topic statistics");
-	PRINT_MODULE_USAGE_COMMAND_DESCR("top", "Monitor topic publication rates");
-	PRINT_MODULE_USAGE_PARAM_FLAG('a', "print all instead of only currently publishing topics with subscribers", true);
-	PRINT_MODULE_USAGE_PARAM_FLAG('1', "run only once, then exit", true);
-	PRINT_MODULE_USAGE_ARG("<filter1> [<filter2>]", "topic(s) to match (implies -a)", true);
+    PRINT_MODULE_USAGE_NAME("uorb", "communication");
+    PRINT_MODULE_USAGE_COMMAND_DESCR("status", "Print topic statistics");
+    PRINT_MODULE_USAGE_COMMAND_DESCR("top", "Monitor topic publication rates");
+    PRINT_MODULE_USAGE_PARAM_FLAG('a', "print all instead of only currently publishing topics with subscribers", true);
+    PRINT_MODULE_USAGE_PARAM_FLAG('1', "run only once, then exit", true);
+    PRINT_MODULE_USAGE_ARG("<filter1> [<filter2>]", "topic(s) to match (implies -a)", true);
 }

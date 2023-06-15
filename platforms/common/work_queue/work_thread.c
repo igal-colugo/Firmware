@@ -37,19 +37,21 @@
  * Included Files
  ****************************************************************************/
 
-#include <px4_platform_common/px4_config.h>
+#include "work_lock.h"
+#include <drivers/drv_hrt.h>
+#include <pthread.h>
 #include <px4_platform_common/defines.h>
 #include <px4_platform_common/posix.h>
-#include <px4_platform_common/time.h>
+#include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/tasks.h>
+#include <px4_platform_common/time.h>
 #include <px4_platform_common/workqueue.h>
+#include <queue.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <queue.h>
-#include <pthread.h>
-#include <drivers/drv_hrt.h>
-#include "work_lock.h"
+
+//@note work_thread module
 
 #ifdef CONFIG_SCHED_WORKQUEUE
 
@@ -93,96 +95,102 @@ px4_sem_t _work_lock[NWORKERS];
 
 static void work_process(struct wqueue_s *wqueue, int lock_id)
 {
-	volatile struct work_s *work;
-	worker_t  worker;
-	void *arg;
-	uint64_t elapsed;
-	uint32_t remaining;
-	uint32_t next;
+    volatile struct work_s *work;
+    worker_t worker;
+    void *arg;
+    uint64_t elapsed;
+    uint32_t remaining;
+    uint32_t next;
 
-	/* Then process queued work.  We need to keep interrupts disabled while
-	 * we process items in the work list.
-	 */
+    /* Then process queued work.  We need to keep interrupts disabled while
+     * we process items in the work list.
+     */
 
-	next  = CONFIG_SCHED_WORKPERIOD;
+    next = CONFIG_SCHED_WORKPERIOD;
 
-	work_lock(lock_id);
+    work_lock(lock_id);
 
-	work  = (struct work_s *)wqueue->q.head;
+    work = (struct work_s *) wqueue->q.head;
 
-	while (work) {
-		/* Is this work ready?  It is ready if there is no delay or if
-		 * the delay has elapsed. qtime is the time that the work was added
-		 * to the work queue.  It will always be greater than or equal to
-		 * zero.  Therefore a delay of zero will always execute immediately.
-		 */
+    while (work)
+    {
+        /* Is this work ready?  It is ready if there is no delay or if
+         * the delay has elapsed. qtime is the time that the work was added
+         * to the work queue.  It will always be greater than or equal to
+         * zero.  Therefore a delay of zero will always execute immediately.
+         */
 
-		elapsed = USEC2TICK(clock_systimer() - work->qtime);
+        elapsed = USEC2TICK(clock_systimer() - work->qtime);
 
-		//printf("work_process: in ticks elapsed=%lu delay=%u\n", elapsed, work->delay);
-		if (elapsed >= work->delay) {
-			/* Remove the ready-to-execute work from the list */
+        // printf("work_process: in ticks elapsed=%lu delay=%u\n", elapsed, work->delay);
+        if (elapsed >= work->delay)
+        {
+            /* Remove the ready-to-execute work from the list */
 
-			(void)dq_rem((struct dq_entry_s *)work, &wqueue->q);
+            (void) dq_rem((struct dq_entry_s *) work, &wqueue->q);
 
-			/* Extract the work description from the entry (in case the work
-			 * instance by the re-used after it has been de-queued).
-			 */
+            /* Extract the work description from the entry (in case the work
+             * instance by the re-used after it has been de-queued).
+             */
 
-			worker = work->worker;
-			arg    = work->arg;
+            worker = work->worker;
+            arg = work->arg;
 
-			/* Mark the work as no longer being queued */
+            /* Mark the work as no longer being queued */
 
-			work->worker = NULL;
+            work->worker = NULL;
 
-			/* Do the work.  Re-enable interrupts while the work is being
-			 * performed... we don't have any idea how long that will take!
-			 */
+            /* Do the work.  Re-enable interrupts while the work is being
+             * performed... we don't have any idea how long that will take!
+             */
 
-			work_unlock(lock_id);
+            work_unlock(lock_id);
 
-			if (!worker) {
-				PX4_WARN("MESSED UP: worker = 0\n");
+            if (!worker)
+            {
+                PX4_WARN("MESSED UP: worker = 0\n");
+            }
+            else
+            {
+                worker(arg);
+            }
 
-			} else {
-				worker(arg);
-			}
+            /* Now, unfortunately, since we re-enabled interrupts we don't
+             * know the state of the work list and we will have to start
+             * back at the head of the list.
+             */
 
-			/* Now, unfortunately, since we re-enabled interrupts we don't
-			 * know the state of the work list and we will have to start
-			 * back at the head of the list.
-			 */
+            work_lock(lock_id);
+            work = (struct work_s *) wqueue->q.head;
+        }
+        else
+        {
+            /* This one is not ready.. will it be ready before the next
+             * scheduled wakeup interval?
+             */
 
-			work_lock(lock_id);
-			work  = (struct work_s *)wqueue->q.head;
+            /* Here: elapsed < work->delay */
+            remaining = USEC_PER_TICK * (work->delay - elapsed);
 
-		} else {
-			/* This one is not ready.. will it be ready before the next
-			 * scheduled wakeup interval?
-			 */
+            if (remaining < next)
+            {
+                /* Yes.. Then schedule to wake up when the work is ready */
 
-			/* Here: elapsed < work->delay */
-			remaining = USEC_PER_TICK * (work->delay - elapsed);
+                next = remaining;
+            }
 
-			if (remaining < next) {
-				/* Yes.. Then schedule to wake up when the work is ready */
+            /* Then try the next in the list. */
 
-				next = remaining;
-			}
+            work = (struct work_s *) work->dq.flink;
+        }
+    }
 
-			/* Then try the next in the list. */
+    /* Wait awhile to check the work list.  We will wait here until either
+     * the time elapses or until we are awakened by a signal.
+     */
+    work_unlock(lock_id);
 
-			work = (struct work_s *)work->dq.flink;
-		}
-	}
-
-	/* Wait awhile to check the work list.  We will wait here until either
-	 * the time elapses or until we are awakened by a signal.
-	 */
-	work_unlock(lock_id);
-
-	px4_usleep(next);
+    px4_usleep(next);
 }
 
 /****************************************************************************
@@ -190,28 +198,17 @@ static void work_process(struct wqueue_s *wqueue, int lock_id)
  ****************************************************************************/
 void work_queues_init(void)
 {
-	px4_sem_init(&_work_lock[HPWORK], 0, 1);
-	px4_sem_init(&_work_lock[LPWORK], 0, 1);
+    px4_sem_init(&_work_lock[HPWORK], 0, 1);
+    px4_sem_init(&_work_lock[LPWORK], 0, 1);
 #ifdef CONFIG_SCHED_USRWORK
-	px4_sem_init(&_work_lock[USRWORK], 0, 1);
+    px4_sem_init(&_work_lock[USRWORK], 0, 1);
 #endif
 
-	// Create high priority worker thread
-	g_work[HPWORK].pid = px4_task_spawn_cmd("hpwork",
-						SCHED_DEFAULT,
-						SCHED_PRIORITY_MAX - 1,
-						2000,
-						work_hpthread,
-						(char *const *)NULL);
+    // Create high priority worker thread
+    g_work[HPWORK].pid = px4_task_spawn_cmd("hpwork", SCHED_DEFAULT, SCHED_PRIORITY_MAX - 1, 2000, work_hpthread, (char *const *) NULL);
 
-	// Create low priority worker thread
-	g_work[LPWORK].pid = px4_task_spawn_cmd("lpwork",
-						SCHED_DEFAULT,
-						SCHED_PRIORITY_MIN,
-						2000,
-						work_lpthread,
-						(char *const *)NULL);
-
+    // Create low priority worker thread
+    g_work[LPWORK].pid = px4_task_spawn_cmd("lpwork", SCHED_DEFAULT, SCHED_PRIORITY_MIN, 2000, work_lpthread, (char *const *) NULL);
 }
 
 /****************************************************************************
@@ -249,54 +246,56 @@ void work_queues_init(void)
 
 int work_hpthread(int argc, char *argv[])
 {
-	/* Loop forever */
+    /* Loop forever */
 
-	for (;;) {
-		/* First, perform garbage collection.  This cleans-up memory de-allocations
-		 * that were queued because they could not be freed in that execution
-		 * context (for example, if the memory was freed from an interrupt handler).
-		 * NOTE: If the work thread is disabled, this clean-up is performed by
-		 * the IDLE thread (at a very, very low priority).
-		 */
+    for (;;)
+    {
+        /* First, perform garbage collection.  This cleans-up memory de-allocations
+         * that were queued because they could not be freed in that execution
+         * context (for example, if the memory was freed from an interrupt handler).
+         * NOTE: If the work thread is disabled, this clean-up is performed by
+         * the IDLE thread (at a very, very low priority).
+         */
 
 #ifndef CONFIG_SCHED_LPWORK
-		sched_garbagecollection();
+        sched_garbagecollection();
 #endif
 
-		/* Then process queued work.  We need to keep interrupts disabled while
-		 * we process items in the work list.
-		 */
+        /* Then process queued work.  We need to keep interrupts disabled while
+         * we process items in the work list.
+         */
 
-		work_process(&g_work[HPWORK], HPWORK);
-	}
+        work_process(&g_work[HPWORK], HPWORK);
+    }
 
-	return PX4_OK; /* To keep some compilers happy */
+    return PX4_OK; /* To keep some compilers happy */
 }
 
 #ifdef CONFIG_SCHED_LPWORK
 
 int work_lpthread(int argc, char *argv[])
 {
-	/* Loop forever */
+    /* Loop forever */
 
-	for (;;) {
-		/* First, perform garbage collection.  This cleans-up memory de-allocations
-		 * that were queued because they could not be freed in that execution
-		 * context (for example, if the memory was freed from an interrupt handler).
-		 * NOTE: If the work thread is disabled, this clean-up is performed by
-		 * the IDLE thread (at a very, very low priority).
-		 */
+    for (;;)
+    {
+        /* First, perform garbage collection.  This cleans-up memory de-allocations
+         * that were queued because they could not be freed in that execution
+         * context (for example, if the memory was freed from an interrupt handler).
+         * NOTE: If the work thread is disabled, this clean-up is performed by
+         * the IDLE thread (at a very, very low priority).
+         */
 
-		//sched_garbagecollection();
+        // sched_garbagecollection();
 
-		/* Then process queued work.  We need to keep interrupts disabled while
-		 * we process items in the work list.
-		 */
+        /* Then process queued work.  We need to keep interrupts disabled while
+         * we process items in the work list.
+         */
 
-		work_process(&g_work[LPWORK], LPWORK);
-	}
+        work_process(&g_work[LPWORK], LPWORK);
+    }
 
-	return PX4_OK; /* To keep some compilers happy */
+    return PX4_OK; /* To keep some compilers happy */
 }
 
 #endif /* CONFIG_SCHED_LPWORK */
@@ -306,32 +305,33 @@ int work_lpthread(int argc, char *argv[])
 
 int work_usrthread(int argc, char *argv[])
 {
-	/* Loop forever */
+    /* Loop forever */
 
-	int rv;
-	// set the threads name
+    int rv;
+    // set the threads name
 #ifdef __PX4_DARWIN
-	rv = pthread_setname_np("USR");
+    rv = pthread_setname_np("USR");
 #else
-	rv = pthread_setname_np(pthread_self(), "USR");
+    rv = pthread_setname_np(pthread_self(), "USR");
 #endif
 
-	for (;;) {
-		/* Then process queued work.  We need to keep interrupts disabled while
-		 * we process items in the work list.
-		 */
+    for (;;)
+    {
+        /* Then process queued work.  We need to keep interrupts disabled while
+         * we process items in the work list.
+         */
 
-		work_process(&g_work[USRWORK], USRWORK);
-	}
+        work_process(&g_work[USRWORK], USRWORK);
+    }
 
-	return PX4_OK; /* To keep some compilers happy */
+    return PX4_OK; /* To keep some compilers happy */
 }
 
 #endif /* CONFIG_SCHED_USRWORK */
 
 uint32_t clock_systimer()
 {
-	//printf("clock_systimer: %0lx\n", hrt_absolute_time());
-	return (0x00000000ffffffff & hrt_absolute_time());
+    // printf("clock_systimer: %0lx\n", hrt_absolute_time());
+    return (0x00000000ffffffff & hrt_absolute_time());
 }
 #endif /* CONFIG_SCHED_WORKQUEUE */
