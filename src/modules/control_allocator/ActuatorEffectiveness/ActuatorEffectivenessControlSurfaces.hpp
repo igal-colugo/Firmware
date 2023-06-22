@@ -57,6 +57,8 @@ public:
 		RightFlaps = 10,
 		Airbrakes = 11,
 		Custom = 12,
+		LeftFlaperon = 13, //colugo shit
+                RightFlaperon = 14,//colugo shit
 	};
 
 	struct Params {

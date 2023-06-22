@@ -295,7 +295,7 @@ PositionControlStates MulticopterPositionControl::set_vehicle_states(const vehic
 
 	return states;
 }
-
+//@note run MulticopterPositionControl
 void MulticopterPositionControl::Run()
 {
 	if (should_exit()) {

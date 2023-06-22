@@ -43,7 +43,9 @@
 #include <lib/mathlib/math/filter/AlphaFilter.hpp>
 #include <uORB/SubscriptionInterval.hpp>
 #include <uORB/topics/parameter_update.h>
+#include <uORB/topics/colugo_transition.h>
 #include <drivers/drv_hrt.h>
+#include <vtol_att_control/colugoTransHelper.h>
 
 using namespace time_literals;
 
@@ -63,11 +65,17 @@ private:
 	static constexpr float _vel_z_filter_time_const = 2.0f;
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+	uORB::Subscription _colugo_transition_sub{ORB_ID(colugo_transition)};
 	param_t _param_handle_pitch_cruise_degrees{PARAM_INVALID};
 	float _param_pitch_cruise_degrees{0.f};
 
 	AlphaFilter<float> _vel_z_filter;
 
 	void updateParameters();
+
+	//colugo bullshit
+	int32_t _c_debug = 0;
+	COLUGO_FW_VTRANS_STAGE _transState = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
+	matrix::Vector3f _last_pos{};
 
 };

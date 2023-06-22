@@ -70,6 +70,7 @@ VtolType::VtolType(VtolAttitudeControl *att_controller) :
 	_thrust_setpoint_0 = _attc->get_thrust_setpoint_0();
 	_thrust_setpoint_1 = _attc->get_thrust_setpoint_1();
 	_local_pos = _attc->get_local_pos();
+	//@note setpoint in vtol of all
 	_local_pos_sp = _attc->get_local_pos_sp();
 	_airspeed_validated = _attc->get_airspeed();
 	_tecs_status = _attc->get_tecs_status();
@@ -136,6 +137,7 @@ bool VtolType::init()
 		}
 	}
 
+	//_flaps_setpoint_with_slewrate.setSlewRate(1.f);
 	return true;
 
 }
@@ -157,6 +159,7 @@ void VtolType::update_mc_state()
 	_mc_pitch_weight = 1.0f;
 	_mc_yaw_weight = 1.0f;
 	_mc_throttle_weight = 1.0f;
+	//_flaps_setpoint_with_slewrate.update(0.f, _dt);
 }
 
 void VtolType::update_fw_state()
@@ -205,6 +208,7 @@ void VtolType::update_fw_state()
 	}
 
 	check_quadchute_condition();
+	//_flaps_setpoint_with_slewrate.update(_actuators_fw_in->control[actuator_controls_s::INDEX_FLAPS], _dt);
 }
 
 void VtolType::update_transition_state()

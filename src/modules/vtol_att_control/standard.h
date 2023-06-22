@@ -48,6 +48,14 @@
 #include "vtol_type.h"
 #include <parameters/param.h>
 #include <drivers/drv_hrt.h>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionCallback.hpp>
+#include <uORB/Publication.hpp>
+
+#include "colugoTransHelper.h"
+#include <uORB/topics/debug_vect_clg.h>
+#include <uORB/topics/debug_vect.h>
+
 
 class Standard : public VtolType
 {
@@ -83,6 +91,16 @@ private:
 		param_t reverse_delay;
 	} _params_handles_standard;
 
+
+
+
+
+
+//	bool _fw_trans_latch = false;
+
+
+
+
 	enum class vtol_mode {
 		MC_MODE = 0,
 		TRANSITION_TO_FW,
@@ -90,15 +108,56 @@ private:
 		FW_MODE
 	};
 
+	struct
+	{
+		hrt_abstime throttle_trans_reached_time;
+
+	} _colugo_trans_to_fw;
+
+
+	colugoTransHelper _cth{};
+	COLUGO_FW_TRANS_STAGE _colugo_fw_trans_stage;
+
 	struct {
 		vtol_mode flight_mode;			// indicates in which mode the vehicle is in
 		hrt_abstime transition_start;	// at what time did we start a transition (front- or backtransition)
 	} _vtol_schedule;
 
+
 	float _pusher_throttle{0.0f};
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
-
+	//my debug logs...
+	struct debug_vect_clg_s _dbg_vect_clg;
+	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &_dbg_vect_clg);
+	//debug for mavlink...
+	struct debug_vect_s _dbg_vect_for_mav;
+	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &_dbg_vect_for_mav);
 	void parameters_update() override;
+	//cologo staff
+	void publishDebugForMavIfneeded();
+
+
+/*
+get the postion of pitch control from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoToFwPitchTransitionTimeBased2();
+
+/*
+get the postion of flaps control from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoToFwFlapsTransitionTimeBased2();
+
+	/*returns relative postion acording to _param_c_tr_fw_srv_slew parameter*/
+	float getColugoSlewedPosition(float startPos, float endPos);
+
+/*
+get the postion of colugo actuator from mc to fw trasition based on time past after reaching transition throttle
+*/
+	float getColugoActuatorToFwTransition2();
+
+//colugo go through the trasitions stages to fw
+	void updateColugoFwTransitionStage();
+
 };
 #endif
