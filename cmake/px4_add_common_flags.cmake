@@ -139,6 +139,10 @@ function(px4_add_common_flags)
 		message(FATAL_ERROR "MS compiler not yet supported")
 	endif()
 
+	add_compile_options(
+			-w
+		)
+
 	# C only flags
 	set(c_flags)
 	list(APPEND c_flags

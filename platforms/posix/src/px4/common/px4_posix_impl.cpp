@@ -37,20 +37,19 @@
  * PX4 Middleware Wrapper Linux Implementation
  */
 
-#include <px4_platform_common/defines.h>
-#include <px4_platform_common/workqueue.h>
-#include <px4_platform_common/defines.h>
-#include <px4_platform_common/time.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <signal.h>
-#include <errno.h>
-#include <unistd.h>
-#include <parameters/param.h>
 #include "hrt_work.h"
 #include <drivers/drv_hrt.h>
+#include <errno.h>
+#include <parameters/param.h>
 #include <pthread.h>
+#include <px4_platform_common/defines.h>
 #include <px4_platform_common/init.h>
+#include <px4_platform_common/time.h>
+#include <px4_platform_common/workqueue.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
 
 extern pthread_t _shell_task_id;
 
@@ -67,34 +66,33 @@ void init_once();
 
 void init_once()
 {
-	_shell_task_id = pthread_self();
+    _shell_task_id = pthread_self();
 
-	work_queues_init();
-	hrt_work_queue_init();
+    work_queues_init();
+    hrt_work_queue_init();
 
-	px4_platform_init();
+    px4_platform_init();
 }
-
+//@note init (print PX4 in terminal)
 void init(int argc, char *argv[], const char *app_name)
 {
-	printf("\n");
-	printf("______  __   __    ___ \n");
-	printf("| ___ \\ \\ \\ / /   /   |\n");
-	printf("| |_/ /  \\ V /   / /| |\n");
-	printf("|  __/   /   \\  / /_| |\n");
-	printf("| |     / /^\\ \\ \\___  |\n");
-	printf("\\_|     \\/   \\/     |_/\n");
-	printf("\n");
-	printf("%s starting.\n", app_name);
-	printf("\n");
+    printf("\n");
+    printf("______  __   __    ___ \n");
+    printf("| ___ \\ \\ \\ / /   /   |\n");
+    printf("| |_/ /  \\ V /   / /| |\n");
+    printf("|  __/   /   \\  / /_| |\n");
+    printf("| |     / /^\\ \\ \\___  |\n");
+    printf("\\_|     \\/   \\/     |_/\n");
+    printf("\n");
+    printf("%s starting.\n", app_name);
+    printf("\n");
 
-	// set the threads name
+    // set the threads name
 #ifdef __PX4_DARWIN
-	(void)pthread_setname_np(app_name);
+    (void) pthread_setname_np(app_name);
 #else
-	(void)pthread_setname_np(pthread_self(), app_name);
+    (void) pthread_setname_np(pthread_self(), app_name);
 #endif
 }
 
-}
-
+} // namespace px4

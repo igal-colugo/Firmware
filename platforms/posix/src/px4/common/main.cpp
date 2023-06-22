@@ -323,8 +323,9 @@ int main(int argc, char **argv)
             return ret;
         }
 
+        //@note px4 initialization
         px4::init_once();
-        px4::init(argc, argv, "px4");
+        px4::init(argc, argv, "Colugo px4");
 
         ret = run_startup_script(commands_file, absolute_binary_path, instance);
 

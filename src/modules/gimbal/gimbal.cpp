@@ -63,6 +63,10 @@
 #include <px4_platform_common/atomic.h>
 #include <px4_platform_common/module.h>
 
+#include <string.h>
+#include <uORB/topics/debug_key_value.h>
+#include <uORB/uORB.h>
+
 //@note gimbal module
 
 using namespace time_literals;
@@ -347,6 +351,12 @@ static int gimbal_thread_main(int argc, char *argv[])
 
 int gimbal_main(int argc, char *argv[])
 {
+    /* advertise debug value */
+    struct debug_key_value_s dbg;
+    strncpy(dbg.key, "dbg_1", sizeof(dbg.key));
+    dbg.value = 0.0f;
+    orb_advert_t pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
+
     if (argc < 2)
     {
         PX4_ERR("missing command");
@@ -356,6 +366,8 @@ int gimbal_main(int argc, char *argv[])
 
     if (!strcmp(argv[1], "start"))
     {
+        dbg.value = 1.0;
+        orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
 
         if (thread_running.load())
         {
@@ -390,6 +402,8 @@ int gimbal_main(int argc, char *argv[])
 
     else if (!strcmp(argv[1], "stop"))
     {
+        dbg.value = 2.0;
+        orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
 
         if (!thread_running.load())
         {

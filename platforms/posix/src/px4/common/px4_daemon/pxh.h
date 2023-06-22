@@ -42,57 +42,55 @@
  */
 #pragma once
 
-#include <vector>
 #include <string>
 #include <termios.h>
+#include <vector>
 
-#include <platforms/posix/apps.h>
 #include "history.h"
+#include <platforms/posix/apps.h>
 
 namespace px4_daemon
 {
 
-
 class Pxh
 {
-public:
-	Pxh();
-	~Pxh();
+  public:
+    Pxh();
+    ~Pxh();
 
-	/**
-	 * Process and run one command line.
-	 *
-	 * @param silently_fail: don't make a fuss on failure
-	 * @return 0 if successful. */
-	static int process_line(const std::string &line, bool silently_fail);
+    /**
+     * Process and run one command line.
+     *
+     * @param silently_fail: don't make a fuss on failure
+     * @return 0 if successful. */
+    static int process_line(const std::string &line, bool silently_fail);
 
-	/**
-	 * Run the pxh shell. This will only return if stop() is called.
-	 */
-	void run_pxh();
+    /**
+     * Run the pxh shell. This will only return if stop() is called.
+     */
+    void run_pxh();
 
-	/**
-	 * Can be called to stop pxh.
-	 */
-	static void stop();
+    /**
+     * Can be called to stop pxh.
+     */
+    static void stop();
 
-private:
-	void _print_prompt();
-	void _move_cursor(int position);
-	void _clear_line();
+  private:
+    void _print_prompt();
+    void _move_cursor(int position);
+    void _clear_line();
 
-	void _setup_term();
-	static void _restore_term();
+    void _setup_term();
+    static void _restore_term();
 
-	bool _should_exit{false};
-	History _history;
-	struct termios _orig_term {};
+    bool _should_exit{false};
+    History _history;
+    struct termios _orig_term
+    {
+    };
 
-	static apps_map_type _apps;
-	static Pxh *_instance;
+    static apps_map_type _apps;
+    static Pxh *_instance;
 };
 
-
-
 } // namespace px4_daemon
-

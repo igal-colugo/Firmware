@@ -42,60 +42,60 @@
 #include "navigator_mode.h"
 #include "navigator.h"
 
-NavigatorMode::NavigatorMode(Navigator *navigator) :
-	_navigator(navigator)
+NavigatorMode::NavigatorMode(Navigator *navigator) : _navigator(navigator)
 {
-	/* set initial mission items */
-	on_inactivation();
-	on_inactive();
+    /* set initial mission items */
+    on_inactivation();
+    on_inactive();
 }
 
-void
-NavigatorMode::run(bool active)
+void NavigatorMode::run(bool active)
 {
-	if (active) {
-		if (!_active) {
-			/* first run, reset stay in failsafe flag */
-			_navigator->get_mission_result()->stay_in_failsafe = false;
-			_navigator->set_mission_result_updated();
-			on_activation();
+    if (active)
+    {
+        if (!_active)
+        {
+            /* first run, reset stay in failsafe flag */
+            _navigator->get_mission_result()->stay_in_failsafe = false;
+            _navigator->set_mission_result_updated();
+            on_activation();
+        }
+        else
+        {
+            /* periodic updates when active */
+            on_active();
+        }
+    }
+    else
+    {
+        /* periodic updates when inactive */
+        if (_active)
+        {
+            on_inactivation();
+        }
+        else
+        {
+            on_inactive();
+        }
+    }
 
-		} else {
-			/* periodic updates when active */
-			on_active();
-		}
-
-	} else {
-		/* periodic updates when inactive */
-		if (_active) {
-			on_inactivation();
-
-		} else {
-			on_inactive();
-		}
-	}
-
-	_active = active;
+    _active = active;
 }
 
-void
-NavigatorMode::on_inactive()
-{
-}
-
-void
-NavigatorMode::on_inactivation()
+void NavigatorMode::on_inactive()
 {
 }
 
-void
-NavigatorMode::on_activation()
+void NavigatorMode::on_inactivation()
 {
-	/* invalidate position setpoint by default */
-	_navigator->get_position_setpoint_triplet()->current.valid = false;
 }
 
-void
-NavigatorMode::on_active()
+void NavigatorMode::on_activation()
+{
+    /* invalidate position setpoint by default */
+    _navigator->get_position_setpoint_triplet()->current.valid = false;
+}
+
+void NavigatorMode::on_active()
 {
 }

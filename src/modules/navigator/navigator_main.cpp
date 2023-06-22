@@ -613,7 +613,7 @@ void Navigator::run()
 
         /* Do stuff according to navigation state set by commander */
         NavigatorMode *navigation_mode_new{nullptr};
-
+        //@note set flight mode
         switch (_vstatus.nav_state)
         {
         case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:
