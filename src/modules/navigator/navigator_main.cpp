@@ -138,6 +138,7 @@ void Navigator::params_update()
     }
 }
 
+//@note navigator run
 void Navigator::run()
 {
     bool have_geofence_position_data = false;
@@ -255,7 +256,6 @@ void Navigator::run()
             }
             else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_REPOSITION)
             {
-
                 bool reposition_valid = true;
 
                 vehicle_global_position_s position_setpoint{};
@@ -593,6 +593,8 @@ void Navigator::run()
             }
             else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION && get_vstatus()->nav_state != vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF)
             {
+                //@note do vtol transition command
+
                 // reset cruise speed and throttle to default when transitioning (VTOL Takeoff handles it separately)
                 reset_cruising_speed();
                 set_cruising_throttle();
