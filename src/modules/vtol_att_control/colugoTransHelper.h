@@ -25,13 +25,13 @@ enum class COLUGO_FW_TRANS_STAGE{
 		TRANS_TIME_SCND_POS,
 		TRANS_ALLOW_FW
 	};
-enum class COLUGO_FW_VTRANS_STAGE{
+enum class COLUGO_FW_VTRANS_STAGE{ //fixed wing vertical algorithm stages ....
 		VTRANS_IDLE = 0,
 		VTRANS_VERTICAL_START,//starting vertical ascend
 		VTRANS_REACHED_SEMI_LOCK_POS, // finished 90% of time ascending colugo lock goes to semi out position
         	VTRANS_FARWARD_START,//starting pusher motor, surfaces slew to transition position
 		VTRANS_REACHED_LOCK_SPEED,//reached blend speed colugo pin goes to fully lock position
-		VTRANS_ALLOW_FW
+		VTRANS_ALLOW_FW //safe to complete transition to fixed wing.
 	};
 
 

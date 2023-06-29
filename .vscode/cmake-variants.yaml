@@ -3,7 +3,7 @@ CONFIG:
   choices:
     px4_sitl_default:
       short: px4_sitl
-      buildType: RelWithDebInfo
+      buildType: Debug
       settings:
         CONFIG: px4_sitl_default
     px4_sitl_rtps:

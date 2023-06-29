@@ -20,12 +20,9 @@
             },
             "problemMatcher": {
                 "base": "$gcc",
-                "fileLocation": [
-                    "relative",
-                    "${command:cmake.buildDirectory}"
-                ]
+                "fileLocation": ["relative", "${command:cmake.buildDirectory}"]
             },
-            "presentation": {
+            "presentation":{
                 "echo": false,
                 "showReuseMessage": false,
                 "clear": true,
@@ -44,7 +41,7 @@
                 "kind": "test",
                 "isDefault": true,
             },
-            "presentation": {
+            "presentation":{
                 "echo": true,
                 "showReuseMessage": false,
                 "clear": false,
@@ -60,7 +57,7 @@
                 "cwd": "${workspaceFolder}/Tools/jMAVSim"
             },
             "problemMatcher": [],
-            "presentation": {
+            "presentation":{
                 "echo": true,
                 "reveal": "never",
                 "focus": false,
@@ -129,7 +126,7 @@
                 "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [],
-            "presentation": {
+            "presentation":{
                 "echo": true,
                 "reveal": "always",
                 "focus": false,
@@ -137,46 +134,6 @@
                 "showReuseMessage": false,
                 "clear": false,
             }
-        },
-        {
-            "label": "gazebo gui start",
-            "type": "shell",
-            "dependsOn": "gazebo build",
-            "options": {
-                "cwd": "${workspaceFolder}",
-                "env": {
-                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo",
-                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/sitl_gazebo/models",
-                    "PX4_SIM_SPEED_FACTOR": "1"
-                }
-            },
-            "command": "gazebo --verbose ${workspaceFolder}/Tools/sitl_gazebo/worlds/${input:gazeboWorld}.world",
-            "isBackground": true,
-            "presentation": {
-                "echo": true,
-                "reveal": "never",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": false
-            },
-            "problemMatcher": [
-                {
-                    "pattern": [
-                        {
-                            "regexp": ".",
-                            "file": 1,
-                            "location": 2,
-                            "message": 3
-                        }
-                    ],
-                    "background": {
-                        "activeOnStart": true,
-                        "beginsPattern": ".",
-                        "endsPattern": ".",
-                    }
-                }
-            ]
         },
         {
             "label": "gazebo start",
@@ -192,46 +149,6 @@
             },
             "command": "gzserver --verbose ${workspaceFolder}/Tools/sitl_gazebo/worlds/${input:gazeboWorld}.world",
             "isBackground": true,
-            "presentation": {
-                "echo": true,
-                "reveal": "never",
-                "focus": false,
-                "panel": "shared",
-                "showReuseMessage": false,
-                "clear": false
-            },
-            "problemMatcher": [
-                {
-                    "pattern": [
-                        {
-                            "regexp": ".",
-                            "file": 1,
-                            "location": 2,
-                            "message": 3
-                        }
-                    ],
-                    "background": {
-                        "activeOnStart": true,
-                        "beginsPattern": ".",
-                        "endsPattern": ".",
-                    }
-                }
-            ]
-        },
-        {
-            "label": "gazebo gui",
-            "type": "shell",
-            "dependsOn": "gazebo gui start",
-            "options": {
-                "cwd": "${workspaceFolder}",
-                "env": {
-                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo",
-                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/sitl_gazebo/models",
-                    "PX4_SIM_SPEED_FACTOR": "1"
-                }
-            },
-            "command": "gz model --verbose --spawn-file=${workspaceFolder}/Tools/sitl_gazebo/models/${input:vehicleModel}/${input:vehicleModel}.sdf --model-name=${input:vehicleModel} -x 1.01 -y 0.98 -z 0.83",
-            "isBackground": false,
             "presentation": {
                 "echo": true,
                 "reveal": "never",
@@ -351,9 +268,7 @@
                 "clear": false
             },
             "problemMatcher": [],
-            "dependsOn": [
-                "px4_sitl_cleanup"
-            ]
+            "dependsOn":["px4_sitl_cleanup"]
         },
         {
             "label": "px4_sitl_cleanup",
@@ -368,9 +283,7 @@
                 "clear": false
             },
             "problemMatcher": [],
-            "dependsOn": [
-                "px4_kill"
-            ]
+            "dependsOn":["px4_kill"]
         },
         {
             "label": "px4_kill",
@@ -419,36 +332,6 @@
                 "clear": false
             },
             "problemMatcher": []
-        },
-        {
-            "label": "run QGroundControl",
-            "type": "shell",
-            "command": "~/Downloads/QGroundControl.AppImage"
-        },
-        {
-            "label": "clean up current branch",
-            "type": "shell",
-            "command": "make clean;make distclean"
-        },
-        {
-            "label": "clean submodules",
-            "type": "shell",
-            "command": "make submodulesclean"
-        },
-        {
-            "label": "make cubeblack and upload",
-            "type": "shell",
-            "command": "make px4_fmu-v3_default upload"
-        },
-        {
-            "label": "make cubeorage and upload",
-            "type": "shell",
-            "command": "make cubepilot_cubeorange upload"
-        },
-        {
-            "label": "make cubeorageplus and upload",
-            "type": "shell",
-            "command": "make cubepilot_cubeorangeplus upload"
         }
     ],
     "inputs": [
@@ -457,16 +340,16 @@
             "id": "vehicleModel",
             "description": "gazebo model",
             "options": [
-                "iris",
-                "typhoon_h480",
-                "plane",
-                "plane_catapult",
-                "plane_lidar",
-                "standard_vtol",
-                "tailsitter",
-                "tiltrotor",
-                "r1_rover",
-                "boat"
+              "iris",
+              "typhoon_h480",
+              "plane",
+              "plane_catapult",
+              "plane_lidar",
+              "standard_vtol",
+              "tailsitter",
+              "tiltrotor",
+              "r1_rover",
+              "boat"
             ],
             "default": "iris"
         },
@@ -485,6 +368,6 @@
                 "yosemite"
             ],
             "default": "empty"
-        },
+        }
     ]
 }
