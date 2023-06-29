@@ -354,20 +354,6 @@ void Standard::update_transition_state()
 			mc_weight = (_cth.getInnerState() >= COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW) ?
 			mc_weight : 1.0f;
 
-			// ramp up FW_PSP_OFF
-		_v_att_sp->pitch_body = _params_standard.pitch_setpoint_offset * (1.0f - mc_weight);
-
-		const Quatf q_sp1(Eulerf(_v_att_sp->roll_body, _v_att_sp->pitch_body, _v_att_sp->yaw_body));
-		q_sp1.copyTo(_v_att_sp->q_d);
-
-		// check front transition timeout
-		if (_params->front_trans_timeout > FLT_EPSILON) {
-			if (time_since_trans_start > _params->front_trans_timeout) {
-				// transition timeout occured, abort transition
-				_attc->quadchute(VtolAttitudeControl::QuadchuteReason::TransitionTimeout);
-			}
-		}
-
 		}
 
 

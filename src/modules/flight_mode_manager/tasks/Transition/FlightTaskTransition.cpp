@@ -125,7 +125,8 @@ bool FlightTaskTransition::update()
 	colugo_transition_s colugo_trans;
 	if (_colugo_transition_sub.update(&colugo_trans)) {
              _transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
-	    if(_transState == COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START){
+	    if(_transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
+	    && _transState < COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
 
 	//	_velocity_setpoint.setAll(NAN);// = 0;
 		//_velocity_setpoint(0) = 0;
