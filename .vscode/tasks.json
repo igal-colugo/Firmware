@@ -441,12 +441,12 @@
             "command": "make px4_fmu-v3_default upload"
         },
         {
-            "label": "make cubeorage and upload",
+            "label": "make cubeorange and upload",
             "type": "shell",
             "command": "make cubepilot_cubeorange upload"
         },
         {
-            "label": "make cubeorageplus and upload",
+            "label": "make cubeorangeplus and upload",
             "type": "shell",
             "command": "make cubepilot_cubeorangeplus upload"
         }
