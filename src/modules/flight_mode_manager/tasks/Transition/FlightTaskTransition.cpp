@@ -102,25 +102,10 @@ bool FlightTaskTransition::update()
 {
 	bool ret = FlightTask::update();
 
-	colugo_transition_s colugo_trans;
-	if (_colugo_transition_sub.update(&colugo_trans)) {
-             _transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
-	    if(_transState == COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START){
-
-		_velocity_setpoint.setAll(NAN);// = 0;
-		//_velocity_setpoint(0) = 0;
-		//_acceleration_setpoint.xy() = matrix::Vector2f(0.0f, 0.0f);
-		_acceleration_setpoint.setAll(NAN);
-		_position_setpoint(0) = _last_pos(0);
-		_position_setpoint(1) = _last_pos(1);
-		_position_setpoint(2) = NAN;
-
-		_velocity_setpoint(2) = colugo_trans.vz;
-	    }
-	}
 
 
-	if(_transState != COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START){
+
+	//if(_transState != COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START){
 		_position_setpoint.setAll(NAN);
 
 
@@ -135,13 +120,31 @@ bool FlightTaskTransition::update()
 		_velocity_setpoint(2) = _vel_z_filter.update(0.0f);
 		_yaw_setpoint = NAN;
 
+	//}
+
+	colugo_transition_s colugo_trans;
+	if (_colugo_transition_sub.update(&colugo_trans)) {
+             _transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
+	    if(_transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
+	    && _transState < COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
+
+	//	_velocity_setpoint.setAll(NAN);// = 0;
+		//_velocity_setpoint(0) = 0;
+		//_acceleration_setpoint.xy() = matrix::Vector2f(0.0f, 0.0f);
+		//_acceleration_setpoint.setAll(NAN);
+		//_position_setpoint(0) = _last_pos(0);
+		//_position_setpoint(1) = _last_pos(1);
+		//_position_setpoint(2) = NAN;
+
+		_velocity_setpoint(2) = colugo_trans.vz;
+		//_position_setpoint(2) = -100.0;
+	    }
 	}
+	//_velocity_setpoint.setAll(NAN);
+	//_acceleration_setpoint.setAll(NAN);
 
-	_velocity_setpoint.setAll(NAN);
-	_acceleration_setpoint.setAll(NAN);
-
-	_position_setpoint(0) = 0;
-	_position_setpoint(1) = 5;
+	//_position_setpoint(0) = 0;
+	//_position_setpoint(1) = 5;
 	return ret;
 
 }
