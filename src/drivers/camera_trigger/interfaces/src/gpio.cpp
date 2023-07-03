@@ -40,74 +40,83 @@
 
 CameraInterfaceGPIO::CameraInterfaceGPIO()
 {
-	_p_polarity = param_find("TRIG_POLARITY");
+    _p_polarity = param_find("TRIG_POLARITY");
 
-	// polarity of the trigger (0 = active low, 1 = active high )
-	int32_t polarity = 0;
-	param_get(_p_polarity, &polarity);
-	_trigger_invert = (polarity == 0);
+    // polarity of the trigger (0 = active low, 1 = active high )
+    int32_t polarity = 0;
+    param_get(_p_polarity, &polarity);
+    _trigger_invert = (polarity == 0);
 
-	get_pins();
-	setup();
+    get_pins();
+    setup();
 }
 
 CameraInterfaceGPIO::~CameraInterfaceGPIO()
 {
-	unsigned channel = 0;
+    unsigned channel = 0;
 
-	while (_allocated_channels != 0) {
-		if (((1u << channel) & _allocated_channels)) {
-			io_timer_unallocate_channel(channel);
-			_allocated_channels &= ~(1u << channel);
-		}
+    while (_allocated_channels != 0)
+    {
+        if (((1u << channel) & _allocated_channels))
+        {
+            io_timer_unallocate_channel(channel);
+            _allocated_channels &= ~(1u << channel);
+        }
 
-		++channel;
-	}
+        ++channel;
+    }
 }
 
 void CameraInterfaceGPIO::setup()
 {
-	_allocated_channels = 0;
+    _allocated_channels = 0;
 
-	for (unsigned i = 0, t = 0; i < arraySize(_pins); i++) {
-		// Pin range is from 0 to num_gpios - 1
-		if (_pins[i] >= 0 && t < (int)arraySize(_triggers)) {
-			uint32_t gpio = io_timer_channel_get_gpio_output(_pins[i]);
+    for (unsigned i = 0, t = 0; i < arraySize(_pins); i++)
+    {
+        // Pin range is from 0 to num_gpios - 1
+        if (_pins[i] >= 0 && t < (int) arraySize(_triggers))
+        {
+            uint32_t gpio = io_timer_channel_get_gpio_output(_pins[i]);
 
-			if (io_timer_allocate_channel(_pins[i], IOTimerChanMode_Trigger) == 0) {
-				_allocated_channels |= 1 << _pins[i];
-				_triggers[t++] = gpio;
-				px4_arch_configgpio(gpio);
-				px4_arch_gpiowrite(gpio, false ^ _trigger_invert);
-			}
-		}
-	}
+            if (io_timer_allocate_channel(_pins[i], IOTimerChanMode_Trigger) == 0)
+            {
+                _allocated_channels |= 1 << _pins[i];
+                _triggers[t++] = gpio;
+                px4_arch_configgpio(gpio);
+                px4_arch_gpiowrite(gpio, false ^ _trigger_invert);
+            }
+        }
+    }
 }
 
 void CameraInterfaceGPIO::trigger(bool trigger_on_true)
 {
-	bool trigger_state = trigger_on_true ^ _trigger_invert;
+    bool trigger_state = trigger_on_true ^ _trigger_invert;
 
-	for (unsigned i = 0; i < arraySize(_triggers); i++) {
-		if (_triggers[i] != 0) {
-			px4_arch_gpiowrite(_triggers[i], trigger_state);
-		}
-	}
+    for (unsigned i = 0; i < arraySize(_triggers); i++)
+    {
+        if (_triggers[i] != 0)
+        {
+            px4_arch_gpiowrite(_triggers[i], trigger_state);
+        }
+    }
 }
 
 void CameraInterfaceGPIO::info()
 {
-	PX4_INFO_RAW("GPIO trigger mode, pins enabled: ");
+    PX4_INFO_RAW("GPIO trigger mode, pins enabled: ");
 
-	for (unsigned i = 0; i < arraySize(_pins); ++i) {
-		if (_pins[i] < 0) {
-			continue;
-		}
+    for (unsigned i = 0; i < arraySize(_pins); ++i)
+    {
+        if (_pins[i] < 0)
+        {
+            continue;
+        }
 
-		PX4_INFO_RAW("[%d]", _pins[i] + 1);
-	}
+        PX4_INFO_RAW("[%d]", _pins[i] + 1);
+    }
 
-	PX4_INFO_RAW(", polarity : %s\n", _trigger_invert ? "ACTIVE_LOW" : "ACTIVE_HIGH");
+    PX4_INFO_RAW(", polarity : %s\n", _trigger_invert ? "ACTIVE_LOW" : "ACTIVE_HIGH");
 }
 
 #endif /* ifdef __PX4_NUTTX */

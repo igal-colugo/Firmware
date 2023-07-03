@@ -446,6 +446,11 @@
             "command": "make cubepilot_cubeorange upload"
         },
         {
+            "label": "make cubeorange min size and upload",
+            "type": "shell",
+            "command": "make cubepilot_cubeorange_minsize upload"
+        },
+        {
             "label": "make cubeorangeplus and upload",
             "type": "shell",
             "command": "make cubepilot_cubeorangeplus upload"

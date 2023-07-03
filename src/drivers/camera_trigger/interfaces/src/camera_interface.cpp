@@ -32,90 +32,134 @@
  ****************************************************************************/
 
 #include "camera_interface.h"
-#include <px4_platform_common/log.h>
 #include <board_config.h>
+#include <px4_platform_common/log.h>
 
 void CameraInterface::get_pins()
 {
-	// Set all pins as invalid
-	for (unsigned i = 0; i < arraySize(_pins); i++) {
-		_pins[i] = -1;
-	}
+    #pragma region Code from 1.13 version
+    // // Set all pins as invalid
+    // for (unsigned i = 0; i < arraySize(_pins); i++)
+    // {
+    //     _pins[i] = -1;
+    // }
 
-	param_t p_ctrl_alloc = param_find("SYS_CTRL_ALLOC");
-	int32_t ctrl_alloc = 0;
+    // param_t p_ctrl_alloc = param_find("SYS_CTRL_ALLOC");
+    // int32_t ctrl_alloc = 0;
 
-	if (p_ctrl_alloc != PARAM_INVALID) {
-		param_get(p_ctrl_alloc, &ctrl_alloc);
-	}
+    // if (p_ctrl_alloc != PARAM_INVALID)
+    // {
+    //     param_get(p_ctrl_alloc, &ctrl_alloc);
+    // }
 
-	if (ctrl_alloc == 1) {
+    // if (ctrl_alloc == 1)
+    // {
 
-		unsigned pin_index = 0;
+    //     unsigned pin_index = 0;
 
-		for (unsigned i = 0; i < 16 && pin_index < arraySize(_pins); ++i) {
-			char param_name[17];
-			snprintf(param_name, sizeof(param_name), "%s_%s%d", PARAM_PREFIX, "FUNC", i + 1);
-			param_t function_handle = param_find(param_name);
-			int32_t function;
+    //     for (unsigned i = 0; i < 16 && pin_index < arraySize(_pins); ++i)
+    //     {
+    //         char param_name[17];
+    //         snprintf(param_name, sizeof(param_name), "%s_%s%d", PARAM_PREFIX, "FUNC", i + 1);
+    //         param_t function_handle = param_find(param_name);
+    //         int32_t function;
 
-			if (function_handle != PARAM_INVALID && param_get(function_handle, &function) == 0) {
-				if (function == 2000) { // Camera_Trigger
-					_pins[pin_index++] = i;
-				}
-			}
-		}
+    //         if (function_handle != PARAM_INVALID && param_get(function_handle, &function) == 0)
+    //         {
+    //             if (function == 2000)
+    //             { // Camera_Trigger
+    //                 _pins[pin_index++] = i;
+    //             }
+    //         }
+    //     }
+    // }
+    // else
+    // {
+    //     // Get parameter handle
+    //     param_t p_pin = param_find("TRIG_PINS");
+    //     param_t p_pin_ex = param_find("TRIG_PINS_EX");
 
-	} else {
-		// Get parameter handle
-		param_t p_pin = param_find("TRIG_PINS");
-		param_t p_pin_ex = param_find("TRIG_PINS_EX");
+    //     if (p_pin == PARAM_INVALID && p_pin_ex == PARAM_INVALID)
+    //     {
+    //         PX4_ERR("param TRIG_PINS not found");
+    //         return;
+    //     }
 
-		if (p_pin == PARAM_INVALID && p_pin_ex == PARAM_INVALID) {
-			PX4_ERR("param TRIG_PINS not found");
-			return;
-		}
+    //     int32_t pin_list = 0;
+    //     int32_t pin_list_ex = 0;
 
-		int32_t pin_list = 0;
-		int32_t pin_list_ex = 0;
+    //     if (p_pin_ex != PARAM_INVALID)
+    //     {
+    //         param_get(p_pin_ex, &pin_list_ex);
+    //     }
 
-		if (p_pin_ex != PARAM_INVALID) {
-			param_get(p_pin_ex, &pin_list_ex);
-		}
+    //     if (p_pin != PARAM_INVALID)
+    //     {
+    //         param_get(p_pin, &pin_list);
+    //     }
 
-		if (p_pin != PARAM_INVALID) {
-			param_get(p_pin, &pin_list);
-		}
+    //     if (pin_list_ex == 0)
+    //     {
 
-		if (pin_list_ex == 0) {
+    //         // Convert number to individual channels
 
-			// Convert number to individual channels
+    //         unsigned i = 0;
+    //         int single_pin;
 
-			unsigned i = 0;
-			int single_pin;
+    //         while ((single_pin = pin_list % 10))
+    //         {
 
-			while ((single_pin = pin_list % 10)) {
+    //             _pins[i] = single_pin - 1;
 
-				_pins[i] = single_pin - 1;
+    //             if (_pins[i] < 0)
+    //             {
+    //                 _pins[i] = -1;
+    //             }
 
-				if (_pins[i] < 0) {
-					_pins[i] = -1;
-				}
+    //             pin_list /= 10;
+    //             i++;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         unsigned int p = 0;
 
-				pin_list /= 10;
-				i++;
-			}
+    //         for (unsigned int i = 0; i < arraySize(_pins); i++)
+    //         {
+    //             int32_t v = (pin_list_ex & (1 << i)) ? i : -1;
 
-		} else {
-			unsigned int p = 0;
+    //             if (v > 0)
+    //             {
+    //                 _pins[p++] = v;
+    //             }
+    //         }
+    //     }
+    // }
 
-			for (unsigned int i = 0; i < arraySize(_pins); i++) {
-				int32_t v = (pin_list_ex & (1 << i)) ? i  : -1;
+    #pragma endregion
 
-				if (v > 0) {
-					_pins[p++] = v;
-				}
-			}
-		}
-	}
+    // Set all pins as invalid
+    for (unsigned i = 0; i < arraySize(_pins); i++)
+    {
+        _pins[i] = -1;
+    }
+
+    unsigned pin_index = 0;
+
+    for (unsigned i = 0; i < 16 && pin_index < arraySize(_pins); ++i)
+    {
+        char param_name[17];
+        snprintf(param_name, sizeof(param_name), "%s_%s%d", PARAM_PREFIX, "FUNC", i + 1);
+        param_t function_handle = param_find(param_name);
+        int32_t function;
+
+        if (function_handle != PARAM_INVALID && param_get(function_handle, &function) == 0)
+        {
+            if (function == 2000)
+            {
+                // Camera_Trigger
+                _pins[pin_index++] = i;
+            }
+        }
+    }
 }

@@ -1,16 +1,16 @@
 CONFIG:
-  default: px4_sitl_default
+  default: px4_sitl_debug
   choices:
     px4_sitl_default:
       short: px4_sitl
       buildType: Debug
       settings:
         CONFIG: px4_sitl_default
-    px4_sitl_default_debug:
+    px4_sitl_debug:
       short: px4_sitl_debug
       buildType: Debug
       settings:
-        CONFIG: px4_sitl_default
+        CONFIG: px4_sitl_debug
     px4_sitl_rtps:
       short: px4_sitl_rtps
       buildType: RelWithDebInfo
@@ -192,15 +192,20 @@ CONFIG:
       settings:
         CONFIG: cubepilot_cubeorange_test
     cubepilot_cubeorange_default:
-      short: cubepilot_cubeorange_default_minsize
+      short: cubepilot_cubeorange_default
       buildType: MinSizeRel
       settings:
         CONFIG: cubepilot_cubeorange_default
-    cubepilot_cubeorange_default_debug:
-      short: cubepilot_cubeorange_default_debug
+    cubepilot_cubeorange_minsize:
+      short: cubepilot_cubeorange_minsize
+      buildType: MinSizeRel
+      settings:
+        CONFIG: cubepilot_cubeorange_minsize
+    cubepilot_cubeorange_debug:
+      short: cubepilot_cubeorange_debug
       buildType: Debug
       settings:
-        CONFIG: cubepilot_cubeorange_default
+        CONFIG: cubepilot_cubeorange_debug
     emlid_navio2_default:
       short: emlid_navio2
       buildType: MinSizeRel

@@ -872,6 +872,7 @@ void CameraTrigger::engage(void *arg)
 
     // Trigger the camera
     trig->_camera_interface->trigger(true);
+
     // set last timestamp
     trig->_last_trigger_timestamp = now;
 
@@ -977,7 +978,7 @@ void CameraTrigger::status()
 
 static int usage()
 {
-    PX4_INFO("usage: camera_trigger {start|stop|status|test|test_power}\n");
+    PX4_INFO("usage: camera_trigger {start|stop|status|test|test_power|shoot_once}\n");
     return 1;
 }
 
@@ -1034,6 +1035,10 @@ extern "C" __EXPORT int camera_trigger_main(int argc, char *argv[])
     else if (!strcmp(argv[1], "test_power"))
     {
         camera_trigger::g_camera_trigger->toggle_power();
+    }
+    else if (!strcmp(argv[1], "shoot_once"))
+    {
+        camera_trigger::g_camera_trigger->shoot_once();
     }
     else
     {
