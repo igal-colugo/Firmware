@@ -1,16 +1,11 @@
 CONFIG:
-  default: px4_sitl_debug
+  default: px4_sitl_default
   choices:
     px4_sitl_default:
       short: px4_sitl
       buildType: Debug
       settings:
         CONFIG: px4_sitl_default
-    px4_sitl_debug:
-      short: px4_sitl_debug
-      buildType: Debug
-      settings:
-        CONFIG: px4_sitl_debug
     px4_sitl_rtps:
       short: px4_sitl_rtps
       buildType: RelWithDebInfo

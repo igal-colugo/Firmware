@@ -2252,6 +2252,7 @@ void Commander::run()
     const param_t param_man_arm_gesture = param_find("MAN_ARM_GESTURE");
     const param_t param_rc_map_arm_sw = param_find("RC_MAP_ARM_SW");
 
+#pragma region Pre while loop process
     /* initialize */
     led_init();
     buzzer_init();
@@ -2318,6 +2319,8 @@ void Commander::run()
 
     // run preflight immediately to find all relevant parameters, but don't report
     PreFlightCheck::preflightCheck(&_mavlink_log_pub, _status, _status_flags, _vehicle_control_mode, false, true, hrt_elapsed_time(&_boot_timestamp));
+
+#pragma endregion
 
     while (!should_exit())
     {
@@ -2486,6 +2489,7 @@ void Commander::run()
             {
                 if (!was_landed && _vehicle_land_detected.landed)
                 {
+                    //@note landing detection
                     mavlink_log_info(&_mavlink_log_pub, "Landing detected\t");
                     events::send(events::ID("commander_landing_detected"), events::Log::Info, "Landing detected");
                     _status.takeoff_time = 0;
@@ -2635,6 +2639,7 @@ void Commander::run()
             }
         }
 
+        //@note Failsafe check local and global position
         estimator_check();
 
         // Auto disarm when landed or kill switch engaged
@@ -4440,7 +4445,6 @@ void Commander::estimator_check()
             _status_flags.position_reliant_on_optical_flow = !gps && optical_flow && !vision_position;
             _status_flags.position_reliant_on_vision_position = !gps && !optical_flow && vision_position;
         }
-
         // Check for a magnetomer fault and notify the user
         if (!mag_fault_prev && estimator_status_flags.cs_mag_fault)
         {
@@ -4448,7 +4452,6 @@ void Commander::estimator_check()
             events::send(events::ID("commander_stopping_mag_use"), events::Log::Critical, "Stopping compass use! Land now and calibrate the compass");
             set_health_flags(subsystem_info_s::SUBSYSTEM_TYPE_MAG, true, true, false, _status);
         }
-
         if (!gnss_heading_fault_prev && estimator_status_flags.cs_gps_yaw_fault)
         {
             mavlink_log_critical(&_mavlink_log_pub, "GNSS heading not reliable - Land now!\t");
@@ -4469,9 +4472,7 @@ void Commander::estimator_check()
 
     if (_estimator_status_sub.updated())
     {
-
         estimator_status_s estimator_status;
-
         if (_estimator_status_sub.copy(&estimator_status))
         {
 
@@ -4529,7 +4530,7 @@ void Commander::estimator_check()
         }
     }
 
-    // run position and velocity accuracy checks
+    //@note run position and velocity accuracy checks
     // Check if quality checking of position accuracy and consistency is to be performed
     if (run_quality_checks)
     {
@@ -4567,9 +4568,11 @@ void Commander::estimator_check()
 
         const vehicle_global_position_s &gpos = _global_position_sub.get();
 
+        //@note check global position
         _status_flags.global_position_valid =
             check_posvel_validity(xy_valid, gpos.eph, _param_com_pos_fs_eph.get(), gpos.timestamp, _last_gpos_fail_time_us, _status_flags.global_position_valid);
 
+        //@note check local position
         _status_flags.local_position_valid = check_posvel_validity(xy_valid, lpos.eph, lpos_eph_threshold_adj, lpos.timestamp, _last_lpos_fail_time_us, _status_flags.local_position_valid);
 
         _status_flags.local_velocity_valid =
@@ -4618,16 +4621,14 @@ void Commander::estimator_check()
 
     _status_flags.angular_velocity_valid = angular_velocity_valid;
 
-    // gps
+    //@note check gps sensor
     const bool condition_gps_position_was_valid = _status_flags.gps_position_valid;
-
     if (_vehicle_gps_position_sub.updated())
     {
         vehicle_gps_position_s vehicle_gps_position;
 
         if (_vehicle_gps_position_sub.copy(&vehicle_gps_position))
         {
-
             bool time = (vehicle_gps_position.timestamp != 0) && (hrt_elapsed_time(&vehicle_gps_position.timestamp) < 1_s);
 
             bool fix = vehicle_gps_position.fix_type >= 2;
@@ -4635,7 +4636,10 @@ void Commander::estimator_check()
             bool epv = vehicle_gps_position.epv < _param_com_pos_fs_epv.get();
             bool evh = vehicle_gps_position.s_variance_m_s < _param_com_vel_fs_evh.get();
 
-            _vehicle_gps_position_valid.set_state_and_update(time && fix && eph && epv && evh, hrt_absolute_time());
+            bool sat = vehicle_gps_position.satellites_used >= _param_com_gps_sat_min_count.get();
+            bool hdop = vehicle_gps_position.hdop <= _param_com_gps_hdop.get();
+
+            _vehicle_gps_position_valid.set_state_and_update(time && fix && eph && epv && evh && sat && hdop, hrt_absolute_time());
             _status_flags.gps_position_valid = _vehicle_gps_position_valid.get_state();
 
             _vehicle_gps_position_timestamp_last = vehicle_gps_position.timestamp;

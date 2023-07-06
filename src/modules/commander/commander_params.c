@@ -816,6 +816,37 @@ PARAM_DEFINE_FLOAT(COM_POS_FS_EPV, 10);
 PARAM_DEFINE_FLOAT(COM_VEL_FS_EVH, 1);
 
 /**
+ * GPS satellites count minimum value.
+ *
+ * @min 0
+ * @max 50
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(COM_GPS_SAT, 4);
+
+/**
+ * GPS hdop minimum value.
+ *
+ * @min 0
+ * @max 50
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(COM_GPS_HDOP, 3);
+
+/**
+ * GPS failsafe take care.
+ * @value 0 Disabled
+ * @value 1 QHover
+ * @value 2 RTL
+ * @value 3 Land mode
+ *
+ * @min 0
+ * @max 3
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(COM_GPS_TKC, 0);
+
+/**
  * Next flight UUID
  *
  * This number is incremented automatically after every flight on

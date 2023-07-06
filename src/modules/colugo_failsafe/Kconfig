@@ -1,0 +1,5 @@
+menuconfig MODULES_COLUGO_FAILSAFE
+bool "colugo_failsafe_module"
+ default n
+ -- - help-- -
+ Enable PX4 Colugo failsafe module
