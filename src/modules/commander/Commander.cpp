@@ -2645,7 +2645,6 @@ void Commander::run()
         // Auto disarm when landed or kill switch engaged
         if (_armed.armed)
         {
-
             // Check for auto-disarm on landing or pre-flight
             if (_param_com_disarm_land.get() > 0 || _param_com_disarm_preflight.get() > 0)
             {
@@ -3242,7 +3241,7 @@ void Commander::run()
             _imbalanced_propeller_check_triggered = false;
         }
 
-        /* now set navigation state according to failsafe and main state */
+        /*@note now set navigation state according to failsafe and main state */
         bool nav_state_changed = set_nav_state(_status, _armed, _internal_state, &_mavlink_log_pub, static_cast<link_loss_actions_t>(_param_nav_dll_act.get()),
                                                _mission_result_sub.get().finished, _mission_result_sub.get().stay_in_failsafe, _status_flags, _vehicle_land_detected.landed,
                                                static_cast<link_loss_actions_t>(_param_nav_rcl_act.get()), static_cast<offboard_loss_actions_t>(_param_com_obl_act.get()),
@@ -3357,6 +3356,7 @@ void Commander::run()
             _failure_detector_status_pub.publish(fd_status);
         }
 
+#pragma region Play tunes
         /* play arming and battery warning tunes */
         if (!_arm_tune_played && _armed.armed && (_safety.safety_switch_available || (_safety.safety_switch_available && _safety.safety_off)))
         {
@@ -3407,6 +3407,8 @@ void Commander::run()
             sensor_fail_tune_played = true;
             _status_changed = true;
         }
+
+#pragma endregion
 
         // check if the worker has finished
         if (_worker_thread.hasResult())

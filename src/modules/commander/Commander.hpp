@@ -185,74 +185,75 @@ class Commander : public ModuleBase<Commander>, public ModuleParams
 
     DEFINE_PARAMETERS(
 
-        (ParamInt<px4::params::NAV_DLL_ACT>) _param_nav_dll_act, (ParamInt<px4::params::COM_DL_LOSS_T>) _param_com_dl_loss_t,
-	(ParamInt<px4::params::COM_RC_OVERRIDE>) _param_com_rc_override,
+        (ParamInt<px4::params::NAV_DLL_ACT>) _param_nav_dll_act,
+        (ParamInt<px4::params::COM_DL_LOSS_T>) _param_com_dl_loss_t,
+        (ParamInt<px4::params::COM_RC_OVERRIDE>) _param_com_rc_override,
         (ParamInt<px4::params::COM_HLDL_LOSS_T>) _param_com_hldl_loss_t,
-	(ParamInt<px4::params::COM_HLDL_REG_T>) _param_com_hldl_reg_t,
+        (ParamInt<px4::params::COM_HLDL_REG_T>) _param_com_hldl_reg_t,
         (ParamInt<px4::params::NAV_RCL_ACT>) _param_nav_rcl_act,
-	(ParamFloat<px4::params::COM_RCL_ACT_T>) _param_com_rcl_act_t,
+        (ParamFloat<px4::params::COM_RCL_ACT_T>) _param_com_rcl_act_t,
         (ParamInt<px4::params::COM_RCL_EXCEPT>) _param_com_rcl_except,
         (ParamBool<px4::params::COM_HOME_EN>) _param_com_home_en,
-	(ParamBool<px4::params::COM_HOME_IN_AIR>) _param_com_home_in_air,
-	//gps
+        (ParamBool<px4::params::COM_HOME_IN_AIR>) _param_com_home_in_air,
+        // gps
         (ParamFloat<px4::params::COM_POS_FS_EPH>) _param_com_pos_fs_eph,
-	(ParamFloat<px4::params::COM_POS_FS_EPV>) _param_com_pos_fs_epv, /*Not realy used for now*/
+        (ParamFloat<px4::params::COM_POS_FS_EPV>) _param_com_pos_fs_epv, /*Not realy used for now*/
         (ParamFloat<px4::params::COM_VEL_FS_EVH>) _param_com_vel_fs_evh,
-	(ParamInt<px4::params::COM_GPS_SAT>) _param_com_gps_sat_min_count,
-	(ParamInt<px4::params::COM_GPS_HDOP>) _param_com_gps_hdop,
-	(ParamInt<px4::params::COM_GPS_TKC>) _param_com_gps_take_care,
+        (ParamInt<px4::params::COM_GPS_SAT>) _param_com_gps_sat_min_count,
+        (ParamInt<px4::params::COM_GPS_HDOP>) _param_com_gps_hdop, (ParamInt<px4::params::COM_GPS_TKC>) _param_com_gps_take_care,
 
         (ParamInt<px4::params::COM_POSCTL_NAVL>) _param_com_posctl_navl, /* failsafe response to loss of navigation accuracy */
         (ParamInt<px4::params::COM_POS_FS_DELAY>) _param_com_pos_fs_delay,
         (ParamInt<px4::params::COM_LOW_BAT_ACT>) _param_com_low_bat_act,
-	(ParamFloat<px4::params::COM_BAT_ACT_T>) _param_com_bat_act_t,
+        (ParamFloat<px4::params::COM_BAT_ACT_T>) _param_com_bat_act_t,
         (ParamInt<px4::params::COM_IMB_PROP_ACT>) _param_com_imb_prop_act,
-	(ParamFloat<px4::params::COM_DISARM_LAND>) _param_com_disarm_land,
+        (ParamFloat<px4::params::COM_DISARM_LAND>) _param_com_disarm_land,
         (ParamFloat<px4::params::COM_DISARM_PRFLT>) _param_com_disarm_preflight,
         (ParamBool<px4::params::COM_OBS_AVOID>) _param_com_obs_avoid,
         (ParamInt<px4::params::COM_FLT_PROFILE>) _param_com_flt_profile,
         (ParamFloat<px4::params::COM_OBC_LOSS_T>) _param_com_obc_loss_t,
         (ParamFloat<px4::params::COM_WIND_WARN>) _param_com_wind_warn,
         (ParamInt<px4::params::RC_MAP_FLTMODE>) _param_rc_map_fltmode,
-	(ParamInt<px4::params::RC_MAP_MODE_SW>) _param_rc_map_mode_sw,
+        (ParamInt<px4::params::RC_MAP_MODE_SW>) _param_rc_map_mode_sw,
         // Quadchute
         (ParamInt<px4::params::COM_QC_ACT>) _param_com_qc_act,
         // Offboard
         (ParamFloat<px4::params::COM_OF_LOSS_T>) _param_com_of_loss_t,
-	(ParamInt<px4::params::COM_OBL_ACT>) _param_com_obl_act,
-	(ParamInt<px4::params::COM_OBL_RC_ACT>) _param_com_obl_rc_act,
+        (ParamInt<px4::params::COM_OBL_ACT>) _param_com_obl_act,
+        (ParamInt<px4::params::COM_OBL_RC_ACT>) _param_com_obl_rc_act,
         (ParamInt<px4::params::COM_PREARM_MODE>) _param_com_prearm_mode,
-	(ParamBool<px4::params::COM_FORCE_SAFETY>) _param_com_force_safety,
+        (ParamBool<px4::params::COM_FORCE_SAFETY>) _param_com_force_safety,
         (ParamBool<px4::params::COM_MOT_TEST_EN>) _param_com_mot_test_en,
         (ParamFloat<px4::params::COM_KILL_DISARM>) _param_com_kill_disarm,
-	(ParamFloat<px4::params::COM_LKDOWN_TKO>) _param_com_lkdown_tko,
+        (ParamFloat<px4::params::COM_LKDOWN_TKO>) _param_com_lkdown_tko,
         // Engine failure
         (ParamFloat<px4::params::COM_EF_THROT>) _param_ef_throttle_thres,
-	(ParamFloat<px4::params::COM_EF_C2T>) _param_ef_current2throttle_thres,
+        (ParamFloat<px4::params::COM_EF_C2T>) _param_ef_current2throttle_thres,
         (ParamFloat<px4::params::COM_EF_TIME>) _param_ef_time_thres,
         (ParamBool<px4::params::COM_ARM_WO_GPS>) _param_arm_without_gps,
-	(ParamBool<px4::params::COM_ARM_MIS_REQ>) _param_arm_mission_required,
+        (ParamBool<px4::params::COM_ARM_MIS_REQ>) _param_arm_mission_required,
         (ParamBool<px4::params::COM_ARM_AUTH_REQ>) _param_arm_auth_required,
-	(ParamBool<px4::params::COM_ARM_CHK_ESCS>) _param_escs_checks_required,
+        (ParamBool<px4::params::COM_ARM_CHK_ESCS>) _param_escs_checks_required,
         (ParamInt<px4::params::COM_FLIGHT_UUID>) _param_flight_uuid,
-	(ParamInt<px4::params::COM_TAKEOFF_ACT>) _param_takeoff_finished_action,
+        (ParamInt<px4::params::COM_TAKEOFF_ACT>) _param_takeoff_finished_action,
         // Circuit breakers
         (ParamInt<px4::params::CBRK_SUPPLY_CHK>) _param_cbrk_supply_chk,
-	(ParamInt<px4::params::CBRK_USB_CHK>) _param_cbrk_usb_chk,
+        (ParamInt<px4::params::CBRK_USB_CHK>) _param_cbrk_usb_chk,
         (ParamInt<px4::params::CBRK_AIRSPD_CHK>) _param_cbrk_airspd_chk,
-	(ParamInt<px4::params::CBRK_ENGINEFAIL>) _param_cbrk_enginefail,
+        (ParamInt<px4::params::CBRK_ENGINEFAIL>) _param_cbrk_enginefail,
         (ParamInt<px4::params::CBRK_FLIGHTTERM>) _param_cbrk_flightterm,
-	(ParamInt<px4::params::CBRK_VELPOSERR>) _param_cbrk_velposerr,
+        (ParamInt<px4::params::CBRK_VELPOSERR>) _param_cbrk_velposerr,
         (ParamInt<px4::params::CBRK_VTOLARMING>) _param_cbrk_vtolarming,
         // Geofence
         (ParamInt<px4::params::GF_ACTION>) _param_geofence_action,
         // Mavlink
         (ParamInt<px4::params::MAV_COMP_ID>) _param_mav_comp_id,
-	(ParamInt<px4::params::MAV_SYS_ID>) _param_mav_sys_id,
-	(ParamInt<px4::params::MAV_TYPE>) _param_mav_type,
+        (ParamInt<px4::params::MAV_SYS_ID>) _param_mav_sys_id,
+        (ParamInt<px4::params::MAV_TYPE>) _param_mav_type,
         (ParamFloat<px4::params::CP_DIST>) _param_cp_dist,
         (ParamFloat<px4::params::BAT_LOW_THR>) _param_bat_low_thr,
-	(ParamFloat<px4::params::BAT_CRIT_THR>) _param_bat_crit_thr)
+        (ParamFloat<px4::params::BAT_CRIT_THR>) _param_bat_crit_thr
+        )
 
     enum class PrearmedMode
     {
@@ -288,6 +289,7 @@ class Commander : public ModuleBase<Commander>, public ModuleParams
     bool _nav_test_passed{false};         /**< true if the post takeoff navigation test has passed */
     bool _nav_test_failed{false};         /**< true if the post takeoff navigation test has failed */
 
+    //@note gps hysteresis time
     static constexpr hrt_abstime GPS_VALID_TIME{3_s};
     Hysteresis _vehicle_gps_position_valid{false};
     hrt_abstime _vehicle_gps_position_timestamp_last{0};

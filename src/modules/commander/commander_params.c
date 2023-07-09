@@ -825,7 +825,7 @@ PARAM_DEFINE_FLOAT(COM_VEL_FS_EVH, 1);
 PARAM_DEFINE_INT32(COM_GPS_SAT, 4);
 
 /**
- * GPS hdop minimum value.
+ * GPS hdop maximum value.
  *
  * @min 0
  * @max 50
@@ -838,7 +838,7 @@ PARAM_DEFINE_INT32(COM_GPS_HDOP, 3);
  * @value 0 Disabled
  * @value 1 QHover
  * @value 2 RTL
- * @value 3 Land mode
+ * @value 3 Land
  *
  * @min 0
  * @max 3
@@ -1055,15 +1055,15 @@ PARAM_DEFINE_INT32(COM_POWER_COUNT, 1);
 PARAM_DEFINE_FLOAT(COM_LKDOWN_TKO, 3.0f);
 
 /**
-* Enable preflight check for maximal allowed airspeed when arming.
-*
-* Deny arming if the current airspeed measurement is greater than half the cruise airspeed (FW_AIRSPD_TRIM).
-* Excessive airspeed measurements on ground are either caused by wind or bad airspeed calibration.
-*
-* @group Commander
-* @value 0 Disabled
-* @value 1 Enabled
-*/
+ * Enable preflight check for maximal allowed airspeed when arming.
+ *
+ * Deny arming if the current airspeed measurement is greater than half the cruise airspeed (FW_AIRSPD_TRIM).
+ * Excessive airspeed measurements on ground are either caused by wind or bad airspeed calibration.
+ *
+ * @group Commander
+ * @value 0 Disabled
+ * @value 1 Enabled
+ */
 PARAM_DEFINE_INT32(COM_ARM_ARSP_EN, 1);
 
 /**

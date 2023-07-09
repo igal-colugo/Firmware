@@ -284,18 +284,20 @@ static void enable_failsafe(vehicle_status_s &status, bool old_failsafe, orb_adv
 }
 
 /**
- * Check failsafe and main status and set navigation status for navigator accordingly
+ *@note Check failsafe and main status and set navigation status for navigator accordingly
  */
 bool set_nav_state(vehicle_status_s &status, actuator_armed_s &armed, commander_state_s &internal_state, orb_advert_t *mavlink_log_pub, const link_loss_actions_t data_link_loss_act,
                    const bool mission_finished, const bool stay_in_failsafe, const vehicle_status_flags_s &status_flags, bool landed, const link_loss_actions_t rc_loss_act,
                    const offboard_loss_actions_t offb_loss_act, const quadchute_actions_t quadchute_act, const offboard_loss_rc_actions_t offb_loss_rc_act,
                    const position_nav_loss_actions_t posctl_nav_loss_act, const float param_com_rcl_act_t, const int param_com_rcl_except)
 {
+    //@note save previous nav state
     const navigation_state_t nav_state_old = status.nav_state;
 
     const bool is_armed = (status.arming_state == vehicle_status_s::ARMING_STATE_ARMED);
     const bool data_link_loss_act_configured = (data_link_loss_act > link_loss_actions_t::DISABLED);
 
+    //@note save previous failsafe
     bool old_failsafe = status.failsafe;
     status.failsafe = false;
 
@@ -377,6 +379,11 @@ bool set_nav_state(vehicle_status_s &status, actuator_armed_s &armed, commander_
          * - if we have an engine failure
          * - if we have vtol transition failure
          * - on data and RC link loss */
+        //@note check dual fail first
+        // if (is_armed && check_dual_fail_nav_state(status, old_failsafe, mavlink_log_pub, status_flags, false, true))
+        //{
+        // nothing to do - everything done in check_dual_fail_nav_state
+        //}
         if (is_armed && check_invalid_pos_nav_state(status, old_failsafe, mavlink_log_pub, status_flags, false, true))
         {
             // nothing to do - everything done in check_invalid_pos_nav_state
@@ -718,6 +725,104 @@ bool check_invalid_pos_nav_state(vehicle_status_s &status, bool old_failsafe, or
         fallback_required = true;
     }
 
+    //@todo Vlad move it to set_nav_state function for implementing dual fail
+    if (fallback_required)
+    {
+        if (use_rc)
+        {
+            // fallback to a mode that gives the operator stick control
+            if (status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_ROTARY_WING && status_flags.local_position_valid)
+            {
+                status.nav_state = vehicle_status_s::NAVIGATION_STATE_POSCTL;
+            }
+            else if (status_flags.local_altitude_valid)
+            {
+                status.nav_state = vehicle_status_s::NAVIGATION_STATE_ALTCTL;
+            }
+            else
+            {
+                status.nav_state = vehicle_status_s::NAVIGATION_STATE_STAB;
+            }
+        }
+        else
+        {
+            // go into a descent that does not require stick control
+            if (status_flags.local_position_valid)
+            {
+                if (gps_failsafe_take_care == 0)
+                {
+                    // do nothing
+                }
+                else if (gps_failsafe_take_care == 1)
+                {
+                    status.nav_state = vehicle_status_s::NAVIGATION_STATE_ALTCTL;
+                }
+                else if (gps_failsafe_take_care == 2)
+                {
+                    status.nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
+                }
+                else if (gps_failsafe_take_care == 3)
+                {
+                    status.nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
+                }
+            }
+            else if (status_flags.local_altitude_valid)
+            {
+                status.nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
+            }
+            else
+            {
+                status.nav_state = vehicle_status_s::NAVIGATION_STATE_TERMINATION;
+            }
+        }
+
+        if (using_global_pos)
+        {
+            if (!status_flags.gps_position_valid)
+            {
+                enable_failsafe(status, old_failsafe, mavlink_log_pub, event_failsafe_reason_t::no_gps);
+            }
+            else
+            {
+                enable_failsafe(status, old_failsafe, mavlink_log_pub, event_failsafe_reason_t::no_global_position);
+            }
+        }
+        else
+        {
+            enable_failsafe(status, old_failsafe, mavlink_log_pub, event_failsafe_reason_t::no_local_position);
+        }
+    }
+
+    return fallback_required;
+}
+
+bool check_dual_fail_nav_state(vehicle_status_s &status, bool old_failsafe, orb_advert_t *mavlink_log_pub, const vehicle_status_flags_s &status_flags, const bool use_rc,
+                               const bool using_global_pos)
+{
+    bool fallback_required = false;
+
+    int32_t gps_failsafe_take_care = 0;
+
+    if (PX4_OK != param_get(param_find("COM_GPS_TKC"), &gps_failsafe_take_care))
+    {
+        PX4_ERR("Could not get param COM_GPS_TKC");
+        return 1;
+    }
+
+    if (using_global_pos && !status_flags.global_position_valid && status.data_link_lost)
+    {
+        fallback_required = true;
+    }
+    else if (using_global_pos && !status_flags.gps_position_valid && status.data_link_lost)
+    {
+        fallback_required = true;
+    }
+    else if (!using_global_pos && (!status_flags.local_position_valid || !status_flags.local_velocity_valid) && status.data_link_lost)
+    {
+        fallback_required = true;
+    }
+
+    //@todo Vlad move it to set_nav_state function for implementing dual fail
     if (fallback_required)
     {
         if (use_rc)
