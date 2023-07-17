@@ -443,7 +443,7 @@
         {
             "label": "make cubeorange and upload",
             "type": "shell",
-            "command": "make cubepilot_cubeorange upload"
+            "command": "make cubepilot_cubeorange_default upload"
         },
         {
             "label": "make cubeorange min size and upload",

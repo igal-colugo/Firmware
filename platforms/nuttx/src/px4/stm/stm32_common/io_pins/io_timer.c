@@ -286,6 +286,7 @@ static inline int validate_timer_index(unsigned timer)
     return (timer < MAX_IO_TIMERS && io_timers[timer].base != 0) ? 0 : -EINVAL;
 }
 
+//@note Vlad look here (timer_allocations[timer] == IOTimerChanMode_NotUsed || timer_allocations[timer] == mode) case not comming
 int io_timer_allocate_timer(unsigned timer, io_timer_channel_mode_t mode)
 {
     int ret = -EINVAL;
@@ -458,16 +459,16 @@ __EXPORT int io_timer_allocate_channel(unsigned channel, io_timer_channel_mode_t
     int existing_mode = io_timer_get_channel_mode(channel);
     int ret = -EBUSY;
 
-//     /* advertise debug value */
-//     struct debug_key_value_s dbg;
-//     strncpy(dbg.key, "cam_trg_1", sizeof(dbg.key));
-//     dbg.value = 0.0f;
-//     orb_advert_t pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
+    //     /* advertise debug value */
+    //     struct debug_key_value_s dbg;
+    //     strncpy(dbg.key, "cam_trg_1", sizeof(dbg.key));
+    //     dbg.value = 0.0f;
+    //     orb_advert_t pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
 
-//     dbg.value = existing_mode;
-//     orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
+    //     dbg.value = existing_mode;
+    //     orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
 
-    if (existing_mode <=(int)IOTimerChanMode_NotUsed || existing_mode == mode)
+    if (existing_mode <= (int) IOTimerChanMode_NotUsed || existing_mode == mode)
     {
         io_timer_channel_allocation_t bit = 1 << channel;
         channel_allocations[IOTimerChanMode_NotUsed] &= ~bit;
