@@ -23,7 +23,7 @@
 #
 
 . ${R}etc/init.d/rc.vtol_defaults
-
+aram set-default SYS_CTRL_ALLOC 1
 param set-default CA_AIRFRAME 2
 param set-default CA_ROTOR_COUNT 5
 param set-default CA_ROTOR0_PX 0.15
