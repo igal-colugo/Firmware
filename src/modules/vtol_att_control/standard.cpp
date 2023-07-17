@@ -231,7 +231,12 @@ void Standard::update_vtol_state()
 				transition_to_fw &= (_colugo_fw_trans_stage == COLUGO_FW_TRANS_STAGE::TRANS_ALLOW_FW);
 			}
 			if(_cth.getColugoDebugVal() == 5){
-				transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
+				//if we are NOT on ground check colugo conditioning for transition to FW
+				if(!can_transition_on_ground()){
+					transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
+
+				}
+
 			}
 
 
