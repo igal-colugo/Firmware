@@ -108,3 +108,5 @@ src/systemcmds/topic_listener/listener_generated.cpp
 !src/drivers/distance_sensor/broadcom/afbrs50/Lib/*
 platforms/nuttx/src/px4/common/cdc_acm_check copy.cpp
 .vscode/tasks.json
+platforms/nuttx/src/px4/common/cdc_acm_check_modyfied.cpp
+.gitignore
