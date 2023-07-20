@@ -360,12 +360,12 @@ void CameraTrigger::update_intervalometer()
 
 void CameraTrigger::update_distance()
 {
-    PX4_INFO("update distance\n");
-
     if (_turning_on || !_trigger_enabled || _trigger_paused)
     {
         return;
     }
+
+    PX4_INFO("update distance");
 
     vehicle_local_position_s local{};
     _lpos_sub.copy(&local);
@@ -438,7 +438,7 @@ void CameraTrigger::toggle_power()
 void CameraTrigger::shoot_once()
 {
     PX4_DEBUG("shoot once");
-    PX4_INFO("shoot once\n");
+    PX4_INFO("shoot once");
 
     // schedule trigger on and off calls
     hrt_call_after(&_engagecall, 0, (hrt_callout) &CameraTrigger::engage, this);

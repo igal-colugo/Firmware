@@ -423,7 +423,7 @@
         {
             "label": "run QGroundControl",
             "type": "shell",
-            "command": "~/Downloads/QGroundControl.AppImage"
+            "command": "~/Downloads/QGroundControl_4_2_8.AppImage"
         },
         {
             "label": "clean up current branch",

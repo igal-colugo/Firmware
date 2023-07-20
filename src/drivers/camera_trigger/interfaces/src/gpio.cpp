@@ -91,14 +91,13 @@ void CameraInterfaceGPIO::setup()
 
 void CameraInterfaceGPIO::trigger(bool trigger_on_true)
 {
-    PX4_INFO("GPIO trigger\n");
     bool trigger_state = trigger_on_true ^ _trigger_invert;
 
     for (unsigned i = 0; i < arraySize(_triggers); i++)
     {
         if (_triggers[i] != 0)
         {
-            PX4_INFO("GPIO trigger num:%d\n", i);
+            PX4_INFO("GPIO trigger num:%d", i);
             px4_arch_gpiowrite(_triggers[i], trigger_state);
         }
     }
