@@ -365,8 +365,6 @@ void CameraTrigger::update_distance()
         return;
     }
 
-    PX4_INFO("update distance");
-
     vehicle_local_position_s local{};
     _lpos_sub.copy(&local);
 
@@ -438,7 +436,6 @@ void CameraTrigger::toggle_power()
 void CameraTrigger::shoot_once()
 {
     PX4_DEBUG("shoot once");
-    PX4_INFO("shoot once");
 
     // schedule trigger on and off calls
     hrt_call_after(&_engagecall, 0, (hrt_callout) &CameraTrigger::engage, this);
@@ -546,7 +543,6 @@ void CameraTrigger::Run()
         if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_DIGICAM_CONTROL)
         {
             PX4_DEBUG("received DO_DIGICAM_CONTROL");
-            PX4_INFO("Received VEHICLE_CMD_DO_DIGICAM_CONTROL");
             need_ack = true;
             hrt_abstime now = hrt_absolute_time();
 
@@ -575,7 +571,6 @@ void CameraTrigger::Run()
         else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_TRIGGER_CONTROL)
         {
             PX4_DEBUG("received DO_TRIGGER_CONTROL");
-            PX4_INFO("Received VEHICLE_CMD_DO_TRIGGER_CONTROL");
             need_ack = true;
 
             if (commandParamToInt(cmd.param3) == 1)
@@ -608,7 +603,6 @@ void CameraTrigger::Run()
         else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_SET_CAM_TRIGG_DIST)
         {
             PX4_DEBUG("received DO_SET_CAM_TRIGG_DIST");
-            PX4_INFO("Received VEHICLE_CMD_DO_SET_CAM_TRIGG_DIST");
             need_ack = true;
 
             /*
@@ -654,7 +648,6 @@ void CameraTrigger::Run()
         else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_SET_CAM_TRIGG_INTERVAL)
         {
             PX4_DEBUG("received DO_SET_CAM_TRIGG_INTERVAL");
-            PX4_INFO("Received VEHICLE_CMD_DO_SET_CAM_TRIGG_INTERVAL");
             need_ack = true;
 
             if (cmd.param1 > 0.0f)
@@ -805,7 +798,6 @@ unknown_cmd:
     // run every loop iteration and trigger if needed
     if (_trigger_mode == TRIGGER_MODE_DISTANCE_ON_CMD || _trigger_mode == TRIGGER_MODE_DISTANCE_ALWAYS_ON)
     {
-
         // update distance counter and trigger
         update_distance();
     }
@@ -868,8 +860,6 @@ void CameraTrigger::adjust_roll()
 void CameraTrigger::engage(void *arg)
 {
     CameraTrigger *trig = static_cast<CameraTrigger *>(arg);
-
-    PX4_INFO("engage");
 
     hrt_abstime now = hrt_absolute_time();
 

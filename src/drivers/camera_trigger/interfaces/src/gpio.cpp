@@ -97,7 +97,7 @@ void CameraInterfaceGPIO::trigger(bool trigger_on_true)
     {
         if (_triggers[i] != 0)
         {
-            PX4_INFO("GPIO trigger num:%d", i);
+            //PX4_INFO("GPIO trigger num:%d", i);
             px4_arch_gpiowrite(_triggers[i], trigger_state);
         }
     }
