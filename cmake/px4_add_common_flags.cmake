@@ -140,7 +140,8 @@ function(px4_add_common_flags)
 	endif()
 
 	add_compile_options(
-			-w
+			-w #@note Vlad disable warnings
+			-O0 #@note Vlad no optimization
 		)
 
 	# C only flags

@@ -454,6 +454,11 @@
             "label": "make cubeorangeplus and upload",
             "type": "shell",
             "command": "make cubepilot_cubeorangeplus upload"
+        },
+        {
+            "label": "run HITL",
+            "type": "shell",
+            "command": "DONT_RUN=1 make px4_sitl_default gazebo;source Tools/setup_gazebo.bash $(pwd) $(pwd)/build/px4_sitl_default;gazebo --verbose Tools/sitl_gazebo/worlds/hitl_standard_vtol.world"
         }
     ],
     "inputs": [

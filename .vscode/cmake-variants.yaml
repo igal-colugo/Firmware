@@ -43,12 +43,12 @@ CONFIG:
         CONFIG: px4_fmu-v2_default
     px4_fmu-v3_default:
       short: px4_fmu-v3
-      buildType: MinSizeRel
+      buildType: RelWithDebInfo
       settings:
         CONFIG: px4_fmu-v3_default
     px4_fmu-v3_default_debug:
       short: px4_fmu-v3_debug
-      buildType: Debug
+      buildType: RelWithDebInfo
       settings:
         CONFIG: px4_fmu-v3_default
     px4_fmu-v4_default:
