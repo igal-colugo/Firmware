@@ -108,14 +108,18 @@ param set-default CBRK_IO_SAFETY 22027
 param set-default MAV_TYPE 22
 
 #@note Vlad added
+
 param set-default TRIG_INTERFACE 1
 param set-default TRIG_MODE 4
 param set-default PWM_AUX_FUNC6 2000
 param set-default PWM_AUX_TIM1 0
-param set-default SYS_HAS_BARO 0
+param set-default SYS_HAS_BARO 1
+param set-default SYS_HAS_GPS 1
+param set-default SYS_HAS_MAG 1
 param set-default SDLOG_MODE 0
 param set-default SDLOG_DIRS_MAX 10
 param set-default SYS_FAILURE_EN 1
+
 #end Vlad added
 
 set MIXER standard_vtol_hitl

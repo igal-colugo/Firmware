@@ -458,7 +458,16 @@
         {
             "label": "run HITL",
             "type": "shell",
-            "command": "DONT_RUN=1 make px4_sitl_default gazebo;source Tools/setup_gazebo.bash $(pwd) $(pwd)/build/px4_sitl_default;gazebo --verbose Tools/sitl_gazebo/worlds/hitl_standard_vtol.world"
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo",
+                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/sitl_gazebo/models",
+                    "LD_LIBRARY_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo",
+                    "PX4_SIM_SPEED_FACTOR": "1"
+                }
+            },
+            "command": "DONT_RUN=1 make px4_sitl_default gazebo;gazebo --verbose Tools/sitl_gazebo/worlds/hitl_standard_vtol.world"
         }
     ],
     "inputs": [
