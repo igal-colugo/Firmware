@@ -133,96 +133,25 @@ static void mavlink_usb_check(void *arg)
         case UsbAutoStartState::connecting:
             if (vbus_present && vbus_present_prev)
             {
-                bool launch_mavlink = true;
-                bool launch_nshterm = true;
-                bool launch_passthru = false;
                 struct termios uart_config;
 
-#if defined(CONFIG_SERIAL_PASSTHRU_UBLOX)
+                static const char *mavlink_argv[]{"mavlink", "start", "-d", USB_DEVICE_PATH, "-b", "57600", nullptr};
+                char **exec_argv = nullptr;
 
-                if (!launch_mavlink && !launch_nshterm && (nread >= 4))
+                exec_argv = (char **) mavlink_argv;
+
+                sched_lock();
+
+                if (exec_builtin(exec_argv[0], exec_argv, nullptr, 0) > 0)
                 {
-                    // passthru Ublox
-                    // scan buffer looking for 0xb5 0x62
-                    for (int i = 0; i < nread; i++)
-                    {
-                        bool ub = buffer[i] == 0xb5 && buffer[i + 1] == 0x62;
-
-                        if (ub && ((buffer[i + 2] == 0x6 && (buffer[i + 3] == 0xb8 || buffer[i + 3] == 0x13)) || (buffer[i + 2] == 0xa && buffer[i + 3] == 0x4)))
-                        {
-                            syslog(LOG_INFO, "%s: launching serial_passthru\n", USB_DEVICE_PATH);
-                            launch_passthru = true;
-                            break;
-                        }
-                    }
+                    usb_auto_start_state = UsbAutoStartState::connected;
+                }
+                else
+                {
+                    usb_auto_start_state = UsbAutoStartState::disconnecting;
                 }
 
-#endif
-
-                if (launch_mavlink || launch_nshterm || launch_passthru)
-                {
-                    static const char *mavlink_argv[]{"mavlink", "start", "-d", USB_DEVICE_PATH, "-b", "57600", nullptr};
-                    static const char *nshterm_argv[]{"nshterm", USB_DEVICE_PATH, nullptr};
-
-#if defined(CONFIG_SERIAL_PASSTHRU_UBLOX)
-                    speed_t baudrate = 57600; // cfgetspeed(&uart_config);
-                    char baudstring[16];
-                    snprintf(baudstring, sizeof(baudstring), "%d", baudrate);
-                    static const char *gps_argv[]{"gps", "stop", nullptr};
-
-                    static const char *passthru_argv[]{"serial_passthru", "start", "-t", "-b", baudstring, "-e", USB_DEVICE_PATH, "-d", SERIAL_PASSTHRU_UBLOX_DEV, nullptr};
-#endif
-                    char **exec_argv = nullptr;
-
-                    if (launch_nshterm)
-                    {
-                        exec_argv = (char **) nshterm_argv;
-
-                        sched_lock();
-
-                        if (exec_builtin(exec_argv[0], exec_argv, nullptr, 0) > 0)
-                        {
-                            usb_auto_start_state = UsbAutoStartState::connected;
-                        }
-                        else
-                        {
-                            usb_auto_start_state = UsbAutoStartState::disconnecting;
-                        }
-
-                        sched_unlock();
-                    }
-
-                    if (launch_mavlink)
-                    {
-                        exec_argv = (char **) mavlink_argv;
-
-                        sched_lock();
-
-                        if (exec_builtin(exec_argv[0], exec_argv, nullptr, 0) > 0)
-                        {
-                            usb_auto_start_state = UsbAutoStartState::connected;
-                        }
-                        else
-                        {
-                            usb_auto_start_state = UsbAutoStartState::disconnecting;
-                        }
-
-                        sched_unlock();
-                    }
-
-#if defined(CONFIG_SERIAL_PASSTHRU_UBLOX)
-
-                    if (launch_passthru)
-                    {
-                        sched_lock();
-                        exec_argv = (char **) gps_argv;
-                        exec_builtin(exec_argv[0], exec_argv, nullptr, 0);
-                        sched_unlock();
-                        exec_argv = (char **) passthru_argv;
-                    }
-
-#endif
-                }
+                sched_unlock();
             }
             else
             {

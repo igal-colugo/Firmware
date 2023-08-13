@@ -1,0 +1,10 @@
+menu "Gimbal"
+    menuconfig COMMON_GIMBAL
+        bool "Common gimbal's"
+        default n
+        select DRIVERS_GIMBAL_VIEWPRO
+        ---help---
+            Enable default set of gimbal drivers
+
+    rsource "*/Kconfig"
+endmenu
