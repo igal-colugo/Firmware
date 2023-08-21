@@ -42,6 +42,7 @@ px4_add_module(
 	MAIN camera_trigger
 	COMPILE_FLAGS
 		-DPARAM_PREFIX="${PARAM_PREFIX}"
+		#-O0
 	SRCS
 		camera_trigger.cpp
 		interfaces/src/camera_interface.cpp

@@ -61,12 +61,6 @@
 #include <stm32_gpio.h>
 #include <stm32_tim.h>
 
-// //@note for debug message
-// #include <string.h>
-// #include <uORB/topics/debug_key_value.h>
-// #include <uORB/uORB.h>
-// //--------------------------------------------
-
 static int io_timer_handler0(int irq, void *context, void *arg);
 static int io_timer_handler1(int irq, void *context, void *arg);
 static int io_timer_handler2(int irq, void *context, void *arg);
@@ -457,16 +451,9 @@ __EXPORT int io_timer_allocate_channel(unsigned channel, io_timer_channel_mode_t
 {
     irqstate_t flags = px4_enter_critical_section();
     int existing_mode = io_timer_get_channel_mode(channel);
-    int ret = -EBUSY;
-
-    //     /* advertise debug value */
-    //     struct debug_key_value_s dbg;
-    //     strncpy(dbg.key, "cam_trg_1", sizeof(dbg.key));
-    //     dbg.value = 0.0f;
-    //     orb_advert_t pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
-
-    //     dbg.value = existing_mode;
-    //     orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
+    // function before return -1 if mode for channel not exists
+    // so it's ok if mode exists and set ret to 0 not to -EBUSY
+    int ret = (existing_mode > 0) ? 0 : -EBUSY;
 
     if (existing_mode <= (int) IOTimerChanMode_NotUsed || existing_mode == mode)
     {
@@ -1127,3 +1114,27 @@ uint32_t io_timer_get_group(unsigned timer)
 {
     return get_timer_channels(timer);
 }
+
+#pragma region Debug code
+//-------------------- Example for insertion debug value ----------------------
+
+//------------------ Header ---------------------
+// //@note for debug message
+// #include <string.h>
+// #include <uORB/topics/debug_key_value.h>
+// #include <uORB/uORB.h>
+// //--------------------------------------------
+
+//---------------- Inside code ------------------
+//     /* advertise debug value */
+//     struct debug_key_value_s dbg;
+//     strncpy(dbg.key, "cam_trg_1", sizeof(dbg.key));
+//     dbg.value = 0.0f;
+//     orb_advert_t pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
+
+//     dbg.value = existing_mode;
+//     orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
+//------------------------------------------------
+
+//-------------------------------------------------------------------------
+#pragma endregion
