@@ -360,8 +360,6 @@ void CameraTrigger::update_intervalometer()
 
 void CameraTrigger::update_distance()
 {
-    PX4_INFO("update distance\n");
-    
     if (_turning_on || !_trigger_enabled || _trigger_paused)
     {
         return;
