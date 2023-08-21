@@ -69,6 +69,7 @@ public:
 	void update_transition_state() override;
 	void update_fw_state() override;
 	void update_mc_state() override;
+	void colugo_debug(bool works) override;
 	void fill_actuator_outputs() override;
 	void waiting_on_tecs() override;
 	void blendThrottleAfterFrontTransition(float scale) override;
@@ -116,7 +117,7 @@ private:
 
 
 	colugoTransHelper _cth{};
-	COLUGO_FW_TRANS_STAGE _colugo_fw_trans_stage;
+	//COLUGO_FW_TRANS_STAGE _colugo_fw_trans_stage;
 
 	struct {
 		vtol_mode flight_mode;			// indicates in which mode the vehicle is in
@@ -141,12 +142,12 @@ private:
 /*
 get the postion of pitch control from mc to fw trasition based on time past after reaching transition throttle
 */
-	float getColugoToFwPitchTransitionTimeBased2();
+	//float getColugoToFwPitchTransitionTimeBased2();
 
 /*
 get the postion of flaps control from mc to fw trasition based on time past after reaching transition throttle
 */
-	float getColugoToFwFlapsTransitionTimeBased2();
+	//float getColugoToFwFlapsTransitionTimeBased2();
 
 	/*returns relative postion acording to _param_c_tr_fw_srv_slew parameter*/
 	float getColugoSlewedPosition(float startPos, float endPos);
@@ -154,10 +155,10 @@ get the postion of flaps control from mc to fw trasition based on time past afte
 /*
 get the postion of colugo actuator from mc to fw trasition based on time past after reaching transition throttle
 */
-	float getColugoActuatorToFwTransition2();
+//	float getColugoActuatorToFwTransition2();
 
 //colugo go through the trasitions stages to fw
-	void updateColugoFwTransitionStage();
+	//void updateColugoFwTransitionStage();
 
 };
 #endif

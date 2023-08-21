@@ -435,6 +435,7 @@ void VtolAttitudeControl::Run()
     // run on actuator publications corresponding to VTOL mode
     bool should_run = false;
 
+
     switch (_vtol_type->get_mode())
     {
     case mode::TRANSITION_TO_FW:
@@ -450,7 +451,7 @@ void VtolAttitudeControl::Run()
         should_run = updated_fw_in;
         break;
     }
-
+    _vtol_type->colugo_debug(should_run);
     if (should_run)
     {
         // check for parameter updates
