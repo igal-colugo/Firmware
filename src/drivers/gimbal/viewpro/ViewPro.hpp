@@ -33,29 +33,33 @@
 
 #pragma once
 
+#include <fcntl.h>
+
+#include <lib/drivers/device/Device.hpp>
+#include <lib/mathlib/math/Limits.hpp>
+#include <lib/matrix/matrix/math.hpp>
+#include <lib/perf/perf_counter.h>
+
+#include <stdlib.h>
+#include <string.h>
 #include <termios.h>
 
 #include <drivers/drv_hrt.h>
-#include <lib/perf/perf_counter.h>
 #include <px4_platform_common/defines.h>
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 
 #include <uORB/Publication.hpp>
+#include <uORB/Subscription.hpp>
+#include <uORB/topics/camera_trigger.h>
 #include <uORB/topics/gimbal_device_attitude_status.h>
 #include <uORB/topics/gimbal_device_information.h>
 #include <uORB/topics/gimbal_device_set_attitude.h>
-#include <uORB/topics/vehicle_command.h>
 
 using namespace time_literals;
+using namespace math;
 
-#define LEDDAR_ONE_FIELD_OF_VIEW (0.105f) // 6 deg cone angle.
-
-#define LEDDAR_ONE_MAX_DISTANCE 40.0f
-#define LEDDAR_ONE_MIN_DISTANCE 0.01f
-
-//--------------------- View pro -----------------------------
-#define MATH_PI (3.141592653589793238462643383280f)
+#define VIEWPRO_BAUDRATE B115200
 #define VIEWPRO_HEADER_BYTE_1 0x3e // first header byte
 #define VIEWPRO_HEADER_BYTE_2 0x3d
 #define VIEWPRO_HEADER_BYTE_3 0x36
@@ -64,87 +68,35 @@ using namespace time_literals;
 #define VIEWPRO_PACKETLEN_MAX (100U)
 #define VIEWPRO_PACKETLEN_MIN 4                                             // minimum number of bytes in a packet.  this is a packet with no data bytes
 #define VIEWPRO_DATALEN_MAX (VIEWPRO_PACKETLEN_MAX - VIEWPRO_PACKETLEN_MIN) // max bytes for data portion of packet
-#define VIEWPRO_SERIAL_RESEND_MS 1000
-// resend angle targets to gimbal once per second
-#define VIEWPRO_MSG_BUF_DATA_START 8      // data starts at this byte in _msg_buf
-#define VIEWPRO_RATE_MAX_RADS radians(90) // maximum physical rotation rate of gimbal in radians/sec
-#define VIEWPRO_MEASURE_INTERVAL 100_ms   // 10Hz
+#define VIEWPRO_MSG_BUF_DATA_START 8                                        // data starts at this byte in _msg_buf
+#define VIEWPRO_MEASURE_INTERVAL 200_ms                                     // 5Hz
 #define CMD_GET_ANGLES_EXT_PACKET_LEN (59U)
-
-//------------------------------------------------------------------
-
-#define MODBUS_SLAVE_ADDRESS 0x01
-#define MODBUS_READING_FUNCTION 0x04
-#define READING_START_ADDR 0x14
-#define READING_LEN 0xA
-
-static const uint8_t request_reading_msg[] = {
-    MODBUS_SLAVE_ADDRESS,
-    MODBUS_READING_FUNCTION,
-    0,    /* starting addr high byte */
-    READING_START_ADDR,
-    0,    /* number of bytes to read high byte */
-    READING_LEN,
-    0x30, /* CRC low */
-    0x09  /* CRC high */
-};
-
-struct __attribute__((__packed__)) reading_msg
-{
-    uint8_t slave_addr;
-    uint8_t function;
-    uint8_t len;
-    uint8_t low_timestamp_high_byte;
-    uint8_t low_timestamp_low_byte;
-    uint8_t high_timestamp_high_byte;
-    uint8_t high_timestamp_low_byte;
-    uint8_t temp_high;
-    uint8_t temp_low;
-    uint8_t num_detections_high_byte;
-    uint8_t num_detections_low_byte;
-    uint8_t first_dist_high_byte;
-    uint8_t first_dist_low_byte;
-    uint8_t first_amplitude_high_byte;
-    uint8_t first_amplitude_low_byte;
-    uint8_t second_dist_high_byte;
-    uint8_t second_dist_low_byte;
-    uint8_t second_amplitude_high_byte;
-    uint8_t second_amplitude_low_byte;
-    uint8_t third_dist_high_byte;
-    uint8_t third_dist_low_byte;
-    uint8_t third_amplitude_high_byte;
-    uint8_t third_amplitude_low_byte;
-    uint16_t crc; /* little-endian */
-};
 
 class ViewPro : public px4::ScheduledWorkItem
 {
   public:
-    const double angle_units_to_degree_ratio = 0.02197265625;
-    const double speed_units_to_degree_ratio = 0.1220740379;
-
+#pragma region Methods
     ViewPro(const char *serial_port);
     ~ViewPro() override;
 
     int init();
-
     /**
      * Diagnostics - print some basic information about the driver.
      */
     void print_info();
-
     /**
      * Initialise the automatic measurement state machine and start it.
      */
     void start();
-
     /**
      * Stop the automatic measurement state machine.
      */
     void stop();
 
+#pragma endregion
+
   private:
-#pragma region-- -- -- -- -- -- -- -- --Nested types-- -- -- -- -- -- -- -- -- -- -- --
+#pragma region Nested types
     union ViewControlMode {
         uint8_t control_byte;
         struct
@@ -258,6 +210,34 @@ class ViewPro : public px4::ScheduledWorkItem
         WAITING_FOR_CHECKSUM
     };
 
+    struct __attribute__((__packed__)) reading_msg
+    {
+        uint8_t slave_addr;
+        uint8_t function;
+        uint8_t len;
+        uint8_t low_timestamp_high_byte;
+        uint8_t low_timestamp_low_byte;
+        uint8_t high_timestamp_high_byte;
+        uint8_t high_timestamp_low_byte;
+        uint8_t temp_high;
+        uint8_t temp_low;
+        uint8_t num_detections_high_byte;
+        uint8_t num_detections_low_byte;
+        uint8_t first_dist_high_byte;
+        uint8_t first_dist_low_byte;
+        uint8_t first_amplitude_high_byte;
+        uint8_t first_amplitude_low_byte;
+        uint8_t second_dist_high_byte;
+        uint8_t second_dist_low_byte;
+        uint8_t second_amplitude_high_byte;
+        uint8_t second_amplitude_low_byte;
+        uint8_t third_dist_high_byte;
+        uint8_t third_dist_low_byte;
+        uint8_t third_amplitude_high_byte;
+        uint8_t third_amplitude_low_byte;
+        uint16_t crc; /* little-endian */
+    };
+
     // parser state and unpacked fields
     struct PACKED
     {
@@ -268,64 +248,27 @@ class ViewPro : public px4::ScheduledWorkItem
         ParseState state;             // state of incoming message processing
     } _parsed_msg;
 
+    struct Quaternion
+    {
+        double w;
+        double x;
+        double y;
+        double z;
+    };
+
+    struct EulerAngles
+    {
+        double roll;
+        double pitch;
+        double yaw;
+    };
+
 #pragma endregion
 
-    // process successfully decoded packets held in the _parsed_msg structure
-    void process_packet();
+#pragma region Fields
 
-    // send packet to gimbal
-    // returns true on success, false if outgoing serial buffer is full
-    bool send_packet(const uint8_t *command_header, uint8_t command_header_len, const uint8_t *databuff, uint8_t databuff_len);
-    bool send_packet(const uint8_t *databuff, uint8_t databuff_len, bool checksum = false, uint8_t header_size = 0);
-
-    uint8_t two_complement_checksum(const uint8_t *pBuffer, uint32_t length);
-
-    // rotate gimbal
-    // bool rotate_gimbal(float roll, float pitch, float yaw, ViewControlModeEnum mode);
-
-    // center gimbal
-    // void center_gimbal();
-
-    // send target pitch and yaw rates to gimbal
-    // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-    // void send_target_rates(float roll_rads, float pitch_rads, float yaw_rads, bool yaw_is_ef);
-
-    // send target pitch and yaw angles to gimbal
-    // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-    // void send_target_angles(float roll_rad, float pitch_rad, float yaw_rad, bool yaw_is_ef);
-
-    /**
-     * Calculates the 16 byte crc value for the data frame.
-     * @param data_frame The data frame to compute a checksum for.
-     * @param crc16_length The length of the data frame.
-     */
-    uint16_t crc16_calc(const unsigned char *data_frame, const uint8_t crc16_length);
-
-    /**
-     * Reads the data measrurement from serial UART.
-     */
-    int collect();
-
-    /**
-     * Sends a data request message to the sensor.
-     */
-    int measure();
-
-    int update();
-
-    /**
-     * Opens and configures the UART serial communications port.
-     * @param speed The baudrate (speed) to configure the serial UART port.
-     */
-    int open_serial_port(const speed_t speed = B115200);
-
-    void Run() override;
-
-    void send_target_angles(float roll_rad, float pitch_rad, float yaw_rad, bool yaw_is_ef);
-    bool rotate_gimbal(float roll, float pitch, float yaw, ViewControlModeEnum mode);
-    bool request_get_angles_ext();
-    float radians(float degrees);
-    float degrees(float radians);
+    const double angle_units_to_degree_ratio = 0.02197265625;
+    const double speed_units_to_degree_ratio = 0.1220740379;
 
     const char *_serial_port{nullptr};
 
@@ -364,8 +307,8 @@ class ViewPro : public px4::ScheduledWorkItem
 
     // Vector3f _current_stator_rel_angle_rad;     // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
 
-    uint32_t _last_current_angle_rad_ms;        // system time _current_angle_rad was updated
-    uint32_t _last_req_current_angle_rad_ms;    // system time that this driver last requested current angle
+    uint32_t _last_current_angle_rad_ms;     // system time _current_angle_rad was updated
+    uint32_t _last_req_current_angle_rad_ms; // system time that this driver last requested current angle
 
     uint32_t _last_req_get_picture_ms;          // system time that this driver last requested get picture
     uint32_t _period_getting_picture_ms = 1000; // period of getting pictures in ms
@@ -376,6 +319,59 @@ class ViewPro : public px4::ScheduledWorkItem
     uint16_t _count_received_packets;
     uint16_t _count_broken_packets;
 
+    EulerAngles angles = EulerAngles();
+
     // Subscribers
-    uORB::Subscription attitude_status_sub{ORB_ID(attitude_status)};
+    uORB::Subscription _attitude_status_sub{ORB_ID(gimbal_device_attitude_status)};
+    uORB::Subscription _trigger_sub{ORB_ID(camera_trigger)};
+
+#pragma endregion
+
+#pragma region Methods
+    // process successfully decoded packets held in the _parsed_msg structure
+    void process_packet();
+
+    // send packet to gimbal
+    // returns true on success, false if outgoing serial buffer is full
+    bool send_packet(const uint8_t *command_header, uint8_t command_header_len, const uint8_t *databuff, uint8_t databuff_len);
+    bool send_packet(const uint8_t *databuff, uint8_t databuff_len, bool checksum = false, uint8_t header_size = 0);
+
+    uint8_t two_complement_checksum(const uint8_t *pBuffer, uint32_t length);
+
+    /**
+     * Calculates the 16 byte crc value for the data frame.
+     * @param data_frame The data frame to compute a checksum for.
+     * @param crc16_length The length of the data frame.
+     */
+    uint16_t crc16_calc(const unsigned char *data_frame, const uint8_t crc16_length);
+
+    /**
+     * Reads the data measrurement from serial UART.
+     */
+    int collect();
+
+    /**
+     * Sends a data request message to the sensor.
+     */
+    int measure();
+
+    int update();
+
+    /**
+     * Opens and configures the UART serial communications port.
+     * @param speed The baudrate (speed) to configure the serial UART port.
+     */
+    int open_serial_port(const speed_t speed = VIEWPRO_BAUDRATE);
+
+    void Run() override;
+
+    void send_target_angles(float roll_rad, float pitch_rad, float yaw_rad, bool yaw_is_ef);
+    bool rotate_gimbal(float roll, float pitch, float yaw, ViewControlModeEnum mode);
+    bool request_get_angles_ext();
+    bool take_picture();
+    bool request_photograph();
+    Quaternion convert_to_quaternion(double roll, double pitch, double yaw);
+    EulerAngles convert_to_euler_angles(Quaternion q);
+
+#pragma endregion
 };

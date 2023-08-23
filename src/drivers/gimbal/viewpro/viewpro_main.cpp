@@ -134,7 +134,7 @@ extern "C" __EXPORT int viewpro_main(int argc, char *argv[])
 
     const char *port = nullptr;
 
-    while ((ch = px4_getopt(argc, argv, "d", &myoptind, &myoptarg)) != EOF)
+    while ((ch = px4_getopt(argc, argv, "d:", &myoptind, &myoptarg)) != EOF)
     {
         switch (ch)
         {

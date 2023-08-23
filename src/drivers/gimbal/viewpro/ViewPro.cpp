@@ -33,12 +33,7 @@
 
 #include "ViewPro.hpp"
 
-#include <fcntl.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <lib/drivers/device/Device.hpp>
-
+#pragma region Module methods
 ViewPro::ViewPro(const char *serial_port) : ScheduledWorkItem(MODULE_NAME, px4::serial_port_to_wq(serial_port))
 {
     _serial_port = strdup(serial_port);
@@ -297,11 +292,26 @@ int ViewPro::update()
 {
     int return_value = 0;
 
-    gimbal_device_attitude_status_s attitude_status{};
+    gimbal_device_attitude_status_s gimbal_device_attitude_status{};
+    camera_trigger_s trigger{};
 
-    if (attitude_status_sub.update(&attitude_status))
+    if (_attitude_status_sub.updated())
     {
+        if (_attitude_status_sub.copy(&gimbal_device_attitude_status))
+        {
+            ViewPro::Quaternion q{gimbal_device_attitude_status.q[0], gimbal_device_attitude_status.q[1], gimbal_device_attitude_status.q[2], gimbal_device_attitude_status.q[3]};
+            angles = convert_to_euler_angles(q);
+        }
     }
+    if (_trigger_sub.updated())
+    {
+        if (_trigger_sub.copy(&trigger))
+        {
+            return_value = take_picture();
+        }
+    }
+
+    send_target_angles(angles.roll, angles.pitch, angles.yaw, false);
 
     return return_value;
 }
@@ -418,6 +428,9 @@ void ViewPro::stop()
     ScheduleClear();
 }
 
+#pragma endregion
+
+#pragma region ViewPro methods
 // process successfully decoded packets held in the _parsed_msg structure
 void ViewPro::process_packet()
 {
@@ -553,11 +566,11 @@ void ViewPro::send_target_angles(float roll_rad, float pitch_rad, float yaw_rad,
     uint32_t now_ms = hrt_absolute_time();
     if (now_ms - _last_current_angle_rad_ms >= 300000)
     {
-        rotate_gimbal(0, 0, 0, ViewControlModeEnum::MODE_ANGLE);
+        rotate_gimbal(0, 0, 0, ViewControlModeEnum::MODE_ANGLE_REF_FRAME);
         return;
     }
 
-    rotate_gimbal(roll_rad, pitch_rad, yaw_rad, ViewControlModeEnum::MODE_ANGLE);
+    rotate_gimbal(roll_rad, pitch_rad, yaw_rad, ViewControlModeEnum::MODE_ANGLE_REF_FRAME);
 }
 
 // rotate gimbal
@@ -590,6 +603,28 @@ bool ViewPro::rotate_gimbal(float roll, float pitch, float yaw, ViewControlModeE
         cmd_control_movement.control_command.pitch_speed_units = degrees(pitch) / speed_units_to_degree_ratio;
         cmd_control_movement.control_command.yaw_speed_units = degrees(yaw) / speed_units_to_degree_ratio;
     }
+    if (mode == ViewControlModeEnum::MODE_SPEED_ANGLE)
+    {
+        //@todo Vlad check angles limits
+
+        // convert radians to degrees and to units
+        cmd_control_movement.control_command.roll_angle_units = degrees(roll) / angle_units_to_degree_ratio;
+        cmd_control_movement.control_command.pitch_angle_units = degrees(pitch) / angle_units_to_degree_ratio;
+        cmd_control_movement.control_command.yaw_angle_units = degrees(yaw) / angle_units_to_degree_ratio;
+
+        cmd_control_movement.control_command.roll_speed_units = 5.0 / speed_units_to_degree_ratio;
+        cmd_control_movement.control_command.pitch_speed_units = 5.0 / speed_units_to_degree_ratio;
+        cmd_control_movement.control_command.yaw_speed_units = 5.0 / speed_units_to_degree_ratio;
+    }
+    if (mode == ViewControlModeEnum::MODE_ANGLE_REF_FRAME)
+    {
+        //@todo Vlad check angles limits
+
+        // convert radians to degrees and to units
+        cmd_control_movement.control_command.roll_angle_units = degrees(roll) / angle_units_to_degree_ratio;
+        cmd_control_movement.control_command.pitch_angle_units = degrees(pitch) / angle_units_to_degree_ratio;
+        cmd_control_movement.control_command.yaw_angle_units = degrees(yaw) / angle_units_to_degree_ratio;
+    }
 
     return_value = send_packet(cmd_control_movement.control_array, (sizeof(cmd_control_movement.control_array) / sizeof(uint8_t)), true,
                                sizeof(cmd_control_movement.control_command.header) / sizeof(uint8_t));
@@ -597,8 +632,6 @@ bool ViewPro::rotate_gimbal(float roll, float pitch, float yaw, ViewControlModeE
     return return_value;
 }
 
-//@todo Vlad document added functions
-//@note -------------------- Other commands -----------------------------
 bool ViewPro::request_get_angles_ext()
 {
     bool returnValue = false;
@@ -609,20 +642,84 @@ bool ViewPro::request_get_angles_ext()
     return returnValue;
 }
 
-float ViewPro::radians(float degrees)
-{
-    float return_value = 0.0;
+#pragma endregion
 
-    return_value = degrees * (MATH_PI / 180.0f);
+#pragma region Camera control methods
+// take a picture
+bool ViewPro::take_picture()
+{
+    bool return_value = false;
+
+    return_value = request_photograph();
 
     return return_value;
 }
 
-float ViewPro::degrees(float radians)
+/*
+Z6KA7 cmd for sony a6000/a7Rii
+poweron/off FF 01 00 50 00 00 51
+zoom_wide FF 01 00 40 00 00 41
+zoom_tele FF 01 00 20 00 00 21
+picture FF 01 00 07 00 66 6E
+stop_zoom FF 01 00 00 00 00 01
+record start/stop FF 01 00 07 00 55 5D
+*/
+bool ViewPro::request_photograph()
 {
-    float return_value = 0.0;
+    bool returnValue = false;
+    uint8_t send_message[] = {0xFF, 0x01, 0x00, 0x07, 0x00, 0x66, 0x6E};
 
-    return_value = radians * (180.0f / MATH_PI);
+    returnValue = send_packet(send_message, (sizeof(send_message) / sizeof(uint8_t)));
 
-    return return_value;
+    return returnValue;
 }
+
+#pragma endregion
+
+#pragma region Helper function
+
+ViewPro::Quaternion ViewPro::convert_to_quaternion(double roll, double pitch, double yaw) // roll (x), pitch (Y), yaw (z)
+{
+    // Abbreviations for the various angular functions
+
+    double cr = cos(roll * 0.5);
+    double sr = sin(roll * 0.5);
+    double cp = cos(pitch * 0.5);
+    double sp = sin(pitch * 0.5);
+    double cy = cos(yaw * 0.5);
+    double sy = sin(yaw * 0.5);
+
+    Quaternion q;
+    q.w = cr * cp * cy + sr * sp * sy;
+    q.x = sr * cp * cy - cr * sp * sy;
+    q.y = cr * sp * cy + sr * cp * sy;
+    q.z = cr * cp * sy - sr * sp * cy;
+
+    return q;
+}
+
+// this implementation assumes normalized quaternion
+// converts to Euler angles in 3-2-1 sequence
+ViewPro::EulerAngles ViewPro::convert_to_euler_angles(Quaternion q)
+{
+    EulerAngles angles;
+
+    // roll (x-axis rotation)
+    double sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+    double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+    angles.roll = std::atan2(sinr_cosp, cosr_cosp);
+
+    // pitch (y-axis rotation)
+    double sinp = std::sqrt(1 + 2 * (q.w * q.y - q.x * q.z));
+    double cosp = std::sqrt(1 - 2 * (q.w * q.y - q.x * q.z));
+    angles.pitch = 2 * std::atan2(sinp, cosp) - M_PI / 2;
+
+    // yaw (z-axis rotation)
+    double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+    double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+    angles.yaw = std::atan2(siny_cosp, cosy_cosp);
+
+    return angles;
+}
+
+#pragma endregion
