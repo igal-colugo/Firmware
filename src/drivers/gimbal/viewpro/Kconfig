@@ -1,0 +1,5 @@
+menuconfig DRIVERS_GIMBAL_VIEWPRO
+	bool "viewpro"
+	default n
+	---help---
+		Enable support for viewpro
