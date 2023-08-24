@@ -39,7 +39,7 @@
 
 namespace gimbal
 {
-
+#pragma region MavlinkV1
 OutputMavlinkV1::OutputMavlinkV1(const Parameters &parameters) : OutputBase(parameters)
 {
 }
@@ -137,6 +137,9 @@ void OutputMavlinkV1::print_status() const
     PX4_INFO("Output: MAVLink gimbal protocol v1");
 }
 
+#pragma endregion
+
+#pragma region MavlinkV2
 OutputMavlinkV2::OutputMavlinkV2(const Parameters &parameters) : OutputBase(parameters)
 {
 }
@@ -235,5 +238,6 @@ void OutputMavlinkV2::_publish_gimbal_device_set_attitude()
 
     _gimbal_device_set_attitude_pub.publish(set_attitude);
 }
+#pragma endregion
 
 } /* namespace gimbal */

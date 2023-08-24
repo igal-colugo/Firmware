@@ -293,13 +293,24 @@ int ViewPro::update()
     int return_value = 0;
 
     gimbal_device_attitude_status_s gimbal_device_attitude_status{};
+    gimbal_device_set_attitude_s gimbal_device_set_attitude{};
     camera_trigger_s trigger{};
 
+    // MavlinkV1
     if (_attitude_status_sub.updated())
     {
         if (_attitude_status_sub.copy(&gimbal_device_attitude_status))
         {
             ViewPro::Quaternion q{gimbal_device_attitude_status.q[0], gimbal_device_attitude_status.q[1], gimbal_device_attitude_status.q[2], gimbal_device_attitude_status.q[3]};
+            angles = convert_to_euler_angles(q);
+        }
+    }
+    // MavlinkV2
+    if (_set_attitude_sub.updated())
+    {
+        if (_set_attitude_sub.copy(&gimbal_device_set_attitude))
+        {
+            ViewPro::Quaternion q{gimbal_device_set_attitude.q[0], gimbal_device_set_attitude.q[1], gimbal_device_set_attitude.q[2], gimbal_device_set_attitude.q[3]};
             angles = convert_to_euler_angles(q);
         }
     }

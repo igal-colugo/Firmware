@@ -322,7 +322,10 @@ class ViewPro : public px4::ScheduledWorkItem
     EulerAngles angles = EulerAngles();
 
     // Subscribers
+    //MavlinkV1
     uORB::Subscription _attitude_status_sub{ORB_ID(gimbal_device_attitude_status)};
+    //MavlinkV2
+    uORB::Subscription _set_attitude_sub{ORB_ID(gimbal_device_set_attitude)};
     uORB::Subscription _trigger_sub{ORB_ID(camera_trigger)};
 
 #pragma endregion
