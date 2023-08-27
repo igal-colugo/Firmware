@@ -88,13 +88,13 @@ bool FlightTaskTransition::activate(const vehicle_local_position_setpoint_s &las
 	}
 
 	_velocity_setpoint(2) = _vel_z_filter.getState();
-
+/*
 	if(_c_debug == 5){
 		_last_pos(0) = _position(0);
 		_last_pos(1) = _position(1);
 		_velocity_setpoint(0) = _velocity_setpoint(1) = 0.0f;
 	}
-
+*/
 	return ret;
 }
 //@note FlightTaskTransition
@@ -102,12 +102,8 @@ bool FlightTaskTransition::update()
 {
 	bool ret = FlightTask::update();
 
-
-
-
 	//if(_transState != COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START){
 		_position_setpoint.setAll(NAN);
-
 
 	// calculate a horizontal acceleration vector which corresponds to an attitude composed of pitch up by _param_pitch_cruise_degrees
 	// and zero roll angle
@@ -119,8 +115,8 @@ bool FlightTaskTransition::update()
 		_vel_z_filter.setParameters(math::constrain(_deltatime, 0.01f, 0.1f), _vel_z_filter_time_const);
 		_velocity_setpoint(2) = _vel_z_filter.update(0.0f);
 		_yaw_setpoint = NAN;
-
 	//}
+
 
 	colugo_transition_s colugo_trans;
 	if (_colugo_transition_sub.update(&colugo_trans)) {
@@ -136,10 +132,13 @@ bool FlightTaskTransition::update()
 		//_position_setpoint(1) = _last_pos(1);
 		//_position_setpoint(2) = NAN;
 
+		_velocity_setpoint(0) = 0;
+		_velocity_setpoint(1) = 0;
 		_velocity_setpoint(2) = colugo_trans.vz;
 		//_position_setpoint(2) = -100.0;
 	    }
 	}
+
 	//_velocity_setpoint.setAll(NAN);
 	//_acceleration_setpoint.setAll(NAN);
 

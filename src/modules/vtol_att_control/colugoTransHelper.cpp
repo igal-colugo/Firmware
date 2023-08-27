@@ -50,14 +50,15 @@ void colugoTransHelper::publishColugoActuator()
 
 }
 
-void colugoTransHelper::updateColugoTransitionState(float airSpd, mode fm, hrt_abstime tt){
+void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, hrt_abstime tt){
 	_airspeed = airSpd;
 		switch (fm)
 		{
-		case mode::FIXED_WING:
+		case vtol_mode::FW_MODE:
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
 			break;
-		case mode::TRANSITION_TO_FW:
+		case vtol_mode::PRE_TRANSITION_TO_FW:
+		case vtol_mode::TRANSITION_TO_FW:
 			if(fm != _currentMode){//we just entered tansition...
 				_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START;
 				_startTime = tt;
@@ -67,10 +68,10 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, mode fm, hrt_a
 				updateInnerStage();
 			}
 			break;
-		case mode::TRANSITION_TO_MC:
+		case vtol_mode::TRANSITION_TO_MC:
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
 			break;
-		case mode::ROTARY_WING:
+		case vtol_mode::MC_MODE:
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
 			break;
 

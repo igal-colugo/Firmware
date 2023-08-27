@@ -39,11 +39,20 @@ enum class COLUGO_FW_VTRANS_STAGE{ //fixed wing vertical algorithm stages ....
 class colugoTransHelper {
 public:
 
+	enum class vtol_mode {
+		MC_MODE = 0,
+		TRANSITION_TO_FW,
+		TRANSITION_TO_MC,
+		FW_MODE,
+		PRE_TRANSITION_TO_FW
+
+	};
+
     colugoTransHelper();
 
     void setColugoActuatorPos();
     void publishColugoActuator();
-    void updateColugoTransitionState(float airSpd, mode fm, hrt_abstime tt);
+    void updateColugoTransitionState(float airSpd, vtol_mode fm, hrt_abstime tt);
     float getPusherThr(float thr);
     COLUGO_FW_VTRANS_STAGE getInnerState(){return _transStage;}
     void parameters_update();
@@ -115,7 +124,7 @@ private:
     float _wingLockActuatorPos = COLUGO_ACTUATOR_MC_POS;
     uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
     uORB::Publication<colugo_transition_s> _colugo_transition_pub{ORB_ID(colugo_transition)};
-    mode _currentMode;
+    vtol_mode _currentMode;
     hrt_abstime _startTime, _reachedLockSpeedTime, _FarwardStageStartTime;
     COLUGO_FW_VTRANS_STAGE _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
     float _airspeed;

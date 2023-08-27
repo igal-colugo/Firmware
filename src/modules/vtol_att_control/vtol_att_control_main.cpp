@@ -451,7 +451,7 @@ void VtolAttitudeControl::Run()
         should_run = updated_fw_in;
         break;
     }
-    _vtol_type->colugo_debug(should_run);
+
     if (should_run)
     {
         // check for parameter updates

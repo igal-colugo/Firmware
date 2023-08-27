@@ -159,13 +159,6 @@ public:
 	 */
 	virtual void update_mc_state();
 
-
-	/**
-	 * deletel later....
-	 */
-	virtual void colugo_debug(bool works){}
-
-
 	/**
 	 * Update fixed wing state.
 	 */
