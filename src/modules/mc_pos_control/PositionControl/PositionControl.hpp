@@ -44,6 +44,10 @@
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 
+#include <uORB/Subscription.hpp>
+#include <vtol_att_control/colugoTransHelper.h>
+#include <uORB/topics/colugo_transition.h>
+
 struct PositionControlStates {
 	matrix::Vector3f position;
 	matrix::Vector3f velocity;
@@ -77,6 +81,8 @@ public:
 
 	PositionControl() = default;
 	~PositionControl() = default;
+
+	uORB::Subscription _colugo_transition_sub {ORB_ID(colugo_transition)};
 
 	/**
 	 * Set the position control gains

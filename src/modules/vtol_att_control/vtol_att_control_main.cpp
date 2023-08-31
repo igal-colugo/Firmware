@@ -469,6 +469,7 @@ void VtolAttitudeControl::Run()
         _v_att_sub.update(&_v_att);
         _local_pos_sub.update(&_local_pos);
         _local_pos_sp_sub.update(&_local_pos_sp);
+        float deleteme = fabsf(_local_pos_sp.vx);
         _pos_sp_triplet_sub.update(&_pos_sp_triplet);
         _airspeed_validated_sub.update(&_airspeed_validated);
         _tecs_status_sub.update(&_tecs_status);

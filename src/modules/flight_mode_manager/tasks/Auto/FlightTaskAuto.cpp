@@ -198,6 +198,9 @@ bool FlightTaskAuto::update()
 	_jerk_setpoint = smoothed_setpoints.jerk;
 	_acceleration_setpoint = smoothed_setpoints.acceleration;
 	_velocity_setpoint = smoothed_setpoints.velocity;
+
+	float dleteleme = fabs(_velocity_setpoint(1));
+
 	_position_setpoint = smoothed_setpoints.position;
 
 	_unsmoothed_velocity_setpoint = smoothed_setpoints.unsmoothed_velocity;

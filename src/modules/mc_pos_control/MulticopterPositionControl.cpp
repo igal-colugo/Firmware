@@ -451,6 +451,8 @@ void MulticopterPositionControl::Run()
 				math::min(speed_up, _param_mpc_z_vel_max_up.get()), // takeoff ramp starts with negative velocity limit
 				math::max(speed_down, 0.f));
 
+		//check what the _setpoint vals are too...
+			float deleteme = fabsf(_setpoint.vx);
 			_control.setInputSetpoint(_setpoint);
 
 			// update states
@@ -500,6 +502,24 @@ void MulticopterPositionControl::Run()
 			vehicle_local_position_setpoint_s local_pos_sp{};
 			_control.getLocalPositionSetpoint(local_pos_sp);
 			local_pos_sp.timestamp = hrt_absolute_time();
+			float deleteme2 = fabsf(local_pos_sp.vx);
+			//workaround colugo fix fuck!!!
+			colugo_transition_s colugo_trans;
+			if (_colugo_transition_sub.update(&colugo_trans)) {
+				COLUGO_FW_VTRANS_STAGE transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
+
+	    			if(transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
+	    				&& transState < COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
+					local_pos_sp.vx = 0.0;
+					local_pos_sp.vy = 0.0;
+					local_pos_sp.x = 0.0;
+					local_pos_sp.y = 0.0;
+					local_pos_sp.acceleration[0] = local_pos_sp.acceleration[1] = 0;
+					local_pos_sp.thrust[0] = local_pos_sp.thrust[1] = 0;
+					_control.resetIntegral();
+	    			}
+			}
+
 			_local_pos_sp_pub.publish(local_pos_sp);
 
 			// Publish attitude setpoint output

@@ -99,6 +99,7 @@ void PositionControl::setState(const PositionControlStates &states)
 void PositionControl::setInputSetpoint(const vehicle_local_position_setpoint_s &setpoint)
 {
     _pos_sp = Vector3f(setpoint.x, setpoint.y, setpoint.z);
+    float deleteme  = fabsf(setpoint.vx);
     _vel_sp = Vector3f(setpoint.vx, setpoint.vy, setpoint.vz);
     _acc_sp = Vector3f(setpoint.acceleration);
     _yaw_sp = setpoint.yaw;
@@ -122,7 +123,7 @@ bool PositionControl::update(const float dt)
     valid = valid && PX4_ISFINITE(_acc_sp(0)) && PX4_ISFINITE(_acc_sp(1)) && PX4_ISFINITE(_acc_sp(2));
     valid = valid && PX4_ISFINITE(_thr_sp(0)) && PX4_ISFINITE(_thr_sp(1)) && PX4_ISFINITE(_thr_sp(2));
 
-    return valid;
+        return valid;
 }
 
 void PositionControl::_positionControl()
@@ -137,6 +138,17 @@ void PositionControl::_positionControl()
     // Constrain horizontal velocity by prioritizing the velocity component along the
     // the desired position setpoint over the feed-forward term.
     _vel_sp.xy() = ControlMath::constrainXY(vel_sp_position.xy(), (_vel_sp - vel_sp_position).xy(), _lim_vel_horizontal);
+    float deleteme = fabsf(_vel_sp(0));
+    //if in trans make sure vx vy are 0
+    colugo_transition_s colugo_trans;
+	if (_colugo_transition_sub.update(&colugo_trans)) {
+            COLUGO_FW_VTRANS_STAGE transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
+	    if(transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
+	    && transState < COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
+            _vel_sp.xy()= 0;
+        }
+    }
+
     // Constrain velocity in z-direction.
     _vel_sp(2) = math::constrain(_vel_sp(2), -_lim_vel_up, _lim_vel_down);
 }

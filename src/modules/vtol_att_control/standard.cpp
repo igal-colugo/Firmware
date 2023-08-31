@@ -189,20 +189,24 @@ void Standard::update_vtol_state()
 	} else {
 		// the transition to fw mode switch is on
 		if (_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::MC_MODE || _vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::TRANSITION_TO_MC) {
+			if(_cth.getColugoDebugVal() == 5){
+				_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
+			}
+			else{//normal behavior - without colugo...
 			// start transition to fw mode
 			/* NOTE: The failsafe transition to fixed-wing was removed because it can result in an
 			 * unsafe flying state. */
 			_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::TRANSITION_TO_FW;
-			_vtol_schedule.transition_start = hrt_absolute_time();
-			if(_cth.getColugoDebugVal() == 5){
-				_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
 			}
+			_vtol_schedule.transition_start = hrt_absolute_time();
+
+
 		}
 
 		if (_cth.getColugoDebugVal() == 5
 			&& _vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW){
 			_vtol_schedule.flight_mode = _cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START ?
-			_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::TRANSITION_TO_FW
+			 _vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::TRANSITION_TO_FW
 			: _vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
 			}
 
@@ -288,8 +292,10 @@ void Standard::update_vtol_state()
 
 		_cth.updateColugoTransitionState(_airspeed_validated->calibrated_airspeed_m_s, _vtol_schedule.flight_mode, _vtol_schedule.transition_start);
 		if(_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW){
-			_vtol_mode = _cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START ?
-			mode::ROTARY_WING : mode::TRANSITION_TO_FW;
+			if(_cth.getInnerState() >= COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
+				_vtol_mode = mode::TRANSITION_TO_FW;
+			}
+
 		}
 
 	}
