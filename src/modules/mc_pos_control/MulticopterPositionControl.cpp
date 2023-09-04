@@ -503,7 +503,7 @@ void MulticopterPositionControl::Run()
 			_control.getLocalPositionSetpoint(local_pos_sp);
 			local_pos_sp.timestamp = hrt_absolute_time();
 			float deleteme2 = fabsf(local_pos_sp.vx);
-			//workaround colugo fix fuck!!!
+
 			colugo_transition_s colugo_trans;
 			if (_colugo_transition_sub.update(&colugo_trans)) {
 				/*

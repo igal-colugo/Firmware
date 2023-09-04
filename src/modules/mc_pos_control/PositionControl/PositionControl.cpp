@@ -146,6 +146,7 @@ void PositionControl::_positionControl()
 	    if(transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
 	    && transState < COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
             _vel_sp.xy()= 0;
+            _vel_sp(2) = -_lim_vel_up;
         }
     }
 
