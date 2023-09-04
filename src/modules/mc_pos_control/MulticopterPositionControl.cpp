@@ -506,6 +506,7 @@ void MulticopterPositionControl::Run()
 			//workaround colugo fix fuck!!!
 			colugo_transition_s colugo_trans;
 			if (_colugo_transition_sub.update(&colugo_trans)) {
+				/*
 				COLUGO_FW_VTRANS_STAGE transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
 
 	    			if(transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
@@ -518,6 +519,7 @@ void MulticopterPositionControl::Run()
 					local_pos_sp.thrust[0] = local_pos_sp.thrust[1] = 0;
 					_control.resetIntegral();
 	    			}
+				*/
 			}
 
 			_local_pos_sp_pub.publish(local_pos_sp);

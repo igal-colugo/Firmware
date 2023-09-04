@@ -142,7 +142,8 @@ void Standard::update_vtol_state()
 			_vtol_vehicle_status->vtol_transition_failsafe = false;
 		}
 
-	} else if (!_attc->is_fixed_wing_requested()) {
+	}
+	else if (!_attc->is_fixed_wing_requested()) {
 
 		// the transition to fw mode switch is off
 		if (_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::MC_MODE) {
@@ -186,28 +187,29 @@ void Standard::update_vtol_state()
 			}
 		}
 
-	} else {
+	}
+	else {
 		// the transition to fw mode switch is on
 		if (_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::MC_MODE || _vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::TRANSITION_TO_MC) {
 			if(_cth.getColugoDebugVal() == 5){
-				_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
+				 _vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
 			}
 			else{//normal behavior - without colugo...
 			// start transition to fw mode
 			/* NOTE: The failsafe transition to fixed-wing was removed because it can result in an
 			 * unsafe flying state. */
-			_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::TRANSITION_TO_FW;
+				_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::TRANSITION_TO_FW;
 			}
+
 			_vtol_schedule.transition_start = hrt_absolute_time();
-
-
 		}
 
 		if (_cth.getColugoDebugVal() == 5
 			&& _vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW){
+
 			_vtol_schedule.flight_mode = _cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START ?
-			 _vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::TRANSITION_TO_FW
-			: _vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
+			 	_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::TRANSITION_TO_FW
+				: _vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
 			}
 
 
@@ -242,7 +244,7 @@ void Standard::update_vtol_state()
 			if(_cth.getColugoDebugVal() == 5){
 				//if we are NOT on ground check colugo conditioning for transition to FW
 				if(!can_transition_on_ground()){
-					transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
+					//transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
 
 				}
 
@@ -270,7 +272,7 @@ void Standard::update_vtol_state()
 
 	// map specific control phases to simple control modes
 	switch (_vtol_schedule.flight_mode) {
-	//case colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW:
+	case colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW:
 	case colugoTransHelper::vtol_mode::MC_MODE:
 		_vtol_mode = mode::ROTARY_WING;
 		break;
@@ -291,12 +293,12 @@ void Standard::update_vtol_state()
 	if(_cth.getColugoDebugVal() == 5){
 
 		_cth.updateColugoTransitionState(_airspeed_validated->calibrated_airspeed_m_s, _vtol_schedule.flight_mode, _vtol_schedule.transition_start);
-		if(_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW){
-			if(_cth.getInnerState() >= COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
-				_vtol_mode = mode::TRANSITION_TO_FW;
-			}
+		//if(_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW){
+			//if(_cth.getInnerState() >= COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
+			//	_vtol_mode = mode::TRANSITION_TO_FW;
+		//	}
 
-		}
+		//}
 
 	}
 
@@ -371,7 +373,8 @@ void Standard::update_transition_state()
 		}
 
 
-	} else if (_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::TRANSITION_TO_MC) {
+	}
+	else if (_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::TRANSITION_TO_MC) {
 
 		if (_v_control_mode->flag_control_climb_rate_enabled) {
 			// control backtransition deceleration using pitch.
@@ -462,8 +465,8 @@ void Standard::fill_actuator_outputs()
 		if(_cth.getColugoDebugVal() == 5){
 			//updateTransitionStage();
 			//_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_IDLE;
-			mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
-			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
+		//	mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
+		//	fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
 		}
 
 		_cth.setColugoActuatorPos();//unlocked in MC mode ONLY!
@@ -487,6 +490,7 @@ void Standard::fill_actuator_outputs()
 			mc_out[actuator_controls_s::INDEX_FLAPS]    = _cth.getColugoTransToFwSlewedFlaps();
 			_cth.setColugoActuatorPos();
 			break;
+
 		}
 
 
@@ -541,7 +545,7 @@ void Standard::fill_actuator_outputs()
 
 		if(_cth.getColugoDebugVal() == 5){
 			//now flaps act as "reverse pitch"
-			mc_out[actuator_controls_s::INDEX_FLAPS] = -fw_in[actuator_controls_s::INDEX_PITCH];
+			//mc_out[actuator_controls_s::INDEX_FLAPS] = -fw_in[actuator_controls_s::INDEX_PITCH];
 		}
 
 		//in fw mode -we are ALWAYS LOCKED!
@@ -568,8 +572,8 @@ void Standard::fill_actuator_outputs()
 	_thrust_setpoint_0->xyz[1] = 0.f;
 
     	//@note debug
-	//original _thrust_setpoint_0->xyz[2] = -mc_out[actuator_controls_s::INDEX_THROTTLE];
-	_thrust_setpoint_0->xyz[2] = _cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START ? -1 : -mc_out[actuator_controls_s::INDEX_THROTTLE];
+	_thrust_setpoint_0->xyz[2] = -mc_out[actuator_controls_s::INDEX_THROTTLE];
+	//colugo  _thrust_setpoint_0->xyz[2] = _cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START ? -1 : -mc_out[actuator_controls_s::INDEX_THROTTLE];
 
 	_dbg_vect_clg.x	    = _thrust_setpoint_0->xyz[2];
 
@@ -589,9 +593,9 @@ void Standard::fill_actuator_outputs()
 	}
 
 	//@note debug
-	_dbg_vect_for_mav.x 	= float(_vtol_schedule.flight_mode);
+	_dbg_vect_for_mav.x 	= float(_local_pos_sp->vx);
 	_dbg_vect_for_mav.y 	= float(_cth.getInnerState());
-	_dbg_vect_for_mav.z 	= float(_vtol_mode);
+	_dbg_vect_for_mav.z 	= float(_local_pos_sp->acceleration[0]);
 
 	_dbg_vect_clg.timestamp = hrt_absolute_time();
 	orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &_dbg_vect_clg);
