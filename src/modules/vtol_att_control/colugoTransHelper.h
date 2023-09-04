@@ -65,7 +65,7 @@ public:
     float getColugoFlapsMcPos(){return _params_colugo._param_c_fl_mc_pos;}
     float getColugoFlapsFrstPos(){return _params_colugo._param_c_fl_fp;}
     float getColugoFlapsScndPos(){return _params_colugo._param_c_fl_sp;}
-    float getColugoLockTimeToPos1(){return _params_colugo._param_c_tm_to_col_pos1;}
+   // float getColugoLockTimeToPos1(){return _params_colugo._param_c_tm_to_col_pos1;}
     float getColugoTimeToPos2(){return _params_colugo._param_c_tm_to_pos2;};
     float getColugoLockTransToFwFrstPos(){return _params_colugo._param_c_wafp;}
     float getColugoLockTransToFwScndPos(){return _params_colugo._param_c_wasp;}
@@ -88,7 +88,7 @@ private:
 		float 	_param_c_fl_sp;
 		float	_param_c_fl_mc_pos;
 		float _param_c_tm_to_pos1;
-		float _param_c_tm_to_col_pos1;
+		//float _param_c_tm_to_col_pos1;
 		float _param_c_tm_to_pos2;
 		float _param_c_tr_fw_srv_slew;
 		float _param_airspeed_blend;
@@ -110,7 +110,7 @@ private:
 		param_t _param_c_fl_sp;
 		param_t _param_c_fl_mc_pos;
 		param_t _param_c_tm_to_pos1;
-		param_t _param_c_tm_to_col_pos1;
+		//param_t _param_c_tm_to_col_pos1;
 		param_t _param_c_tm_to_pos2;
 		param_t _param_c_tr_fw_srv_slew;
 		param_t _param_airspeed_blend;
