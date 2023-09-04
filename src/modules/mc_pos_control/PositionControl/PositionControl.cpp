@@ -99,7 +99,6 @@ void PositionControl::setState(const PositionControlStates &states)
 void PositionControl::setInputSetpoint(const vehicle_local_position_setpoint_s &setpoint)
 {
     _pos_sp = Vector3f(setpoint.x, setpoint.y, setpoint.z);
-    float deleteme  = fabsf(setpoint.vx);
     _vel_sp = Vector3f(setpoint.vx, setpoint.vy, setpoint.vz);
     _acc_sp = Vector3f(setpoint.acceleration);
     _yaw_sp = setpoint.yaw;

@@ -451,8 +451,6 @@ void MulticopterPositionControl::Run()
 				math::min(speed_up, _param_mpc_z_vel_max_up.get()), // takeoff ramp starts with negative velocity limit
 				math::max(speed_down, 0.f));
 
-		//check what the _setpoint vals are too...
-			float deleteme = fabsf(_setpoint.vx);
 			_control.setInputSetpoint(_setpoint);
 
 			// update states
@@ -502,7 +500,6 @@ void MulticopterPositionControl::Run()
 			vehicle_local_position_setpoint_s local_pos_sp{};
 			_control.getLocalPositionSetpoint(local_pos_sp);
 			local_pos_sp.timestamp = hrt_absolute_time();
-			float deleteme2 = fabsf(local_pos_sp.vx);
 
 			colugo_transition_s colugo_trans;
 			if (_colugo_transition_sub.update(&colugo_trans)) {
