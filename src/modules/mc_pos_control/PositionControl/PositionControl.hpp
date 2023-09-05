@@ -132,6 +132,12 @@ public:
 	void setHoverThrust(const float hover_thrust) { _hover_thrust = math::constrain(hover_thrust, 0.1f, 0.9f); }
 
 	/**
+	 * Set the velocity for first stage of trasition to FW (ascending)
+	 * @param velocity of ascending in trasition to FW (can not exceed -_lim_vel_up, _lim_vel_down)
+	 */
+	void setColugoTransZvel(const float zVel) { _colugo_trans_z_vel = zVel; }
+
+	/**
 	 * Update the hover thrust without immediately affecting the output
 	 * by adjusting the integrator. This prevents propagating the dynamics
 	 * of the hover thrust signal directly to the output of the controller.
@@ -207,6 +213,7 @@ private:
 	float _lim_tilt{}; ///< Maximum tilt from level the output attitude is allowed to have
 
 	float _hover_thrust{}; ///< Thrust [0.1, 0.9] with which the vehicle hovers not accelerating down or up with level orientation
+	float _colugo_trans_z_vel{};//velocity of ascending in trasition to FW
 
 	// States
 	matrix::Vector3f _pos; /**< current position */

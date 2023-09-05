@@ -168,6 +168,10 @@ void MulticopterPositionControl::parameters_update(bool force)
 			Vector3f(_param_mpc_xy_vel_d_acc.get(), _param_mpc_xy_vel_d_acc.get(), _param_mpc_z_vel_d_acc.get()));
 		_control.setHorizontalThrustMargin(_param_mpc_thr_xy_marg.get());
 
+		//colugo
+		_control.setColugoTransZvel(_param_c_z_tr_spd_ms.get());
+
+
 		// Check that the design parameters are inside the absolute maximum constraints
 		if (_param_mpc_xy_cruise.get() > _param_mpc_xy_vel_max.get()) {
 			_param_mpc_xy_cruise.set(_param_mpc_xy_vel_max.get());
