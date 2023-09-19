@@ -263,7 +263,7 @@ int IRLOCK::read_device_block(irlock_target_s *block)
 
 void IRLOCK::print_usage()
 {
-	PRINT_MODULE_USAGE_NAME("irlock", "driver");
+	PRINT_MODULE_USAGE_NAME("irLock", "driver");
 	PRINT_MODULE_USAGE_COMMAND("start");
 	PRINT_MODULE_USAGE_PARAMS_I2C_SPI_DRIVER(true, false);
 	PRINT_MODULE_USAGE_PARAMS_I2C_ADDRESS(0x54);
