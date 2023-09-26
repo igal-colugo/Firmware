@@ -45,14 +45,6 @@
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_status.h>
 
-// int32_t param = 0;
-
-// if (PX4_OK != param_get(param_find("SYS_FAILURE_EN"), &param))
-// {
-//     PX4_ERR("Could not get param SYS_FAILURE_EN");
-//     return 1;
-// }
-
 int ColugoFailsafeModule::print_status()
 {
     PX4_INFO("Running");
@@ -320,6 +312,7 @@ bool ColugoFailsafeModule::update_gps_parameters()
 
     return return_value;
 }
+
 bool ColugoFailsafeModule::update_handler(FailHandler *handler)
 {
     bool return_value = false;

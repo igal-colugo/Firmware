@@ -4573,7 +4573,7 @@ void Commander::estimator_check()
         //@note check global position
         _status_flags.global_position_valid =
             check_posvel_validity(xy_valid, gpos.eph, _param_com_pos_fs_eph.get(), gpos.timestamp, _last_gpos_fail_time_us, _status_flags.global_position_valid);
-       
+
         //@note check local position
         _status_flags.local_position_valid = check_posvel_validity(xy_valid, lpos.eph, lpos_eph_threshold_adj, lpos.timestamp, _last_lpos_fail_time_us, _status_flags.local_position_valid);
 
