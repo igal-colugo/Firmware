@@ -47,6 +47,7 @@
 #include "land.h"
 #include "precland.h"
 #include "loiter.h"
+#include "colugoCamGuide.h"
 #include "mission.h"
 #include "navigator_mode.h"
 #include "rtl.h"
@@ -86,7 +87,7 @@ using namespace time_literals;
 /**
  * Number of navigation modes that need on_active/on_inactive calls
  */
-#define NAVIGATOR_MODE_ARRAY_SIZE 9
+#define NAVIGATOR_MODE_ARRAY_SIZE 10 // added new one for colugo
 
 class Navigator : public ModuleBase<Navigator>, public ModuleParams
 {
@@ -388,6 +389,7 @@ private:
 
 	Mission		_mission;			/**< class that handles the missions */
 	Loiter		_loiter;			/**< class that handles loiter */
+	ColugoCamGuide	_cCamGuide;			/**< class that handles colugo's cam guide */
 	Takeoff		_takeoff;			/**< class for handling takeoff commands */
 	VtolTakeoff	_vtol_takeoff;			/**< class for handling VEHICLE_CMD_NAV_VTOL_TAKEOFF command */
 	Land		_land;			/**< class for handling land commands */
