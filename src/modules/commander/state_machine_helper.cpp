@@ -380,11 +380,11 @@ bool set_nav_state(vehicle_status_s &status, actuator_armed_s &armed, commander_
          * - if we have vtol transition failure
          * - on data and RC link loss */
         //@note check dual fail first
-        // if (is_armed && check_dual_fail_nav_state(status, old_failsafe, mavlink_log_pub, status_flags, false, true))
-        //{
-        // nothing to do - everything done in check_dual_fail_nav_state
-        //}
-        if (is_armed && check_invalid_pos_nav_state(status, old_failsafe, mavlink_log_pub, status_flags, false, true))
+        if (is_armed && check_dual_fail_nav_state(status, old_failsafe, mavlink_log_pub, status_flags, false, true))
+        {
+            // nothing to do - everything done in check_dual_fail_nav_state
+        }
+        else if (is_armed && check_invalid_pos_nav_state(status, old_failsafe, mavlink_log_pub, status_flags, false, true))
         {
             // nothing to do - everything done in check_invalid_pos_nav_state
         }
@@ -801,11 +801,11 @@ bool check_dual_fail_nav_state(vehicle_status_s &status, bool old_failsafe, orb_
 {
     bool fallback_required = false;
 
-    int32_t gps_failsafe_take_care = 0;
+    int32_t dual_failsafe_take_care = 0;
 
-    if (PX4_OK != param_get(param_find("COM_GPS_TKC"), &gps_failsafe_take_care))
+    if (PX4_OK != param_get(param_find("C_DUAL_FAIL"), &dual_failsafe_take_care))
     {
-        PX4_ERR("Could not get param COM_GPS_TKC");
+        PX4_ERR("Could not get param C_DUAL_FAIL");
         return 1;
     }
 
@@ -846,21 +846,22 @@ bool check_dual_fail_nav_state(vehicle_status_s &status, bool old_failsafe, orb_
             // go into a descent that does not require stick control
             if (status_flags.local_position_valid)
             {
-                if (gps_failsafe_take_care == 0)
+                if (dual_failsafe_take_care == 0)
                 {
+                    // disabled
                     // do nothing
                 }
-                if (gps_failsafe_take_care == 1)
+                if (dual_failsafe_take_care == 1)
                 {
-                    status.nav_state = vehicle_status_s::NAVIGATION_STATE_ALTCTL;
+                    // warning
                 }
-                if (gps_failsafe_take_care == 2)
-                {
-                    status.nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
-                }
-                if (gps_failsafe_take_care == 3)
+                if (dual_failsafe_take_care == 2)
                 {
                     status.nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
+                }
+                if (dual_failsafe_take_care == 3)
+                {
+                    status.nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_RTL;
                 }
             }
             else if (status_flags.local_altitude_valid)

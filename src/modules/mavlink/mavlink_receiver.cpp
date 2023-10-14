@@ -2412,7 +2412,7 @@ void MavlinkReceiver::handle_message_hil_sensor(mavlink_message_t *msg)
     {
         differential_pressure_s report{};
         report.timestamp_sample = timestamp;
-        report.device_id = 1377548;                                          // 1377548: DRV_DIFF_PRESS_DEVTYPE_SIM, BUS: 1, ADDR: 5, TYPE: SIMULATION
+        report.device_id = 1377548; // 1377548: DRV_DIFF_PRESS_DEVTYPE_SIM, BUS: 1, ADDR: 5, TYPE: SIMULATION
         report.temperature = hil_sensor.temperature;
         report.differential_pressure_pa = hil_sensor.diff_pressure * 100.0f; // hPa to Pa
         report.timestamp = hrt_absolute_time();
@@ -2461,8 +2461,8 @@ void MavlinkReceiver::handle_message_hil_gps(mavlink_message_t *msg)
     gps.eph = (float) hil_gps.eph * 1e-2f; // cm -> m
     gps.epv = (float) hil_gps.epv * 1e-2f; // cm -> m
 
-    gps.hdop = 0;                          // TODO
-    gps.vdop = 0;                          // TODO
+    gps.hdop = hil_gps.eph;
+    gps.vdop = hil_gps.epv;
 
     gps.noise_per_ms = 0;
     gps.automatic_gain_control = 0;

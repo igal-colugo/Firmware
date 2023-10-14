@@ -1,0 +1,6 @@
+module_name: ViewPro
+serial_config:
+    - command: viewpro start -d ${SERIAL_DEV}
+      port_config_param:
+        name: MNT_VIEWPRO_CFG
+        group: Mount

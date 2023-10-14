@@ -226,6 +226,9 @@ else()
 	endif()
 endif()
 
+#@note Vlad added
+set(MIN_CUSTOM_OPT_LEVEL -O0)
+
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebInfo;MinSizeRel;Coverage;AddressSanitizer;UndefinedBehaviorSanitizer")
 message(STATUS "cmake build type: ${CMAKE_BUILD_TYPE}")
 

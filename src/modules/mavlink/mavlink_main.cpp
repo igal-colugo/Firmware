@@ -681,7 +681,19 @@ int Mavlink::mavlink_open_uart(const int baud, const char *uart_name, const FLOW
     }
 
     /* open uart */
+    // #note Vlad added
+    int wait_time_counter = 0;
     _uart_fd = ::open(uart_name, O_RDWR | O_NOCTTY);
+    while (_uart_fd < 0)
+    {
+        _uart_fd = ::open(uart_name, O_RDWR | O_NOCTTY);
+        usleep(100000);
+        wait_time_counter++;
+        if (wait_time_counter > 10) // wait 1 sec
+        {
+            break;
+        }
+    }
 
     /*
      * Return here in the iridium mode since the iridium driver does not
@@ -2344,7 +2356,6 @@ int Mavlink::task_main(int argc, char *argv[])
     }
 
 #endif // MAVLINK_UDP
-
 
     if (set_instance_id())
     {

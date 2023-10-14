@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015-2021 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2017 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,24 +31,4 @@
 #
 ############################################################################
 
-set(PARAM_PREFIX PWM_MAIN)
-
-if(CONFIG_BOARD_IO)
-	set(PARAM_PREFIX PWM_AUX)
-endif()
-
-px4_add_module(
-	MODULE drivers__camera_trigger
-	MAIN camera_trigger
-	COMPILE_FLAGS
-		-DPARAM_PREFIX="${PARAM_PREFIX}"
-		#-O0
-	SRCS
-		camera_trigger.cpp
-		interfaces/src/camera_interface.cpp
-		interfaces/src/pwm.cpp
-		interfaces/src/seagull_map2.cpp
-		interfaces/src/gpio.cpp
-	DEPENDS
-		px4_work_queue
-	)
+add_subdirectory(viewpro)

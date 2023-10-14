@@ -22,6 +22,7 @@ cscope.in.out
 cscope.po.out
 Firmware.sublime-workspace
 user.sublime*
+/Documentation/
 /Documentation/doxy.log
 /Documentation/html/
 /Documentation/doxygen*objdb*tmp

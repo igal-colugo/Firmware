@@ -81,10 +81,10 @@ void CameraInterfacePWM::setup()
         PX4_ERR("up_pwm_trigger_init failed (%i)", ret);
         pin_bitmask = 0;
     }
-    else
-    {
-        pin_bitmask = ret;
-    }
+    // else
+    //{
+    // pin_bitmask = ret;
+    //}
 
     // Clear pins that could not be initialized
     for (unsigned i = 0; i < arraySize(_pins); i++)
@@ -107,14 +107,14 @@ void CameraInterfacePWM::setup()
 
 void CameraInterfacePWM::trigger(bool trigger_on_true)
 {
-//     /* advertise debug value */
-//     struct debug_key_value_s dbg;
-//     strncpy(dbg.key, "cam_trg_1", sizeof(dbg.key));
-//     dbg.value = 0.0f;
-//     orb_advert_t pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
+    //     /* advertise debug value */
+    //     struct debug_key_value_s dbg;
+    //     strncpy(dbg.key, "cam_trg_1", sizeof(dbg.key));
+    //     dbg.value = 0.0f;
+    //     orb_advert_t pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
 
-//     dbg.value = 77;
-//     orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
+    //     dbg.value = 77;
+    //     orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
 
     for (unsigned i = 0; i < arraySize(_pins); i++)
     {
