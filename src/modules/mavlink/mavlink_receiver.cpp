@@ -2456,7 +2456,7 @@ void MavlinkReceiver::handle_message_hil_gps(mavlink_message_t *msg)
 
     gps.s_variance_m_s = 0.25f;
     gps.c_variance_rad = 0.5f;
-    gps.fix_type = hil_gps.fix_type;
+    gps.fix_type = 2;//igal WA hil_gps.fix_type;
 
     gps.eph = (float) hil_gps.eph * 1e-2f; // cm -> m
     gps.epv = (float) hil_gps.epv * 1e-2f; // cm -> m
