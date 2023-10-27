@@ -3224,8 +3224,6 @@ void MavlinkReceiver::run()
 
     while (!_mavlink->should_exit())
     {
-        Protocol debug_1 = _mavlink->get_protocol();
-
         // check for parameter updates
         if (_parameter_update_sub.updated())
         {

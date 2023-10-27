@@ -107,7 +107,6 @@ PARAM_DEFINE_INT32(GPS_SAT_INFO, 0);
  */
 PARAM_DEFINE_INT32(GPS_UBX_MODE, 0);
 
-
 /**
  * Heading/Yaw offset for dual antenna GPS
  *
@@ -158,7 +157,7 @@ PARAM_DEFINE_INT32(GPS_1_PROTOCOL, 1);
  * Auto-detection will probe all protocols, and thus is a bit slower.
  *
  * @min 0
- * @max 5
+ * @max 7
  * @value 0 Auto detect
  * @value 1 u-blox
  * @value 2 MTK
@@ -166,6 +165,7 @@ PARAM_DEFINE_INT32(GPS_1_PROTOCOL, 1);
  * @value 4 Emlid Reach
  * @value 5 Femtomes
  * @value 6 NMEA (generic)
+ * @value 7 MAVLINK
  *
  * @reboot_required true
  * @group GPS
@@ -231,3 +231,36 @@ PARAM_DEFINE_INT32(GPS_1_GNSS, 0);
  * @group GPS
  */
 PARAM_DEFINE_INT32(GPS_2_GNSS, 0);
+
+/**
+ * Initialized lattitude for OBOX for case if main GPS has no satellites
+ *
+ * @min -900000000
+ * @max  900000000
+ *
+ * @reboot_required true
+ * @group GPS
+ */
+PARAM_DEFINE_INT32(GPS_2_LAT, 0);
+
+/**
+ * Initialized longitude for OBOX for case if main GPS has no satellites
+ *
+ * @min -1800000000
+ * @max  1800000000
+ *
+ * @reboot_required true
+ * @group GPS
+ */
+PARAM_DEFINE_INT32(GPS_2_LON, 0);
+
+/**
+ * Initialize auto init OBOX time (sec)
+ *
+ * @min -1
+ * @max  1800
+ *
+ * @reboot_required true
+ * @group GPS
+ */
+PARAM_DEFINE_INT32(GPS_2_INIT_TM, -1);
