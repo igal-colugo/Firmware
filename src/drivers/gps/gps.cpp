@@ -69,6 +69,7 @@
 #include "devices/src/ashtech.h"
 #include "devices/src/emlid_reach.h"
 #include "devices/src/femtomes.h"
+#include "devices/src/gps_mavlink.h"
 #include "devices/src/mtk.h"
 #include "devices/src/nmea.h"
 #endif // CONSTRAINED_FLASH
@@ -82,6 +83,8 @@
 
 #define TIMEOUT_1HZ 1300 //!< Timeout time in mS, 1000 mS (1Hz) + 300 mS delta for error
 #define TIMEOUT_5HZ 500  //!< Timeout time in mS,  200 mS (5Hz) + 300 mS delta for error
+#define TIMEOUT_10HZ 400 //!< Timeout time in mS,  100 mS (10Hz) + 300 mS delta for error
+#define TIMEOUT_20HZ 350 //!< Timeout time in mS,  50 mS (10Hz) + 300 mS delta for error
 #define RATE_MEASUREMENT_PERIOD 5000000
 
 enum class gps_driver_mode_t
@@ -92,7 +95,8 @@ enum class gps_driver_mode_t
     ASHTECH,
     EMLIDREACH,
     FEMTOMES,
-    NMEA
+    NMEA,
+    MAVLINK
 };
 
 enum class gps_dump_comm_mode_t : int32_t
@@ -166,34 +170,34 @@ class GPS : public ModuleBase<GPS>, public device::Device
     void reset_if_scheduled();
 
   private:
-    int _serial_fd{-1};                                                           ///< serial interface to GPS
-    unsigned _baudrate{0};                                                        ///< current baudrate
-    const unsigned _configured_baudrate{0};                                       ///< configured baudrate (0=auto-detect)
-    char _port[20]{};                                                             ///< device / serial port path
+    int _serial_fd{-1};                     ///< serial interface to GPS
+    unsigned _baudrate{0};                  ///< current baudrate
+    const unsigned _configured_baudrate{0}; ///< configured baudrate (0=auto-detect)
+    char _port[20]{};                       ///< device / serial port path
 
-    bool _healthy{false};                                                         ///< flag to signal if the GPS is ok
-    bool _mode_auto;                                                              ///< if true, auto-detect which GPS is attached
+    bool _healthy{false}; ///< flag to signal if the GPS is ok
+    bool _mode_auto;      ///< if true, auto-detect which GPS is attached
 
-    gps_driver_mode_t _mode;                                                      ///< current mode
+    gps_driver_mode_t _mode; ///< current mode
 
-    GPSHelper::Interface _interface;                                              ///< interface
-    GPSHelper *_helper{nullptr};                                                  ///< instance of GPS parser
+    GPSHelper::Interface _interface; ///< interface
+    GPSHelper *_helper{nullptr};     ///< instance of GPS parser
 
-    GPS_Sat_Info *_sat_info{nullptr};                                             ///< instance of GPS sat info data object
+    GPS_Sat_Info *_sat_info{nullptr}; ///< instance of GPS sat info data object
 
-    sensor_gps_s _report_gps_pos{};                                               ///< uORB topic for gps position
-    satellite_info_s *_p_report_sat_info{nullptr};                                ///< pointer to uORB topic for satellite info
+    sensor_gps_s _report_gps_pos{};                ///< uORB topic for gps position
+    satellite_info_s *_p_report_sat_info{nullptr}; ///< pointer to uORB topic for satellite info
 
     uORB::PublicationMulti<sensor_gps_s> _report_gps_pos_pub{ORB_ID(sensor_gps)}; ///< uORB pub for gps position
     uORB::PublicationMulti<sensor_gnss_relative_s> _sensor_gnss_relative_pub{ORB_ID(sensor_gnss_relative)};
 
     uORB::PublicationMulti<satellite_info_s> _report_sat_info_pub{ORB_ID(satellite_info)}; ///< uORB pub for satellite info
 
-    float _rate{0.0f};                                                                     ///< position update rate
-    float _rate_rtcm_injection{0.0f};                                                      ///< RTCM message injection rate
-    unsigned _last_rate_rtcm_injection_count{0};                                           ///< counter for number of RTCM messages
-    unsigned _num_bytes_read{0};                                                           ///< counter for number of read bytes from the UART (within update interval)
-    unsigned _rate_reading{0};                                                             ///< reading rate in B/s
+    float _rate{0.0f};                           ///< position update rate
+    float _rate_rtcm_injection{0.0f};            ///< RTCM message injection rate
+    unsigned _last_rate_rtcm_injection_count{0}; ///< counter for number of RTCM messages
+    unsigned _num_bytes_read{0};                 ///< counter for number of read bytes from the UART (within update interval)
+    unsigned _rate_reading{0};                   ///< reading rate in B/s
 
     const Instance _instance;
 
@@ -356,6 +360,9 @@ GPS::GPS(const char *path, gps_driver_mode_t mode, GPSHelper::Interface interfac
 
         case 6:
             _mode = gps_driver_mode_t::NMEA;
+            break;
+        case 7:
+            _mode = gps_driver_mode_t::MAVLINK;
             break;
 #endif // CONSTRAINED_FLASH
         }
@@ -851,15 +858,17 @@ void GPS::run()
     /* loop handling received serial bytes and also configuring in between */
     while (!should_exit())
     {
+        hrt_abstime debug_time = hrt_absolute_time();
+
         if (_helper != nullptr)
         {
             delete (_helper);
             _helper = nullptr;
         }
 
+        /* open the serial port */
         if (_serial_fd < 0)
         {
-            /* open the serial port */
             _serial_fd = ::open(_port, O_RDWR | O_NOCTTY);
 
             if (_serial_fd < 0)
@@ -928,6 +937,11 @@ void GPS::run()
             _helper = new GPSDriverNMEA(&GPS::callback, this, &_report_gps_pos, _p_report_sat_info, heading_offset);
             set_device_type(DRV_GPS_DEVTYPE_NMEA);
             break;
+
+        case gps_driver_mode_t::MAVLINK:
+            _helper = new GPSDriverMavlink(&GPS::callback, this, &_report_gps_pos, _p_report_sat_info, heading_offset);
+            set_device_type(DRV_GPS_DEVTYPE_MAVLINK);
+            break;
 #endif // CONSTRAINED_FLASH
 
         default:
@@ -949,7 +963,6 @@ void GPS::run()
 
         if (_helper && _helper->configure(_baudrate, gpsConfig) == 0)
         {
-
             /* reset report */
             memset(&_report_gps_pos, 0, sizeof(_report_gps_pos));
             _report_gps_pos.heading = NAN;
@@ -1005,9 +1018,13 @@ void GPS::run()
                 receive_timeout = TIMEOUT_1HZ;
             }
 
+            if (_mode == gps_driver_mode_t::MAVLINK)
+            {
+                receive_timeout = TIMEOUT_5HZ;
+            }
+
             while ((helper_ret = _helper->receive(receive_timeout)) > 0 && !should_exit())
             {
-
                 if (helper_ret & 1)
                 {
                     publish();
@@ -1066,6 +1083,8 @@ void GPS::run()
                     //						PX4_WARN("module found: %s", mode_str);
                     _healthy = true;
                 }
+
+                // px4_usleep(10);
             }
 
             if (_healthy)
@@ -1076,6 +1095,7 @@ void GPS::run()
             }
         }
 
+        /* close the serial port */
         if (_serial_fd >= 0)
         {
             ::close(_serial_fd);
@@ -1107,7 +1127,7 @@ void GPS::run()
             case gps_driver_mode_t::NMEA: // skip NMEA for auto-detection to avoid false positive matching
 #endif                                    // CONSTRAINED_FLASH
                 _mode = gps_driver_mode_t::UBX;
-                px4_usleep(500000);       // tried all possible drivers. Wait a bit before next round
+                px4_usleep(500000); // tried all possible drivers. Wait a bit before next round
                 break;
 
             default:
@@ -1449,6 +1469,7 @@ int GPS::run_trampoline_secondary(int argc, char *argv[])
     }
     return 0;
 }
+
 GPS *GPS::instantiate(int argc, char *argv[])
 {
     return instantiate(argc, argv, Instance::Main);

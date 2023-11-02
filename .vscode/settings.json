@@ -140,5 +140,6 @@
         ],
         "python.analysis.extraPaths": [
                 "/opt/ros/foxy/lib/python3.8/site-packages"
-        ] // Added for rp2040
+        ],
+        "cortex-debug.variableUseNaturalFormat": true // Added for rp2040
 }
