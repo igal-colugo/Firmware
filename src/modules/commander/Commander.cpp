@@ -4067,7 +4067,6 @@ void Commander::data_link_check()
     {
         if ((_datalink_last_heartbeat_gcs != 0) && hrt_elapsed_time(&_datalink_last_heartbeat_gcs) > (_param_com_dl_loss_t.get() * 1_s))
         {
-
             _status.data_link_lost = true;
             _status.data_link_lost_counter++;
 

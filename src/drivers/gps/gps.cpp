@@ -112,7 +112,7 @@ struct GPS_Sat_Info
     satellite_info_s _data;
 };
 
-static constexpr int TASK_STACK_SIZE = PX4_STACK_ADJUSTED(2760);
+static constexpr int TASK_STACK_SIZE = PX4_STACK_ADJUSTED(1760);
 
 class GPS : public ModuleBase<GPS>, public device::Device
 {
@@ -1436,7 +1436,7 @@ int GPS::task_spawn(int argc, char *argv[], Instance instance)
         entry_point = (px4_main_t) &run_trampoline_secondary;
     }
 
-    int task_id = px4_task_spawn_cmd("gps", SCHED_DEFAULT, SCHED_PRIORITY_SLOW_DRIVER, 2760, entry_point, (char *const *) argv);
+    int task_id = px4_task_spawn_cmd("gps", SCHED_DEFAULT, SCHED_PRIORITY_SLOW_DRIVER, TASK_STACK_SIZE, entry_point, (char *const *) argv);
 
     if (task_id < 0)
     {
