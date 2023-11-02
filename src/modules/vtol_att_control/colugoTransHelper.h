@@ -14,7 +14,7 @@ static const float CST_LOCKING_TIME_S = 1.2;//allowed time in seconds for the lo
 
 static const float COLUGO_ACTUATOR_MC_POS{-1.0f};
 
-
+/*
 enum class COLUGO_FW_TRANS_STAGE{
 		TRANS_IDLE = 0,
 		TRANS_START,
@@ -25,6 +25,7 @@ enum class COLUGO_FW_TRANS_STAGE{
 		TRANS_TIME_SCND_POS,
 		TRANS_ALLOW_FW
 	};
+	*/
 enum class COLUGO_FW_VTRANS_STAGE{ //fixed wing vertical algorithm stages ....
 		VTRANS_IDLE = 0,
 		VTRANS_VERTICAL_START,//starting vertical ascend
@@ -38,27 +39,36 @@ enum class COLUGO_FW_VTRANS_STAGE{ //fixed wing vertical algorithm stages ....
 class colugoTransHelper {
 public:
 
+	enum class vtol_mode {
+		MC_MODE = 0,
+		TRANSITION_TO_FW,
+		TRANSITION_TO_MC,
+		FW_MODE,
+		PRE_TRANSITION_TO_FW
+
+	};
+
     colugoTransHelper();
 
     void setColugoActuatorPos();
     void publishColugoActuator();
-    void updateColugoTransitionState(float airSpd, mode fm, hrt_abstime tt);
+    void updateColugoTransitionState(float airSpd, vtol_mode fm, hrt_abstime tt);
     float getPusherThr(float thr);
-    COLUGO_FW_VTRANS_STAGE getInnerState(){return _transStage;};
+    COLUGO_FW_VTRANS_STAGE getInnerState(){return _transStage;}
     void parameters_update();
-    int32_t getColugoDebugVal(){return _params_colugo._param_c_debug;};
-    float getColugoPiMcPos(){return _params_colugo._param_c_pi_mc_pos;};
-    float getColugoPiFp(){return _params_colugo._param_c_pi_fp;};
-    float getColugoPiSp(){return _params_colugo._param_c_pi_sp;};
-    float getColugoTrFwSrvSlew(){return _params_colugo._param_c_tr_fw_srv_slew;};
-    float getColugoTmToPos1(){return _params_colugo._param_c_tm_to_pos1;};
-    float getColugoFlapsMcPos(){return _params_colugo._param_c_fl_mc_pos;};
-    float getColugoFlapsFrstPos(){return _params_colugo._param_c_fl_fp;};
-    float getColugoFlapsScndPos(){return _params_colugo._param_c_fl_sp;};
-    float getColugoLockTimeToPos1(){return _params_colugo._param_c_tm_to_col_pos1;};
-    float getColugoTimeToPos2(){return _params_colugo._param_c_tm_to_pos2;};
-    float getColugoLockTransToFwFrstPos(){return _params_colugo._param_c_wafp;};
-    float getColugoLockTransToFwScndPos(){return _params_colugo._param_c_wasp;};
+    int32_t getColugoDebugVal(){return _params_colugo._param_c_debug;}
+    float getColugoPiMcPos(){return _params_colugo._param_c_pi_mc_pos;}
+    float getColugoPiFp(){return _params_colugo._param_c_pi_fp;}
+    float getColugoPiSp(){return _params_colugo._param_c_pi_sp;}
+    float getColugoTrFwSrvSlew(){return _params_colugo._param_c_tr_fw_srv_slew;}
+   // float getColugoTmToPos1(){return _params_colugo._param_c_tm_to_pos1;};
+    float getColugoFlapsMcPos(){return _params_colugo._param_c_fl_mc_pos;}
+    float getColugoFlapsFrstPos(){return _params_colugo._param_c_fl_fp;}
+    float getColugoFlapsScndPos(){return _params_colugo._param_c_fl_sp;}
+   // float getColugoLockTimeToPos1(){return _params_colugo._param_c_tm_to_col_pos1;}
+ //   float getColugoTimeToPos2(){return _params_colugo._param_c_tm_to_pos2;};
+    float getColugoLockTransToFwFrstPos(){return _params_colugo._param_c_wafp;}
+    float getColugoLockTransToFwScndPos(){return _params_colugo._param_c_wasp;}
     void lockColugoActuator();
     float getColugoTransToFwSlewedPitch();
     float getColugoTransToFwSlewedFlaps();
@@ -77,9 +87,9 @@ private:
 		float 	_param_c_fl_fp;
 		float 	_param_c_fl_sp;
 		float	_param_c_fl_mc_pos;
-		float _param_c_tm_to_pos1;
-		float _param_c_tm_to_col_pos1;
-		float _param_c_tm_to_pos2;
+		//float _param_c_tm_to_pos1;
+		//float _param_c_tm_to_col_pos1;
+		//float _param_c_tm_to_pos2;
 		float _param_c_tr_fw_srv_slew;
 		float _param_airspeed_blend;
 		float _param_c_z_tr_spd_ms;
@@ -99,9 +109,9 @@ private:
 		param_t _param_c_fl_fp;
 		param_t _param_c_fl_sp;
 		param_t _param_c_fl_mc_pos;
-		param_t _param_c_tm_to_pos1;
-		param_t _param_c_tm_to_col_pos1;
-		param_t _param_c_tm_to_pos2;
+		//param_t _param_c_tm_to_pos1;
+		//param_t _param_c_tm_to_col_pos1;
+		//param_t _param_c_tm_to_pos2;
 		param_t _param_c_tr_fw_srv_slew;
 		param_t _param_airspeed_blend;
 		param_t _param_c_z_tr_spd_ms;
@@ -114,7 +124,7 @@ private:
     float _wingLockActuatorPos = COLUGO_ACTUATOR_MC_POS;
     uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
     uORB::Publication<colugo_transition_s> _colugo_transition_pub{ORB_ID(colugo_transition)};
-    mode _currentMode;
+    vtol_mode _currentMode;
     hrt_abstime _startTime, _reachedLockSpeedTime, _FarwardStageStartTime;
     COLUGO_FW_VTRANS_STAGE _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
     float _airspeed;

@@ -75,6 +75,7 @@ public:
 
 private:
 
+
 	struct {
 		float pusher_ramp_dt;
 		float back_trans_ramp;
@@ -92,22 +93,6 @@ private:
 	} _params_handles_standard;
 
 
-
-
-
-
-//	bool _fw_trans_latch = false;
-
-
-
-
-	enum class vtol_mode {
-		MC_MODE = 0,
-		TRANSITION_TO_FW,
-		TRANSITION_TO_MC,
-		FW_MODE
-	};
-
 	struct
 	{
 		hrt_abstime throttle_trans_reached_time;
@@ -116,10 +101,10 @@ private:
 
 
 	colugoTransHelper _cth{};
-	COLUGO_FW_TRANS_STAGE _colugo_fw_trans_stage;
+	//COLUGO_FW_TRANS_STAGE _colugo_fw_trans_stage;
 
 	struct {
-		vtol_mode flight_mode;			// indicates in which mode the vehicle is in
+		colugoTransHelper::vtol_mode flight_mode;			// indicates in which mode the vehicle is in
 		hrt_abstime transition_start;	// at what time did we start a transition (front- or backtransition)
 	} _vtol_schedule;
 
@@ -141,23 +126,23 @@ private:
 /*
 get the postion of pitch control from mc to fw trasition based on time past after reaching transition throttle
 */
-	float getColugoToFwPitchTransitionTimeBased2();
+	//float getColugoToFwPitchTransitionTimeBased2();
 
 /*
 get the postion of flaps control from mc to fw trasition based on time past after reaching transition throttle
 */
-	float getColugoToFwFlapsTransitionTimeBased2();
+	//float getColugoToFwFlapsTransitionTimeBased2();
 
 	/*returns relative postion acording to _param_c_tr_fw_srv_slew parameter*/
-	float getColugoSlewedPosition(float startPos, float endPos);
+//	float getColugoSlewedPosition(float startPos, float endPos);
 
 /*
 get the postion of colugo actuator from mc to fw trasition based on time past after reaching transition throttle
 */
-	float getColugoActuatorToFwTransition2();
+//	float getColugoActuatorToFwTransition2();
 
 //colugo go through the trasitions stages to fw
-	void updateColugoFwTransitionStage();
+	//void updateColugoFwTransitionStage();
 
 };
 #endif

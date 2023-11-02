@@ -435,6 +435,7 @@ void VtolAttitudeControl::Run()
     // run on actuator publications corresponding to VTOL mode
     bool should_run = false;
 
+
     switch (_vtol_type->get_mode())
     {
     case mode::TRANSITION_TO_FW:

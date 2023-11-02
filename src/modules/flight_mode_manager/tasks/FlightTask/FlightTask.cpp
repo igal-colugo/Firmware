@@ -87,7 +87,7 @@ const vehicle_local_position_setpoint_s FlightTask::getPositionSetpoint()
 	vehicle_local_position_setpoint.y = _position_setpoint(1);
 	vehicle_local_position_setpoint.z = _position_setpoint(2);
 
-	vehicle_local_position_setpoint.vx = _velocity_setpoint(0);
+ 	vehicle_local_position_setpoint.vx = _velocity_setpoint(0);
 	vehicle_local_position_setpoint.vy = _velocity_setpoint(1);
 	vehicle_local_position_setpoint.vz = _velocity_setpoint(2);
 
@@ -179,6 +179,7 @@ void FlightTask::_evaluateVehicleLocalPositionSetpoint()
 		// This is used to properly initialize the velocity setpoint when onpening the position loop (position unlock)
 		_velocity_setpoint_feedback = matrix::Vector3f(vehicle_local_position_setpoint.vx, vehicle_local_position_setpoint.vy,
 					      vehicle_local_position_setpoint.vz);
+
 		_acceleration_setpoint_feedback = matrix::Vector3f(vehicle_local_position_setpoint.acceleration);
 
 	} else {

@@ -132,7 +132,7 @@ exiterr:
 
 int landing_target_estimator_thread_main(int argc, char *argv[])
 {
-	PX4_DEBUG("starting");
+	PX4_DEBUG("starting LTE");
 
 	thread_running = true;
 

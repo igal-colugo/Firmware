@@ -12,9 +12,9 @@ colugoTransHelper::colugoTransHelper() {
 	_params_handles_colugo._param_c_fl_fp          = param_find("C_FL_FP");
 	_params_handles_colugo._param_c_fl_sp 	       = param_find("C_FL_SP");
 	_params_handles_colugo._param_c_fl_mc_pos      = param_find("C_FL_MC_POS");
-	_params_handles_colugo._param_c_tm_to_pos1     = param_find("C_TM_TO_POS1");
-	_params_handles_colugo._param_c_tm_to_col_pos1 = param_find("C_TM_TO_COL_POS1");
-	_params_handles_colugo._param_c_tm_to_pos2     = param_find("C_TM_TO_POS2");
+	//_params_handles_colugo._param_c_tm_to_pos1     = param_find("C_TM_TO_POS1");
+	//_params_handles_colugo._param_c_tm_to_col_pos1 = param_find("C_TM_TO_COL_POS1");
+	//_params_handles_colugo._param_c_tm_to_pos2     = param_find("C_TM_TO_POS2");
 	_params_handles_colugo._param_c_tr_fw_srv_slew = param_find("C_TR_FW_SRV_SLEW");
 	_params_handles_colugo._param_airspeed_blend   = param_find("VT_ARSP_BLEND");
 	_params_handles_colugo._param_c_z_tr_spd_ms    = param_find("C_Z_TR_SPD_MS");
@@ -50,14 +50,15 @@ void colugoTransHelper::publishColugoActuator()
 
 }
 
-void colugoTransHelper::updateColugoTransitionState(float airSpd, mode fm, hrt_abstime tt){
+void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, hrt_abstime tt){
 	_airspeed = airSpd;
 		switch (fm)
 		{
-		case mode::FIXED_WING:
+		case vtol_mode::FW_MODE:
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
 			break;
-		case mode::TRANSITION_TO_FW:
+		case vtol_mode::PRE_TRANSITION_TO_FW:
+		case vtol_mode::TRANSITION_TO_FW:
 			if(fm != _currentMode){//we just entered tansition...
 				_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START;
 				_startTime = tt;
@@ -67,10 +68,10 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, mode fm, hrt_a
 				updateInnerStage();
 			}
 			break;
-		case mode::TRANSITION_TO_MC:
+		case vtol_mode::TRANSITION_TO_MC:
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
 			break;
-		case mode::ROTARY_WING:
+		case vtol_mode::MC_MODE:
 			_transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
 			break;
 
@@ -168,14 +169,14 @@ void colugoTransHelper::parameters_update(){
 	param_get(_params_handles_colugo._param_c_pi_mc_pos, &v);
 	_params_colugo._param_c_pi_mc_pos = math::constrain(v, -1.0f, 1.0f);
 
-	param_get(_params_handles_colugo._param_c_tm_to_pos1, &v);
-	_params_colugo._param_c_tm_to_pos1 = math::constrain(v, 0.0f, 100.0f);
+	//param_get(_params_handles_colugo._param_c_tm_to_pos1, &v);
+	//_params_colugo._param_c_tm_to_pos1 = math::constrain(v, 0.0f, 100.0f);
 
-	param_get(_params_handles_colugo._param_c_tm_to_col_pos1, &v);
-	_params_colugo._param_c_tm_to_col_pos1 = math::constrain(v, 0.0f, 100.0f);
+	//param_get(_params_handles_colugo._param_c_tm_to_col_pos1, &v);
+	//_params_colugo._param_c_tm_to_col_pos1 = math::constrain(v, 0.0f, 100.0f);
 
-	param_get(_params_handles_colugo._param_c_tm_to_pos2, &v);
-	_params_colugo._param_c_tm_to_pos2 = math::constrain(v, 0.0f, 100.0f);
+	//param_get(_params_handles_colugo._param_c_tm_to_pos2, &v);
+	//_params_colugo._param_c_tm_to_pos2 = math::constrain(v, 0.0f, 100.0f);
 
 	param_get(_params_handles_colugo._param_c_tr_fw_srv_slew, &v);
 	_params_colugo._param_c_tr_fw_srv_slew = math::constrain(v, 0.0f, 10.0f);

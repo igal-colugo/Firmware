@@ -110,45 +110,6 @@ parameters:
             max: 1.0
             default: 0.1
 
-        C_TM_TO_COL_POS1:
-            description:
-                short: 'Time to position #1(COLUGO ACTUTOR)'
-                long: |
-                    'time gap, in seconds since 'transition throttle' reached, to go to position #1 (COLUGO ACTUTOR).'
-            type: float
-            decimal: 2
-            increment: 0.01
-            unit: s
-            min: 0.1
-            max: 100.0
-            default: 2.0
-
-        C_TM_TO_POS1:
-            description:
-                short: 'Time to position #1(surfaces)'
-                long: |
-                    'time gap, in seconds since 'transition throttle' reached, to go to position #1 (flaps and elevator).'
-            type: float
-            decimal: 2
-            increment: 0.01
-            unit: s
-            min: 0.1
-            max: 100.0
-            default: 3.0
-
-        C_TM_TO_POS2:
-            description:
-                short: 'Time to position #2'
-                long: |
-                    'time gap, in seconds since 'transition throttle' reached, to go to position #2 (flaps, elevator, and colugo actuator).'
-            type: float
-            decimal: 2
-            increment: 0.01
-            unit: s
-            min: 0.1
-            max: 100.0
-            default: 4.0
-
         C_Z_TR_SPD_MS:
             description:
                 short: 'vertical speed for FW transition 1st stage m/s'

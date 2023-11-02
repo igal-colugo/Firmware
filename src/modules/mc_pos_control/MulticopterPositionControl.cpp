@@ -168,6 +168,10 @@ void MulticopterPositionControl::parameters_update(bool force)
 			Vector3f(_param_mpc_xy_vel_d_acc.get(), _param_mpc_xy_vel_d_acc.get(), _param_mpc_z_vel_d_acc.get()));
 		_control.setHorizontalThrustMargin(_param_mpc_thr_xy_marg.get());
 
+		//colugo
+		_control.setColugoTransZvel(_param_c_z_tr_spd_ms.get());
+
+
 		// Check that the design parameters are inside the absolute maximum constraints
 		if (_param_mpc_xy_cruise.get() > _param_mpc_xy_vel_max.get()) {
 			_param_mpc_xy_cruise.set(_param_mpc_xy_vel_max.get());
@@ -500,6 +504,25 @@ void MulticopterPositionControl::Run()
 			vehicle_local_position_setpoint_s local_pos_sp{};
 			_control.getLocalPositionSetpoint(local_pos_sp);
 			local_pos_sp.timestamp = hrt_absolute_time();
+
+			colugo_transition_s colugo_trans;
+			if (_colugo_transition_sub.update(&colugo_trans)) {
+				/*
+				COLUGO_FW_VTRANS_STAGE transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
+
+	    			if(transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
+	    				&& transState < COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
+					local_pos_sp.vx = 0.0;
+					local_pos_sp.vy = 0.0;
+					local_pos_sp.x = 0.0;
+					local_pos_sp.y = 0.0;
+					local_pos_sp.acceleration[0] = local_pos_sp.acceleration[1] = 0;
+					local_pos_sp.thrust[0] = local_pos_sp.thrust[1] = 0;
+					_control.resetIntegral();
+	    			}
+				*/
+			}
+
 			_local_pos_sp_pub.publish(local_pos_sp);
 
 			// Publish attitude setpoint output

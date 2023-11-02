@@ -69,7 +69,7 @@ Navigator *g_navigator;
 }
 
 Navigator::Navigator()
-    : ModuleParams(nullptr), _loop_perf(perf_alloc(PC_ELAPSED, "navigator")), _geofence(this), _gf_breach_avoidance(this), _mission(this), _loiter(this), _takeoff(this), _vtol_takeoff(this),
+    : ModuleParams(nullptr), _loop_perf(perf_alloc(PC_ELAPSED, "navigator")), _geofence(this), _gf_breach_avoidance(this), _mission(this), _loiter(this), _cCamGuide(this), _takeoff(this), _vtol_takeoff(this),
       _land(this), _precland(this), _rtl(this), _engineFailure(this), _follow_target(this)
 {
     /* Create a list of our possible navigation types */
@@ -82,6 +82,7 @@ Navigator::Navigator()
     _navigation_mode_array[6] = &_precland;
     _navigation_mode_array[7] = &_vtol_takeoff;
     _navigation_mode_array[8] = &_follow_target;
+    _navigation_mode_array[9] = &_cCamGuide;
 
     /* iterate through navigation modes and initialize _mission_item for each */
     for (unsigned int i = 0; i < NAVIGATOR_MODE_ARRAY_SIZE; i++)

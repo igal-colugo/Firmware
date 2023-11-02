@@ -67,15 +67,12 @@ void FlightTaskTransition::updateParameters()
 			param_get(_param_handle_pitch_cruise_degrees, &_param_pitch_cruise_degrees);
 		}
 
-		param_get(param_find("C_DEBUG"), &_c_debug);
+	//	param_get(param_find("C_DEBUG"), &_c_debug);
 	}
 }
 
 bool FlightTaskTransition::activate(const vehicle_local_position_setpoint_s &last_setpoint)
 {
-
-
-
 	bool ret = FlightTask::activate(last_setpoint);
 
 	_vel_z_filter.setParameters(math::constrain(_deltatime, 0.01f, 0.1f), _vel_z_filter_time_const);
@@ -88,63 +85,34 @@ bool FlightTaskTransition::activate(const vehicle_local_position_setpoint_s &las
 	}
 
 	_velocity_setpoint(2) = _vel_z_filter.getState();
-
+/*
 	if(_c_debug == 5){
 		_last_pos(0) = _position(0);
 		_last_pos(1) = _position(1);
 		_velocity_setpoint(0) = _velocity_setpoint(1) = 0.0f;
 	}
-
+*/
 	return ret;
 }
 //@note FlightTaskTransition
 bool FlightTaskTransition::update()
 {
+	// tailsitters will override attitude and thrust setpoint
+	// tiltrotors and standard vtol will overrride roll and pitch setpoint but keep vertical thrust setpoint
 	bool ret = FlightTask::update();
 
-
-
-
-	//if(_transState != COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START){
-		_position_setpoint.setAll(NAN);
-
+	_position_setpoint.setAll(NAN);
 
 	// calculate a horizontal acceleration vector which corresponds to an attitude composed of pitch up by _param_pitch_cruise_degrees
 	// and zero roll angle
-		matrix::Vector2f tmp(-1.0f, 0.0f);
-		Sticks::rotateIntoHeadingFrameXY(tmp, _yaw, NAN);
-		_acceleration_setpoint.xy() = tmp * tanf(math::radians(_param_pitch_cruise_degrees)) * CONSTANTS_ONE_G;
+	matrix::Vector2f tmp(-1.0f, 0.0f);
+	Sticks::rotateIntoHeadingFrameXY(tmp, _yaw, NAN);
+	_acceleration_setpoint.xy() = tmp * tanf(math::radians(_param_pitch_cruise_degrees)) * CONSTANTS_ONE_G;
 
-		// slowly move vertical velocity setpoint to zero
-		_vel_z_filter.setParameters(math::constrain(_deltatime, 0.01f, 0.1f), _vel_z_filter_time_const);
-		_velocity_setpoint(2) = _vel_z_filter.update(0.0f);
-		_yaw_setpoint = NAN;
+	// slowly move vertical velocity setpoint to zero
+	_vel_z_filter.setParameters(math::constrain(_deltatime, 0.01f, 0.1f), _vel_z_filter_time_const);
+	_velocity_setpoint(2) = _vel_z_filter.update(0.0f);
 
-	//}
-
-	colugo_transition_s colugo_trans;
-	if (_colugo_transition_sub.update(&colugo_trans)) {
-             _transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
-	    if(_transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
-	    && _transState < COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
-
-	//	_velocity_setpoint.setAll(NAN);// = 0;
-		//_velocity_setpoint(0) = 0;
-		//_acceleration_setpoint.xy() = matrix::Vector2f(0.0f, 0.0f);
-		//_acceleration_setpoint.setAll(NAN);
-		//_position_setpoint(0) = _last_pos(0);
-		//_position_setpoint(1) = _last_pos(1);
-		//_position_setpoint(2) = NAN;
-
-		_velocity_setpoint(2) = colugo_trans.vz;
-		//_position_setpoint(2) = -100.0;
-	    }
-	}
-	//_velocity_setpoint.setAll(NAN);
-	//_acceleration_setpoint.setAll(NAN);
-
-	//_position_setpoint(0) = 0;
-	//_position_setpoint(1) = 5;
+	_yaw_setpoint = NAN;
 	return ret;
-
 }
