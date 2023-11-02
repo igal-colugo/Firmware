@@ -264,3 +264,25 @@ PARAM_DEFINE_INT32(GPS_2_LON, 0);
  * @group GPS
  */
 PARAM_DEFINE_INT32(GPS_2_INIT_TM, -1);
+
+/**
+ * GPS failsafe hysteresis time in (sec)
+ *
+ * @min 0
+ * @max 60
+ *
+ * @reboot_required true
+ * @group GPS
+ */
+PARAM_DEFINE_INT32(GPS_HIST_T_I, 3);
+
+/**
+ * GPS failsafe hysteresis time out (sec)
+ *
+ * @min 0
+ * @max 60
+ *
+ * @reboot_required true
+ * @group GPS
+ */
+PARAM_DEFINE_INT32(GPS_HIST_T_O, 3);

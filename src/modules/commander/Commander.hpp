@@ -263,6 +263,8 @@ class Commander : public ModuleBase<Commander>, public ModuleParams
     static constexpr hrt_abstime GPS_VALID_TIME{3_s};
     Hysteresis _vehicle_gps_position_valid{false};
     hrt_abstime _vehicle_gps_position_timestamp_last{0};
+    int32_t _gps_hysteresis_time_in = 0;
+    int32_t _gps_hysteresis_time_out = 0;
 
     bool _geofence_loiter_on{false};
     bool _geofence_rtl_on{false};
