@@ -59,6 +59,7 @@ px4_add_module(
 		devices/mavlink/protocol.h
 		devices/mavlink/mavlink_msg_hil_gps.h
 		devices/mavlink/mavlink_msg_asio_status.h
+		devices/mavlink/mavlink_msg_command_ack.h
 	MODULE_CONFIG
 		module.yaml
 	DEPENDS
