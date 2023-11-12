@@ -822,7 +822,7 @@ unsigned Mavlink::get_free_tx_buf()
         return 1500 * 10; // Speed up FTP transfers
 #else
         return 1500;
-#endif                    /* defined(__PX4_POSIX) */
+#endif /* defined(__PX4_POSIX) */
     }
     else
 #endif // MAVLINK_UDP
@@ -1706,6 +1706,7 @@ int Mavlink::configure_streams_to_default(const char *configure_single_stream)
         configure_stream_local("VFR_HUD", 4.0f);
         configure_stream_local("VIBRATION", 0.1f);
         configure_stream_local("WIND_COV", 0.5f);
+        configure_stream_local("ASIO_STATUS", 10.0f);
 
 #if !defined(CONSTRAINED_FLASH)
         configure_stream_local("DEBUG", 1.0f);
@@ -1922,6 +1923,7 @@ int Mavlink::configure_streams_to_default(const char *configure_single_stream)
         configure_stream_local("DEBUG", 50.0f);
         configure_stream_local("DEBUG_FLOAT_ARRAY", 50.0f);
         configure_stream_local("DEBUG_VECT", 50.0f);
+        configure_stream_local("ASIO_STATUS", 10.0f);
         configure_stream_local("NAMED_VALUE_FLOAT", 50.0f);
         configure_stream_local("LINK_NODE_STATUS", 1.0f);
 #endif // !CONSTRAINED_FLASH

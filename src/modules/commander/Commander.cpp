@@ -917,8 +917,15 @@ Commander::Commander() : ModuleParams(nullptr), _failure_detector(this)
     // default for vtol is rotary wing
     _vtol_status.vtol_in_rw_mode = true;
 
-    _vehicle_gps_position_valid.set_hysteresis_time_from(false, GPS_VALID_TIME);
-    _vehicle_gps_position_valid.set_hysteresis_time_from(true, GPS_VALID_TIME);
+    param_t parameter_handle = param_find("GPS_HIST_T_I");
+    param_get(parameter_handle, &_gps_hysteresis_time_in);
+    parameter_handle = param_find("GPS_HIST_T_O");
+    param_get(parameter_handle, &_gps_hysteresis_time_out);
+
+    //_vehicle_gps_position_valid.set_hysteresis_time_from(false, GPS_VALID_TIME);
+    //_vehicle_gps_position_valid.set_hysteresis_time_from(true, GPS_VALID_TIME);
+    _vehicle_gps_position_valid.set_hysteresis_time_from(false, _gps_hysteresis_time_out * 1_s);
+    _vehicle_gps_position_valid.set_hysteresis_time_from(true, _gps_hysteresis_time_in * 1_s);
 }
 
 Commander::~Commander()
@@ -4650,7 +4657,7 @@ void Commander::estimator_check()
     {
         const hrt_abstime now_us = hrt_absolute_time();
 
-        if (now_us > _vehicle_gps_position_timestamp_last + GPS_VALID_TIME)
+        if (now_us > _vehicle_gps_position_timestamp_last + _gps_hysteresis_time_in * 1_s)
         {
             _vehicle_gps_position_valid.set_state_and_update(false, now_us);
             _status_flags.gps_position_valid = false;
