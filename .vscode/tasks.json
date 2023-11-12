@@ -456,6 +456,11 @@
             "command": "make cubepilot_cubeorangeplus upload"
         },
         {
+            "label": "make FMUv6X and upload",
+            "type": "shell",
+            "command": "make px4_fmu-v6x upload"
+        },
+        {
             "label": "run HITL",
             "type": "shell",
             "options": {
