@@ -38,7 +38,7 @@ px4_add_module(
 	MAIN gps
 	COMPILE_FLAGS
 		-Wno-stringop-overflow # due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91707
-		-O0
+		#-O0
 	SRCS
 		gps.cpp
 		devices/src/gps_helper.cpp
@@ -60,6 +60,7 @@ px4_add_module(
 		devices/mavlink/mavlink_msg_hil_gps.h
 		devices/mavlink/mavlink_msg_asio_status.h
 		devices/mavlink/mavlink_msg_command_ack.h
+		devices/mavlink/mavlink_msg_heartbeat.h
 	MODULE_CONFIG
 		module.yaml
 	DEPENDS
