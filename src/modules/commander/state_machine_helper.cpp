@@ -746,7 +746,7 @@ bool check_invalid_pos_nav_state(vehicle_status_s &status, bool old_failsafe, or
         }
         else
         {
-            // go into a descent that does not require stick control
+            // colugo gps fail action
             if (status_flags.local_position_valid)
             {
                 if (gps_failsafe_take_care == 0)
@@ -768,6 +768,7 @@ bool check_invalid_pos_nav_state(vehicle_status_s &status, bool old_failsafe, or
             }
             else if (status_flags.local_altitude_valid)
             {
+                //only if we are not in alt ctrl mode
                 status.nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
             }
             else
