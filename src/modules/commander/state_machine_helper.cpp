@@ -746,7 +746,7 @@ bool check_invalid_pos_nav_state(vehicle_status_s &status, bool old_failsafe, or
         }
         else
         {
-            // colugo gps fail action
+            // go into a descent that does not require stick control
             if (status_flags.local_position_valid)
             {
                 if (gps_failsafe_take_care == 0)
@@ -766,10 +766,13 @@ bool check_invalid_pos_nav_state(vehicle_status_s &status, bool old_failsafe, or
                     status.nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LAND;
                 }
             }
+            //
             else if (status_flags.local_altitude_valid)
             {
-                //only if we are not in alt ctrl mode
-                status.nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
+//                status.nav_state = vehicle_status_s::NAVIGATION_STATE_DESCEND;
+
+                    //need to add check for FW mode and comm is ok
+                    status.nav_state = vehicle_status_s::NAVIGATION_STATE_ALTCTL;
             }
             else
             {
