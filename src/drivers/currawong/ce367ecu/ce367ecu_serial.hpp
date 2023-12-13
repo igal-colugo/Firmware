@@ -56,6 +56,10 @@
 #include <uORB/topics/gimbal_device_information.h>
 #include <uORB/topics/gimbal_device_set_attitude.h>
 
+#include "stm32.h"
+
+extern struct fdcan_driver_s g_fdcan0;
+
 using namespace time_literals;
 using namespace math;
 

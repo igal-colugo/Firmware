@@ -33,7 +33,7 @@
 
 #pragma once
 
-#include <nuttx/can/can.h>
+//#include <nuttx/can/can.h>
 
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
@@ -46,6 +46,8 @@
 
 #include <arch/board/board.h>
 #include <px4_platform_common/log.h>
+
+#include "stm32.h"
 
 using namespace time_literals;
 

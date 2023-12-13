@@ -50,6 +50,11 @@ extern orb_advert_t mavlink_log_pub;
 
 CE367ECUCan::CE367ECUCan() : ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::uavcan)
 {
+    // fdcan_driver_s g_fdcan0;
+    // int res = fdcan_initialize(g_fdcan0);
+    //arm_netinitialize();
+
+    //int res = stm32_fdcansockinitialize(0);
 }
 
 CE367ECUCan::~CE367ECUCan()

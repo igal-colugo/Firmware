@@ -37,6 +37,14 @@
 
 CE367ECUSerial::CE367ECUSerial(const char *serial_port) : ScheduledWorkItem(MODULE_NAME, px4::serial_port_to_wq(serial_port))
 {
+     int res = stm32_fdcansockinitialize(0);
+
+    // int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+
+    // fdcan_driver_s g_fdcan0;
+    //fdcan_receive(&g_fdcan0);
+    // arm_netinitialize();
+
     _serial_port = strdup(serial_port);
 
     device::Device::DeviceId device_id;
