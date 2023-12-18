@@ -181,10 +181,16 @@ int DA35EFISerial::collect()
                 if (recieved_message.data == nullptr)
                 {
                     recieved_message.data = (uint8_t *) malloc(recieved_message.size);
-                    data_index = recieved_message.data;
+                    if (recieved_message.data != nullptr)
+                    {
+                        data_index = recieved_message.data;
+                        parsing_state = ParseState::WAITING_FOR_DATA;
+                    }
+                    else
+                    {
+                        reset_parser = true;
+                    }
                 }
-
-                parsing_state = ParseState::WAITING_FOR_DATA;
             }
             else
             {
@@ -239,11 +245,6 @@ int DA35EFISerial::collect()
                 // successfully received a message, do something with it
                 process_packet();
 
-                if (recieved_message.data != nullptr)
-                {
-                    recieved_message.data = nullptr;
-                }
-
                 _count_received_packets++;
             }
             else
@@ -262,6 +263,7 @@ int DA35EFISerial::collect()
             data_bytes_received = 0;
             if (recieved_message.data != nullptr)
             {
+                free(recieved_message.data);
                 recieved_message.data = nullptr;
             }
         }
@@ -289,21 +291,21 @@ int DA35EFISerial::update()
 {
     int return_value = 0;
 
-    gimbal_device_attitude_status_s gimbal_device_attitude_status{};
-    gimbal_device_set_attitude_s gimbal_device_set_attitude{};
+    // gimbal_device_attitude_status_s gimbal_device_attitude_status{};
+    // gimbal_device_set_attitude_s gimbal_device_set_attitude{};
 
-    if (_attitude_status_sub.updated())
-    {
-        if (_attitude_status_sub.copy(&gimbal_device_attitude_status))
-        {
-        }
-    }
-    if (_set_attitude_sub.updated())
-    {
-        if (_set_attitude_sub.copy(&gimbal_device_set_attitude))
-        {
-        }
-    }
+    // if (_attitude_status_sub.updated())
+    // {
+    //     if (_attitude_status_sub.copy(&gimbal_device_attitude_status))
+    //     {
+    //     }
+    // }
+    // if (_set_attitude_sub.updated())
+    // {
+    //     if (_set_attitude_sub.copy(&gimbal_device_set_attitude))
+    //     {
+    //     }
+    // }
 
     // send_target_angles(angles.roll, angles.pitch, angles.yaw, false);
 
@@ -403,7 +405,7 @@ void DA35EFISerial::Run()
     // Ensure the serial port is open.
     open_serial_port();
     collect();
-    update();
+    // update();
 }
 
 void DA35EFISerial::start()
@@ -440,109 +442,133 @@ void DA35EFISerial::process_packet()
 
     _last_current_real_time_ms = hrt_absolute_time();
 
-    memcpy(&realtime_data_packet.packet_array, recieved_message.data, recieved_message.size - 1);
-
-    // big endian swap variables
-    realtime_data_packet.packet.seconds = swap_uint16(realtime_data_packet.packet.seconds);
-    realtime_data_packet.packet.pulseWidth1 = swap_uint16(realtime_data_packet.packet.pulseWidth1);
-    realtime_data_packet.packet.pulseWidth2 = swap_uint16(realtime_data_packet.packet.pulseWidth2);
-    realtime_data_packet.packet.rpm = swap_uint16(realtime_data_packet.packet.rpm);
-    realtime_data_packet.packet.advance = swap_int16(realtime_data_packet.packet.advance);
-    realtime_data_packet.packet.barometer = swap_int16(realtime_data_packet.packet.barometer);
-    realtime_data_packet.packet.map = swap_int16(realtime_data_packet.packet.map);
-    realtime_data_packet.packet.mat = swap_int16(realtime_data_packet.packet.mat);
-    realtime_data_packet.packet.coolant = swap_int16(realtime_data_packet.packet.coolant);
-    realtime_data_packet.packet.tps = swap_int16(realtime_data_packet.packet.tps);
-    realtime_data_packet.packet.batteryVoltage = swap_int16(realtime_data_packet.packet.batteryVoltage);
-    realtime_data_packet.packet.afr1 = swap_int16(realtime_data_packet.packet.afr1);
-    realtime_data_packet.packet.afr2 = swap_int16(realtime_data_packet.packet.afr2);
-    realtime_data_packet.packet.knock = swap_int16(realtime_data_packet.packet.knock);
-    realtime_data_packet.packet.egocor1 = swap_int16(realtime_data_packet.packet.egocor1);
-    realtime_data_packet.packet.egocor2 = swap_int16(realtime_data_packet.packet.egocor2);
-    realtime_data_packet.packet.aircor = swap_int16(realtime_data_packet.packet.aircor);
-    realtime_data_packet.packet.warmcor = swap_int16(realtime_data_packet.packet.warmcor);
-    realtime_data_packet.packet.accelEnrich = swap_int16(realtime_data_packet.packet.accelEnrich);
-    realtime_data_packet.packet.tpsfuelcut = swap_int16(realtime_data_packet.packet.tpsfuelcut);
-    realtime_data_packet.packet.baroCorrection = swap_int16(realtime_data_packet.packet.baroCorrection);
-    realtime_data_packet.packet.gammaEnrich = swap_int16(realtime_data_packet.packet.gammaEnrich);
-    realtime_data_packet.packet.ve1 = swap_int16(realtime_data_packet.packet.ve1);
-    realtime_data_packet.packet.ve2 = swap_int16(realtime_data_packet.packet.ve2);
-    realtime_data_packet.packet.iacstep = swap_int16(realtime_data_packet.packet.iacstep);
-    realtime_data_packet.packet.cold_adv_deg = swap_int16(realtime_data_packet.packet.cold_adv_deg);
-    realtime_data_packet.packet.TPSdot = swap_int16(realtime_data_packet.packet.TPSdot);
-    realtime_data_packet.packet.MAPdot = swap_int16(realtime_data_packet.packet.MAPdot);
-    realtime_data_packet.packet.dwell = swap_int16(realtime_data_packet.packet.dwell);
-    realtime_data_packet.packet.MAF = swap_int16(realtime_data_packet.packet.MAF);
-    realtime_data_packet.packet.fuelcor = swap_int16(realtime_data_packet.packet.fuelcor);
-    realtime_data_packet.packet.EAEfcor1 = swap_int16(realtime_data_packet.packet.EAEfcor1);
-    realtime_data_packet.packet.egoV1 = swap_int16(realtime_data_packet.packet.egoV1);
-    realtime_data_packet.packet.egoV2 = swap_int16(realtime_data_packet.packet.egoV2);
-    realtime_data_packet.packet.status1 = swap_uint16(realtime_data_packet.packet.status1);
-    realtime_data_packet.packet.status2 = swap_uint16(realtime_data_packet.packet.status2);
-    realtime_data_packet.packet.status3 = swap_uint16(realtime_data_packet.packet.status3);
-    realtime_data_packet.packet.status4 = swap_uint16(realtime_data_packet.packet.status4);
-    realtime_data_packet.packet.looptime = swap_uint16(realtime_data_packet.packet.looptime);
-    realtime_data_packet.packet.status5 = swap_uint16(realtime_data_packet.packet.status5);
-    realtime_data_packet.packet.tpsADC = swap_uint16(realtime_data_packet.packet.tpsADC);
-    realtime_data_packet.packet.fuelload2 = swap_int16(realtime_data_packet.packet.fuelload2);
-    realtime_data_packet.packet.ignload = swap_int16(realtime_data_packet.packet.ignload);
-    realtime_data_packet.packet.ignload2 = swap_int16(realtime_data_packet.packet.ignload2);
-    realtime_data_packet.packet.delta = swap_int32(realtime_data_packet.packet.delta);
-    realtime_data_packet.packet.wallfuel1 = swap_uint32(realtime_data_packet.packet.wallfuel1);
-    realtime_data_packet.packet.gpioadc0 = swap_uint16(realtime_data_packet.packet.gpioadc0);
-    realtime_data_packet.packet.gpioadc1 = swap_uint16(realtime_data_packet.packet.gpioadc1);
-    realtime_data_packet.packet.gpioadc2 = swap_uint16(realtime_data_packet.packet.gpioadc2);
-    realtime_data_packet.packet.gpioadc3 = swap_uint16(realtime_data_packet.packet.gpioadc3);
-    realtime_data_packet.packet.gpioadc4 = swap_uint16(realtime_data_packet.packet.gpioadc4);
-    realtime_data_packet.packet.gpioadc5 = swap_uint16(realtime_data_packet.packet.gpioadc5);
-    realtime_data_packet.packet.gpioadc6 = swap_uint16(realtime_data_packet.packet.gpioadc6);
-    realtime_data_packet.packet.gpioadc7 = swap_uint16(realtime_data_packet.packet.gpioadc7);
-    realtime_data_packet.packet.gpiopwmin0 = swap_uint16(realtime_data_packet.packet.gpiopwmin0);
-    realtime_data_packet.packet.gpiopwmin1 = swap_uint16(realtime_data_packet.packet.gpiopwmin1);
-    realtime_data_packet.packet.gpiopwmin2 = swap_uint16(realtime_data_packet.packet.gpiopwmin2);
-    realtime_data_packet.packet.gpiopwmin3 = swap_uint16(realtime_data_packet.packet.gpiopwmin3);
-    realtime_data_packet.packet.adc6 = swap_uint16(realtime_data_packet.packet.adc6);
-    realtime_data_packet.packet.adc7 = swap_uint16(realtime_data_packet.packet.adc7);
-    realtime_data_packet.packet.wallfuel2 = swap_int32(realtime_data_packet.packet.wallfuel2);
-    realtime_data_packet.packet.EAEFuelCorr2 = swap_uint16(realtime_data_packet.packet.EAEFuelCorr2);
-    realtime_data_packet.packet.user0 = swap_uint16(realtime_data_packet.packet.user0);
-    realtime_data_packet.packet.inj_adv1 = swap_int16(realtime_data_packet.packet.inj_adv1);
-    realtime_data_packet.packet.inj_adv2 = swap_int16(realtime_data_packet.packet.inj_adv2);
-    realtime_data_packet.packet.pulseWidth3 = swap_uint16(realtime_data_packet.packet.pulseWidth3);
-    realtime_data_packet.packet.pulseWidth4 = swap_uint16(realtime_data_packet.packet.pulseWidth4);
-    realtime_data_packet.packet.vetrim1curr = swap_int16(realtime_data_packet.packet.vetrim1curr);
-    realtime_data_packet.packet.vetrim2curr = swap_int16(realtime_data_packet.packet.vetrim2curr);
-    realtime_data_packet.packet.vetrim3curr = swap_int16(realtime_data_packet.packet.vetrim3curr);
-    realtime_data_packet.packet.vetrim4curr = swap_int16(realtime_data_packet.packet.vetrim4curr);
-    realtime_data_packet.packet.maf = swap_uint16(realtime_data_packet.packet.maf);
-    realtime_data_packet.packet.eaeload1 = swap_int16(realtime_data_packet.packet.eaeload1);
-    realtime_data_packet.packet.afrload1 = swap_int16(realtime_data_packet.packet.afrload1);
-    realtime_data_packet.packet.RPMdot = swap_int16(realtime_data_packet.packet.RPMdot);
-    realtime_data_packet.packet.gpioport2 = swap_uint16(realtime_data_packet.packet.gpioport2);
-    realtime_data_packet.packet.cl_idle_targ_rpm = swap_int16(realtime_data_packet.packet.cl_idle_targ_rpm);
-    realtime_data_packet.packet.maf_volts = swap_uint16(realtime_data_packet.packet.maf_volts);
-    realtime_data_packet.packet.airtemp = swap_int16(realtime_data_packet.packet.airtemp);
-    realtime_data_packet.packet.dwell_trl = swap_uint16(realtime_data_packet.packet.dwell_trl);
-    realtime_data_packet.packet.fuel_pct = swap_uint16(realtime_data_packet.packet.fuel_pct);
-    realtime_data_packet.packet.boost_targ = swap_int16(realtime_data_packet.packet.boost_targ);
-    realtime_data_packet.packet.ext_advance = swap_int16(realtime_data_packet.packet.ext_advance);
-    realtime_data_packet.packet.base_advance = swap_int16(realtime_data_packet.packet.base_advance);
-    realtime_data_packet.packet.idle_cor_advance = swap_int16(realtime_data_packet.packet.idle_cor_advance);
-    realtime_data_packet.packet.mat_retard = swap_int16(realtime_data_packet.packet.mat_retard);
-    realtime_data_packet.packet.flex_advance = swap_int16(realtime_data_packet.packet.flex_advance);
-    realtime_data_packet.packet.adv1 = swap_int16(realtime_data_packet.packet.adv1);
-    realtime_data_packet.packet.adv2 = swap_int16(realtime_data_packet.packet.adv2);
-    realtime_data_packet.packet.adv3 = swap_int16(realtime_data_packet.packet.adv3);
-    realtime_data_packet.packet.revlim_retard = swap_int16(realtime_data_packet.packet.revlim_retard);
-    realtime_data_packet.packet.nitrous_retard = swap_int16(realtime_data_packet.packet.nitrous_retard);
-    realtime_data_packet.packet.deadtime1 = swap_uint16(realtime_data_packet.packet.deadtime1);
-    realtime_data_packet.packet.n2o_addfuel = swap_uint16(realtime_data_packet.packet.n2o_addfuel);
-
-    if (unexpected_len)
+    if (recieved_message.data != nullptr)
     {
+        memcpy(&realtime_data_packet.packet_array, recieved_message.data, recieved_message.size - 1);
+
+        // big endian swap variables
+        realtime_data_packet.packet.seconds = swap_uint16(realtime_data_packet.packet.seconds);
+        realtime_data_packet.packet.pulseWidth1 = swap_uint16(realtime_data_packet.packet.pulseWidth1);
+        realtime_data_packet.packet.pulseWidth2 = swap_uint16(realtime_data_packet.packet.pulseWidth2);
+        realtime_data_packet.packet.rpm = swap_uint16(realtime_data_packet.packet.rpm);
+        realtime_data_packet.packet.advance = swap_int16(realtime_data_packet.packet.advance);
+        realtime_data_packet.packet.barometer = swap_int16(realtime_data_packet.packet.barometer);
+        realtime_data_packet.packet.map = swap_int16(realtime_data_packet.packet.map);
+        realtime_data_packet.packet.mat = swap_int16(realtime_data_packet.packet.mat);
+        realtime_data_packet.packet.coolant = swap_int16(realtime_data_packet.packet.coolant);
+        realtime_data_packet.packet.tps = swap_int16(realtime_data_packet.packet.tps);
+        realtime_data_packet.packet.batteryVoltage = swap_int16(realtime_data_packet.packet.batteryVoltage);
+        realtime_data_packet.packet.afr1 = swap_int16(realtime_data_packet.packet.afr1);
+        realtime_data_packet.packet.afr2 = swap_int16(realtime_data_packet.packet.afr2);
+        realtime_data_packet.packet.knock = swap_int16(realtime_data_packet.packet.knock);
+        realtime_data_packet.packet.egocor1 = swap_int16(realtime_data_packet.packet.egocor1);
+        realtime_data_packet.packet.egocor2 = swap_int16(realtime_data_packet.packet.egocor2);
+        realtime_data_packet.packet.aircor = swap_int16(realtime_data_packet.packet.aircor);
+        realtime_data_packet.packet.warmcor = swap_int16(realtime_data_packet.packet.warmcor);
+        realtime_data_packet.packet.accelEnrich = swap_int16(realtime_data_packet.packet.accelEnrich);
+        realtime_data_packet.packet.tpsfuelcut = swap_int16(realtime_data_packet.packet.tpsfuelcut);
+        realtime_data_packet.packet.baroCorrection = swap_int16(realtime_data_packet.packet.baroCorrection);
+        realtime_data_packet.packet.gammaEnrich = swap_int16(realtime_data_packet.packet.gammaEnrich);
+        realtime_data_packet.packet.ve1 = swap_int16(realtime_data_packet.packet.ve1);
+        realtime_data_packet.packet.ve2 = swap_int16(realtime_data_packet.packet.ve2);
+        realtime_data_packet.packet.iacstep = swap_int16(realtime_data_packet.packet.iacstep);
+        realtime_data_packet.packet.cold_adv_deg = swap_int16(realtime_data_packet.packet.cold_adv_deg);
+        realtime_data_packet.packet.TPSdot = swap_int16(realtime_data_packet.packet.TPSdot);
+        realtime_data_packet.packet.MAPdot = swap_int16(realtime_data_packet.packet.MAPdot);
+        realtime_data_packet.packet.dwell = swap_int16(realtime_data_packet.packet.dwell);
+        realtime_data_packet.packet.MAF = swap_int16(realtime_data_packet.packet.MAF);
+        realtime_data_packet.packet.fuelcor = swap_int16(realtime_data_packet.packet.fuelcor);
+        realtime_data_packet.packet.EAEfcor1 = swap_int16(realtime_data_packet.packet.EAEfcor1);
+        realtime_data_packet.packet.egoV1 = swap_int16(realtime_data_packet.packet.egoV1);
+        realtime_data_packet.packet.egoV2 = swap_int16(realtime_data_packet.packet.egoV2);
+        realtime_data_packet.packet.status1 = swap_uint16(realtime_data_packet.packet.status1);
+        realtime_data_packet.packet.status2 = swap_uint16(realtime_data_packet.packet.status2);
+        realtime_data_packet.packet.status3 = swap_uint16(realtime_data_packet.packet.status3);
+        realtime_data_packet.packet.status4 = swap_uint16(realtime_data_packet.packet.status4);
+        realtime_data_packet.packet.looptime = swap_uint16(realtime_data_packet.packet.looptime);
+        realtime_data_packet.packet.status5 = swap_uint16(realtime_data_packet.packet.status5);
+        realtime_data_packet.packet.tpsADC = swap_uint16(realtime_data_packet.packet.tpsADC);
+        realtime_data_packet.packet.fuelload2 = swap_int16(realtime_data_packet.packet.fuelload2);
+        realtime_data_packet.packet.ignload = swap_int16(realtime_data_packet.packet.ignload);
+        realtime_data_packet.packet.ignload2 = swap_int16(realtime_data_packet.packet.ignload2);
+        realtime_data_packet.packet.delta = swap_int32(realtime_data_packet.packet.delta);
+        realtime_data_packet.packet.wallfuel1 = swap_uint32(realtime_data_packet.packet.wallfuel1);
+        realtime_data_packet.packet.gpioadc0 = swap_uint16(realtime_data_packet.packet.gpioadc0);
+        realtime_data_packet.packet.gpioadc1 = swap_uint16(realtime_data_packet.packet.gpioadc1);
+        realtime_data_packet.packet.gpioadc2 = swap_uint16(realtime_data_packet.packet.gpioadc2);
+        realtime_data_packet.packet.gpioadc3 = swap_uint16(realtime_data_packet.packet.gpioadc3);
+        realtime_data_packet.packet.gpioadc4 = swap_uint16(realtime_data_packet.packet.gpioadc4);
+        realtime_data_packet.packet.gpioadc5 = swap_uint16(realtime_data_packet.packet.gpioadc5);
+        realtime_data_packet.packet.gpioadc6 = swap_uint16(realtime_data_packet.packet.gpioadc6);
+        realtime_data_packet.packet.gpioadc7 = swap_uint16(realtime_data_packet.packet.gpioadc7);
+        realtime_data_packet.packet.gpiopwmin0 = swap_uint16(realtime_data_packet.packet.gpiopwmin0);
+        realtime_data_packet.packet.gpiopwmin1 = swap_uint16(realtime_data_packet.packet.gpiopwmin1);
+        realtime_data_packet.packet.gpiopwmin2 = swap_uint16(realtime_data_packet.packet.gpiopwmin2);
+        realtime_data_packet.packet.gpiopwmin3 = swap_uint16(realtime_data_packet.packet.gpiopwmin3);
+        realtime_data_packet.packet.adc6 = swap_uint16(realtime_data_packet.packet.adc6);
+        realtime_data_packet.packet.adc7 = swap_uint16(realtime_data_packet.packet.adc7);
+        realtime_data_packet.packet.wallfuel2 = swap_int32(realtime_data_packet.packet.wallfuel2);
+        realtime_data_packet.packet.EAEFuelCorr2 = swap_uint16(realtime_data_packet.packet.EAEFuelCorr2);
+        realtime_data_packet.packet.user0 = swap_uint16(realtime_data_packet.packet.user0);
+        realtime_data_packet.packet.inj_adv1 = swap_int16(realtime_data_packet.packet.inj_adv1);
+        realtime_data_packet.packet.inj_adv2 = swap_int16(realtime_data_packet.packet.inj_adv2);
+        realtime_data_packet.packet.pulseWidth3 = swap_uint16(realtime_data_packet.packet.pulseWidth3);
+        realtime_data_packet.packet.pulseWidth4 = swap_uint16(realtime_data_packet.packet.pulseWidth4);
+        realtime_data_packet.packet.vetrim1curr = swap_int16(realtime_data_packet.packet.vetrim1curr);
+        realtime_data_packet.packet.vetrim2curr = swap_int16(realtime_data_packet.packet.vetrim2curr);
+        realtime_data_packet.packet.vetrim3curr = swap_int16(realtime_data_packet.packet.vetrim3curr);
+        realtime_data_packet.packet.vetrim4curr = swap_int16(realtime_data_packet.packet.vetrim4curr);
+        realtime_data_packet.packet.maf = swap_uint16(realtime_data_packet.packet.maf);
+        realtime_data_packet.packet.eaeload1 = swap_int16(realtime_data_packet.packet.eaeload1);
+        realtime_data_packet.packet.afrload1 = swap_int16(realtime_data_packet.packet.afrload1);
+        realtime_data_packet.packet.RPMdot = swap_int16(realtime_data_packet.packet.RPMdot);
+        realtime_data_packet.packet.gpioport2 = swap_uint16(realtime_data_packet.packet.gpioport2);
+        realtime_data_packet.packet.cl_idle_targ_rpm = swap_int16(realtime_data_packet.packet.cl_idle_targ_rpm);
+        realtime_data_packet.packet.maf_volts = swap_uint16(realtime_data_packet.packet.maf_volts);
+        realtime_data_packet.packet.airtemp = swap_int16(realtime_data_packet.packet.airtemp);
+        realtime_data_packet.packet.dwell_trl = swap_uint16(realtime_data_packet.packet.dwell_trl);
+        realtime_data_packet.packet.fuel_pct = swap_uint16(realtime_data_packet.packet.fuel_pct);
+        realtime_data_packet.packet.boost_targ = swap_int16(realtime_data_packet.packet.boost_targ);
+        realtime_data_packet.packet.ext_advance = swap_int16(realtime_data_packet.packet.ext_advance);
+        realtime_data_packet.packet.base_advance = swap_int16(realtime_data_packet.packet.base_advance);
+        realtime_data_packet.packet.idle_cor_advance = swap_int16(realtime_data_packet.packet.idle_cor_advance);
+        realtime_data_packet.packet.mat_retard = swap_int16(realtime_data_packet.packet.mat_retard);
+        realtime_data_packet.packet.flex_advance = swap_int16(realtime_data_packet.packet.flex_advance);
+        realtime_data_packet.packet.adv1 = swap_int16(realtime_data_packet.packet.adv1);
+        realtime_data_packet.packet.adv2 = swap_int16(realtime_data_packet.packet.adv2);
+        realtime_data_packet.packet.adv3 = swap_int16(realtime_data_packet.packet.adv3);
+        realtime_data_packet.packet.revlim_retard = swap_int16(realtime_data_packet.packet.revlim_retard);
+        realtime_data_packet.packet.nitrous_retard = swap_int16(realtime_data_packet.packet.nitrous_retard);
+        realtime_data_packet.packet.deadtime1 = swap_uint16(realtime_data_packet.packet.deadtime1);
+        realtime_data_packet.packet.n2o_addfuel = swap_uint16(realtime_data_packet.packet.n2o_addfuel);
+
+        if (unexpected_len)
+        {
+        }
+
+        _injector_duty_cycle = ((float) realtime_data_packet.packet.pulseWidth1 * (float) realtime_data_packet.packet.rpm) / 60000.0f;
+        _fuel_flow_rate_instantaneos = (static_injector_flow_rate / 60.0f) * _injector_duty_cycle * density_of_fuel; // g/s
+        _scaled_flow_rate = _fuel_flow_rate_instantaneos * (scalar_divisor / 1000.0f);                               // g/s
+
+        //@todo Vlad insert relevant data to publish structure and publish it
+
+        _hfe_da35efi_status.seconds = realtime_data_packet.packet.seconds;
+        _hfe_da35efi_status.pulse_width_1 = realtime_data_packet.packet.pulseWidth1 / 0.000666;
+        _hfe_da35efi_status.pulse_width_2 = realtime_data_packet.packet.pulseWidth2 / 0.000666;
+        _hfe_da35efi_status.rpm = realtime_data_packet.packet.rpm;
+        _hfe_da35efi_status.engine = realtime_data_packet.packet.engine;
+        _hfe_da35efi_status.barometer = realtime_data_packet.packet.barometer / 10;
+        _hfe_da35efi_status.coolant = realtime_data_packet.packet.coolant / 10;
+        _hfe_da35efi_status.tps = realtime_data_packet.packet.tps / 10;
+        _hfe_da35efi_status.battery_voltage = realtime_data_packet.packet.batteryVoltage / 10;
+
+        _hfe_da35efi_status.injector_duty_cycle = _injector_duty_cycle;
+        _hfe_da35efi_status.fuel_flow_rate_instantaneos = _fuel_flow_rate_instantaneos;
+        _hfe_da35efi_status.scaled_flow_rate = _scaled_flow_rate;
+
+        _da35efi_status_pub.publish(_hfe_da35efi_status);
     }
 }
-// methods to send commands to gimbal
 // returns true on success, false if outgoing serial buffer is full
 bool DA35EFISerial::send_packet(const uint8_t *databuff, uint16_t databuff_len, bool checksum)
 {

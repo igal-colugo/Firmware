@@ -96,6 +96,7 @@ set(msg_files
 	gps_dump.msg
 	gps_inject_data.msg
 	heater_status.msg
+	hfe_da35efi_status.msg
 	home_position.msg
 	hover_thrust_estimate.msg
 	internal_combustion_engine_status.msg

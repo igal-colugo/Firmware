@@ -34,7 +34,7 @@ px4_add_module(
 	MODULE drivers__hfe__da35efi
 	MAIN da35efi
 	COMPILE_FLAGS
-		-O0
+		#-O0
 	SRCS
 		da35efi_main.cpp
 		da35efi_serial.cpp

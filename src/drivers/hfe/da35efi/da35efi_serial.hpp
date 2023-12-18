@@ -51,10 +51,7 @@
 
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
-#include <uORB/topics/camera_trigger.h>
-#include <uORB/topics/gimbal_device_attitude_status.h>
-#include <uORB/topics/gimbal_device_information.h>
-#include <uORB/topics/gimbal_device_set_attitude.h>
+#include <uORB/topics/hfe_da35efi_status.h>
 
 using namespace time_literals;
 using namespace math;
@@ -288,12 +285,13 @@ class DA35EFISerial : public px4::ScheduledWorkItem
 
 #pragma region Fields
 
+    const float static_injector_flow_rate = 68.0f; // cc/min
+    const float density_of_fuel = 0.7489;          // gram/cc
+    const float scalar_divisor = 1000.0;
+
     const char *_serial_port{nullptr};
 
     int _file_descriptor{-1};
-
-    uint8_t _buffer[250];
-    uint8_t _buffer_len{0};
 
     hrt_abstime _measurement_time{0};
 
@@ -308,6 +306,9 @@ class DA35EFISerial : public px4::ScheduledWorkItem
 
     RealTimeDataPacket realtime_data_packet = {};
 
+    uint8_t _buffer[250];
+    uint8_t _buffer_len{0};
+    
     // buffer holding bytes from latest packet.  This is only used to calculate the crc
     uint8_t _msg_buff[DA35EFI_PACKETLEN_MAX];
     uint8_t _msg_buff_len;
@@ -316,19 +317,20 @@ class DA35EFISerial : public px4::ScheduledWorkItem
     uint32_t _last_send_ms; // system time (in milliseconds) of last packet sent to gimbal
     uint16_t _last_seq;     // last sequence number used (should be increment for each send)
 
-    uint32_t _last_current_angle_rad_ms; // system time _current_angle_rad was updated
-
     uint32_t _last_current_real_time_ms;
 
     uint16_t _count_received_packets;
     uint16_t _count_broken_packets;
 
+    float _injector_duty_cycle;
+    float _fuel_flow_rate_instantaneos;
+    float _scaled_flow_rate;
+
     // Subscribers
-    // MavlinkV1
-    uORB::Subscription _attitude_status_sub{ORB_ID(gimbal_device_attitude_status)};
-    // MavlinkV2
-    uORB::Subscription _set_attitude_sub{ORB_ID(gimbal_device_set_attitude)};
-    uORB::Subscription _trigger_sub{ORB_ID(camera_trigger)};
+
+    // Publishers
+    hfe_da35efi_status_s _hfe_da35efi_status{};
+    uORB::Publication<hfe_da35efi_status_s> _da35efi_status_pub{ORB_ID(hfe_da35efi_status)};
 
 #pragma endregion
 

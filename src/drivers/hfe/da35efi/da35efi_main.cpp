@@ -104,20 +104,20 @@ static int usage()
         R"DESCR_STR(
 ### Description
 
-Serial bus driver for the Viewpro gimbal.
+Serial bus driver for the HFE da35efi engine controller.
 
-Most boards are configured to enable/start the driver on a specified UART using the MNT_VIEWPRO_CFG parameter.
+Most boards are configured to enable/start the driver on a specified UART using the DA35EFI_CFG parameter.
 
 ### Examples
 
 Attempt to start driver on a specified serial device.
-$ viewpro start -d /dev/ttyS1
+$ da35efi start -d /dev/ttyS1
 Stop driver
-$ viewpro stop
+$ da35efi stop
 )DESCR_STR");
 
-    PRINT_MODULE_USAGE_NAME("viewpro", "driver");
-    PRINT_MODULE_USAGE_SUBCATEGORY("gimbal");
+    PRINT_MODULE_USAGE_NAME("da35efi", "driver");
+    PRINT_MODULE_USAGE_SUBCATEGORY("drivers");
     PRINT_MODULE_USAGE_COMMAND_DESCR("start", "Start driver");
     PRINT_MODULE_USAGE_PARAM_STRING('d', nullptr, nullptr, "Serial device", false);
     PRINT_MODULE_USAGE_COMMAND_DESCR("stop", "Stop driver");
@@ -134,7 +134,7 @@ extern "C" __EXPORT int da35efi_main(int argc, char *argv[])
     int myoptind = 1;
 
     const char *port = nullptr;
-    //uint8_t communication = 0;
+    // uint8_t communication = 0;
 
     while ((ch = px4_getopt(argc, argv, "d:", &myoptind, &myoptarg)) != EOF)
     {
