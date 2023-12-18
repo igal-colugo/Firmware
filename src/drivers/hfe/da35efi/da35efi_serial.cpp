@@ -553,14 +553,14 @@ void DA35EFISerial::process_packet()
         //@todo Vlad insert relevant data to publish structure and publish it
 
         _hfe_da35efi_status.seconds = realtime_data_packet.packet.seconds;
-        _hfe_da35efi_status.pulse_width_1 = realtime_data_packet.packet.pulseWidth1 / 0.000666;
-        _hfe_da35efi_status.pulse_width_2 = realtime_data_packet.packet.pulseWidth2 / 0.000666;
+        _hfe_da35efi_status.pulse_width_1 = realtime_data_packet.packet.pulseWidth1 / 0.000666f;
+        _hfe_da35efi_status.pulse_width_2 = realtime_data_packet.packet.pulseWidth2 / 0.000666f;
         _hfe_da35efi_status.rpm = realtime_data_packet.packet.rpm;
         _hfe_da35efi_status.engine = realtime_data_packet.packet.engine;
-        _hfe_da35efi_status.barometer = realtime_data_packet.packet.barometer / 10;
-        _hfe_da35efi_status.coolant = realtime_data_packet.packet.coolant / 10;
-        _hfe_da35efi_status.tps = realtime_data_packet.packet.tps / 10;
-        _hfe_da35efi_status.battery_voltage = realtime_data_packet.packet.batteryVoltage / 10;
+        _hfe_da35efi_status.barometer = realtime_data_packet.packet.barometer / 10.0f;
+        _hfe_da35efi_status.coolant = realtime_data_packet.packet.coolant / 10.0f;
+        _hfe_da35efi_status.tps = realtime_data_packet.packet.tps / 10.0f;
+        _hfe_da35efi_status.battery_voltage = realtime_data_packet.packet.batteryVoltage / 10.0f;
 
         _hfe_da35efi_status.injector_duty_cycle = _injector_duty_cycle;
         _hfe_da35efi_status.fuel_flow_rate_instantaneos = _fuel_flow_rate_instantaneos;
