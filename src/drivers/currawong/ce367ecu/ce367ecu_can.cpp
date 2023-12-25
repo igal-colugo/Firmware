@@ -48,187 +48,135 @@
 
 extern orb_advert_t mavlink_log_pub;
 
-CE367ECUCan::CE367ECUCan() : ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::uavcan)
+CE367ECUCan::CE367ECUCan() : ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::can)
 {
-    // fdcan_driver_s g_fdcan0;
-    // int res = fdcan_initialize(g_fdcan0);
-    //arm_netinitialize();
-
-    //int res = stm32_fdcansockinitialize(0);
+    int res = stm32_fdcansockinitialize(0);
+    res = stm32_fdcansockinitialize(1);
+    netlib_ifup("can0");
+    netlib_ifup("can1");
 }
 
 CE367ECUCan::~CE367ECUCan()
 {
+    netlib_ifdown("can0");
+    netlib_ifdown("can1");
 }
 
 void CE367ECUCan::Run()
 {
-    if (!_initialized)
-    {
-
-        // int res = stm32_fdcansockinitialize(0);
-        //  static CanInitHelper *can = nullptr;
-
-        // if (can == nullptr)
-        // {
-
-        //     can = new CanInitHelper(board_get_can_interfaces());
-
-        //     if (can == nullptr)
-        //     { // We don't have exceptions so bad_alloc cannot be thrown
-        //         PX4_ERR("Out of memory");
-        //         return -1;
-        //     }
-
-        //     const int can_init_res = can->init(bitrate);
-
-        //     if (can_init_res < 0)
-        //     {
-        //         PX4_ERR("CAN driver init failed %i", can_init_res);
-        //         return can_init_res;
-        //     }
-        // }
-
-        // if (can == nullptr)
-        // {
-        //     PX4_ERR("Failed to get CAN interface");
-        // }
-        // else
-        // {
-        //     /* Register the CAN driver at "/dev/can0" */
-        //     int ret = can_register("/dev/can0", can);
-
-        //     if (ret < 0)
-        //     {
-        //         PX4_ERR("can_register failed: %d", ret);
-        //     }
-        //     else
-        //     {
-        //         _fd = ::open("/dev/can0", O_RDWR | O_NONBLOCK);
-        //     }
-        // }
-
-        _initialized = true;
-    }
-
-    uint8_t data[64]{};
-    CanFrame received_frame{};
-    received_frame.payload = &data;
-
-    CE367ECUCanMessage tattu_message = {};
-
-    while (receive(&received_frame) > 0)
-    {
-
-        // Find the start of a transferr
-        if ((received_frame.payload_size == 8) && ((uint8_t *) received_frame.payload)[7] == TAIL_BYTE_START_OF_TRANSFER)
-        {
-        }
-        else
-        {
-            continue;
-        }
-
-        // We have the start of a transfer
-        size_t offset = 5;
-        memcpy(&tattu_message, &(((uint8_t *) received_frame.payload)[2]), offset);
-
-        while (receive(&received_frame) > 0)
-        {
-
-            size_t payload_size = received_frame.payload_size - 1;
-            // TODO: add check to prevent buffer overflow from a corrupt 'payload_size' value
-            // TODO: AND look for TAIL_BYTE_START_OF_TRANSFER to indicate end of transfer. Untested...
-            memcpy(((char *) &tattu_message) + offset, received_frame.payload, payload_size);
-            offset += payload_size;
-        }
-
-        battery_status_s battery_status = {};
-        battery_status.timestamp = hrt_absolute_time();
-        battery_status.connected = true;
-        battery_status.cell_count = 12;
-
-        // sprintf(battery_status.serial_number, "%d", tattu_message.manufacturer);
-        battery_status.id = static_cast<uint8_t>(tattu_message.sku);
-
-        battery_status.cycle_count = tattu_message.cycle_life;
-        battery_status.state_of_health = static_cast<uint16_t>(tattu_message.health_status);
-
-        battery_status.voltage_v = static_cast<float>(tattu_message.voltage) / 1000.0f;
-        battery_status.voltage_filtered_v = static_cast<float>(tattu_message.voltage) / 1000.0f;
-        battery_status.current_a = static_cast<float>(tattu_message.current) / 1000.0f;
-        battery_status.current_filtered_a = static_cast<float>(tattu_message.current) / 1000.0f;
-        battery_status.remaining = static_cast<float>(tattu_message.remaining_percent) / 100.0f;
-        battery_status.temperature = static_cast<float>(tattu_message.temperature);
-        battery_status.capacity = tattu_message.standard_capacity;
-        battery_status.voltage_cell_v[0] = static_cast<float>(tattu_message.cell_1_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[1] = static_cast<float>(tattu_message.cell_2_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[2] = static_cast<float>(tattu_message.cell_3_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[3] = static_cast<float>(tattu_message.cell_4_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[4] = static_cast<float>(tattu_message.cell_5_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[5] = static_cast<float>(tattu_message.cell_6_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[6] = static_cast<float>(tattu_message.cell_7_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[7] = static_cast<float>(tattu_message.cell_8_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[8] = static_cast<float>(tattu_message.cell_9_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[9] = static_cast<float>(tattu_message.cell_10_voltage / 1000.0f);
-        battery_status.voltage_cell_v[10] = static_cast<float>(tattu_message.cell_11_voltage) / 1000.0f;
-        battery_status.voltage_cell_v[11] = static_cast<float>(tattu_message.cell_12_voltage) / 1000.0f;
-
-        _battery_status_pub.publish(battery_status);
-    }
+    collect();
+    update();
+    // px4_sleep(50);
 }
 
-int16_t CE367ECUCan::receive(CanFrame *received_frame)
+void CE367ECUCan::start()
 {
-    //     if ((_fd < 0) || (received_frame == nullptr))
-    //     {
-    //         PX4_INFO("fd < 0");
-    //         return -1;
-    //     }
-
-    //     struct pollfd fds
-    //     {
-    //     };
-
-    //     fds.fd = _fd;
-
-    //     fds.events = POLLIN;
-
-    //     // Jake: this doesn't block even in blocking mode, dunno if we need it
-    //     ::poll(&fds, 1, 0);
-
-    //     // Only execute this part if can0 is changed.
-    //     if (fds.revents & POLLIN)
-    //     {
-
-    //         // Try to read.
-    //         // struct can_msg_s receive_msg;
-    //         // const ssize_t nbytes = ::read(fds.fd, &receive_msg, sizeof(receive_msg));
-
-    //         // if (nbytes < 0 || (size_t) nbytes < CAN_MSGLEN(0) || (size_t) nbytes > sizeof(receive_msg))
-    //         // {
-    //         //     PX4_INFO("error");
-    //         //     return -1;
-    //         // }
-    //         // else
-    //         // {
-    //         //     received_frame->extended_can_id = receive_msg.cm_hdr.ch_id;
-    //         //     received_frame->payload_size = receive_msg.cm_hdr.ch_dlc;
-    //         //     memcpy((void *) received_frame->payload, receive_msg.cm_data, receive_msg.cm_hdr.ch_dlc);
-    //         //     return nbytes;
-    //         // }
-    //     }
-
-    //     return 0;
+    // Schedule the driver at regular intervals.
+    ScheduleOnInterval(CE367ECU_MEASURE_INTERVAL, CE367ECU_MEASURE_INTERVAL);
 }
 
-int CE367ECUCan::start()
+void CE367ECUCan::stop()
 {
-    // There is a race condition at boot that sometimes causes opening of
-    // /dev/can0 to fail. We will delay 0.5s to be safe.
-    uint32_t delay_us = 500000;
-    ScheduleOnInterval(1000000 / SAMPLE_RATE, delay_us);
-    return PX4_OK;
+    // Clear the work queue schedule.
+    ScheduleClear();
+}
+
+int CE367ECUCan::update()
+{
+    int return_value = 0;
+
+    int s; /* can raw socket */
+    int required_mtu;
+    int mtu;
+    int enable_canfd = 1;
+    struct sockaddr_can addr;
+    struct canfd_frame frame;
+    struct ifreq ifr;
+
+    /* parse CAN frame */
+    required_mtu = this->parse_canframe("00000005#AAAABBBBCCCCDDDD", &frame);
+    if (!required_mtu)
+    {
+        fprintf(stderr, "\nWrong CAN-frame format!\n\n");
+        return -1;
+    }
+
+    /* open socket */
+    if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
+    {
+        perror("socket");
+        return -1;
+    }
+
+    strncpy(ifr.ifr_name, "can1", IFNAMSIZ - 1);
+    ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+    ifr.ifr_ifindex = if_nametoindex(ifr.ifr_name);
+    if (!ifr.ifr_ifindex)
+    {
+        perror("if_nametoindex");
+        return -1;
+    }
+
+    memset(&addr, 0, sizeof(addr));
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+
+    if (required_mtu > (int) CAN_MTU)
+    {
+        /* check if the frame fits into the CAN netdevice */
+        if (ioctl(s, SIOCGIFMTU, &ifr) < 0)
+        {
+            perror("SIOCGIFMTU");
+            return -1;
+        }
+        mtu = ifr.ifr_mtu;
+
+        if (mtu != CANFD_MTU)
+        {
+            printf("CAN interface is not CAN FD capable - sorry.\n");
+            return -1;
+        }
+
+        /* interface is ok - try to switch the socket into CAN FD mode */
+        if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)))
+        {
+            printf("error when enabling CAN FD support\n");
+            return -1;
+        }
+
+        /* ensure discrete CAN FD length values 0..8, 12, 16, 20, 24, 32, 64 */
+        frame.len = can_dlc2len(can_len2dlc(frame.len));
+    }
+
+    /* disable default receive filter on this RAW socket */
+    /* This is obsolete as we do not read from the socket at all, but for */
+    /* this reason we can remove the receive list in the Kernel to save a */
+    /* little (really a very little!) CPU usage.                          */
+    setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
+
+    if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+    {
+        perror("bind");
+        return -1;
+    }
+
+    /* send frame */
+    if (write(s, &frame, required_mtu) != required_mtu)
+    {
+        perror("write");
+        return -1;
+    }
+
+    close(s);
+
+    return return_value;
+}
+
+int CE367ECUCan::collect()
+{
+    int return_value = 0;
+
+    return return_value;
 }
 
 void CE367ECUCan::print_info()
@@ -236,3 +184,450 @@ void CE367ECUCan::print_info()
     perf_print_counter(_comms_error);
     perf_print_counter(_sample_perf);
 }
+
+#pragma region Can send functions
+/* get data length from can_dlc with sanitized can_dlc */
+unsigned char CE367ECUCan::can_dlc2len(unsigned char can_dlc)
+{
+    return dlc2len[can_dlc & 0x0F];
+}
+/* map the sanitized data length to an appropriate data length code */
+unsigned char CE367ECUCan::can_len2dlc(unsigned char len)
+{
+    if (len > 64)
+        return 0xF;
+
+    return len2dlc[len];
+}
+
+unsigned char CE367ECUCan::asc2nibble(char c)
+{
+
+    if ((c >= '0') && (c <= '9'))
+        return c - '0';
+
+    if ((c >= 'A') && (c <= 'F'))
+        return c - 'A' + 10;
+
+    if ((c >= 'a') && (c <= 'f'))
+        return c - 'a' + 10;
+
+    return 16; /* error */
+}
+
+int CE367ECUCan::hexstring2data(char *arg, unsigned char *data, int maxdlen)
+{
+
+    int len = strlen(arg);
+    int i;
+    unsigned char tmp;
+
+    if (!len || len % 2 || len > maxdlen * 2)
+        return 1;
+
+    memset(data, 0, maxdlen);
+
+    for (i = 0; i < len / 2; i++)
+    {
+
+        tmp = asc2nibble(*(arg + (2 * i)));
+        if (tmp > 0x0F)
+            return 1;
+
+        data[i] = (tmp << 4);
+
+        tmp = asc2nibble(*(arg + (2 * i) + 1));
+        if (tmp > 0x0F)
+            return 1;
+
+        data[i] |= tmp;
+    }
+
+    return 0;
+}
+
+int CE367ECUCan::parse_canframe(char *cs, struct canfd_frame *cf)
+{
+    /* documentation see lib.h */
+
+    int i, idx, dlen, len;
+    int maxdlen = CAN_MAX_DLEN;
+    int ret = CAN_MTU;
+    unsigned char tmp;
+
+    len = strlen(cs);
+    // printf("'%s' len %d\n", cs, len);
+
+    memset(cf, 0, sizeof(*cf)); /* init CAN FD frame, e.g. LEN = 0 */
+
+    if (len < 4)
+        return 0;
+
+    if (cs[3] == CANID_DELIM)
+    { /* 3 digits */
+
+        idx = 4;
+        for (i = 0; i < 3; i++)
+        {
+            if ((tmp = asc2nibble(cs[i])) > 0x0F)
+                return 0;
+            cf->can_id |= (tmp << (2 - i) * 4);
+        }
+    }
+    else if (cs[8] == CANID_DELIM)
+    { /* 8 digits */
+
+        idx = 9;
+        for (i = 0; i < 8; i++)
+        {
+            if ((tmp = asc2nibble(cs[i])) > 0x0F)
+                return 0;
+            cf->can_id |= (tmp << (7 - i) * 4);
+        }
+        if (!(cf->can_id & CAN_ERR_FLAG)) /* 8 digits but no errorframe?  */
+            cf->can_id |= CAN_EFF_FLAG;   /* then it is an extended frame */
+    }
+    else
+        return 0;
+
+    if ((cs[idx] == 'R') || (cs[idx] == 'r'))
+    { /* RTR frame */
+        cf->can_id |= CAN_RTR_FLAG;
+
+        /* check for optional DLC value for CAN 2.0B frames */
+        if (cs[++idx] && (tmp = asc2nibble(cs[idx])) <= CAN_MAX_DLC)
+            cf->len = tmp;
+
+        return ret;
+    }
+
+    if (cs[idx] == CANID_DELIM)
+    { /* CAN FD frame escape char '##' */
+
+        maxdlen = CANFD_MAX_DLEN;
+        ret = CANFD_MTU;
+
+        /* CAN FD frame <canid>##<flags><data>* */
+        if ((tmp = asc2nibble(cs[idx + 1])) > 0x0F)
+            return 0;
+
+        cf->flags = tmp;
+        idx += 2;
+    }
+
+    for (i = 0, dlen = 0; i < maxdlen; i++)
+    {
+
+        if (cs[idx] == DATA_SEPERATOR) /* skip (optional) separator */
+            idx++;
+
+        if (idx >= len) /* end of string => end of data */
+            break;
+
+        if ((tmp = asc2nibble(cs[idx++])) > 0x0F)
+            return 0;
+        cf->data[i] = (tmp << 4);
+        if ((tmp = asc2nibble(cs[idx++])) > 0x0F)
+            return 0;
+        cf->data[i] |= tmp;
+        dlen++;
+    }
+    cf->len = dlen;
+
+    return ret;
+}
+
+void CE367ECUCan::fprint_canframe(FILE *stream, struct canfd_frame *cf, char *eol, int sep, int maxdlen)
+{
+    /* documentation see lib.h */
+
+    char buf[CL_CFSZ]; /* max length */
+
+    sprint_canframe(buf, cf, sep, maxdlen);
+    fprintf(stream, "%s", buf);
+    if (eol)
+        fprintf(stream, "%s", eol);
+}
+
+void CE367ECUCan::sprint_canframe(char *buf, struct canfd_frame *cf, int sep, int maxdlen)
+{
+    /* documentation see lib.h */
+
+    int i, offset;
+    int len = (cf->len > maxdlen) ? maxdlen : cf->len;
+
+    if (cf->can_id & CAN_ERR_FLAG)
+    {
+        put_eff_id(buf, cf->can_id & (CAN_ERR_MASK | CAN_ERR_FLAG));
+        buf[8] = '#';
+        offset = 9;
+    }
+    else if (cf->can_id & CAN_EFF_FLAG)
+    {
+        put_eff_id(buf, cf->can_id & CAN_EFF_MASK);
+        buf[8] = '#';
+        offset = 9;
+    }
+    else
+    {
+        put_sff_id(buf, cf->can_id & CAN_SFF_MASK);
+        buf[3] = '#';
+        offset = 4;
+    }
+
+    /* standard CAN frames may have RTR enabled. There are no ERR frames with RTR */
+    if (maxdlen == CAN_MAX_DLEN && cf->can_id & CAN_RTR_FLAG)
+    {
+        buf[offset++] = 'R';
+        /* print a given CAN 2.0B DLC if it's not zero */
+        if (cf->len && cf->len <= CAN_MAX_DLC)
+            buf[offset++] = hex_asc_upper_lo(cf->len);
+
+        buf[offset] = 0;
+        return;
+    }
+
+    if (maxdlen == CANFD_MAX_DLEN)
+    {
+        /* add CAN FD specific escape char and flags */
+        buf[offset++] = '#';
+        buf[offset++] = hex_asc_upper_lo(cf->flags);
+        if (sep && len)
+            buf[offset++] = '.';
+    }
+
+    for (i = 0; i < len; i++)
+    {
+        put_hex_byte(buf + offset, cf->data[i]);
+        offset += 2;
+        if (sep && (i + 1 < len))
+            buf[offset++] = '.';
+    }
+
+    buf[offset] = 0;
+}
+
+void CE367ECUCan::fprint_long_canframe(FILE *stream, struct canfd_frame *cf, char *eol, int view, int maxdlen)
+{
+    /* documentation see lib.h */
+
+    char buf[CL_LONGCFSZ];
+
+    sprint_long_canframe(buf, cf, view, maxdlen);
+    fprintf(stream, "%s", buf);
+    if ((view & CANLIB_VIEW_ERROR) && (cf->can_id & CAN_ERR_FLAG))
+    {
+        fprintf(stream, "\n\t%s", buf);
+    }
+    if (eol)
+        fprintf(stream, "%s", eol);
+}
+
+void CE367ECUCan::sprint_long_canframe(char *buf, struct canfd_frame *cf, int view, int maxdlen)
+{
+    /* documentation see lib.h */
+
+    int i, j, dlen, offset;
+    int len = (cf->len > maxdlen) ? maxdlen : cf->len;
+
+    /* initialize space for CAN-ID and length information */
+    memset(buf, ' ', 15);
+
+    if (cf->can_id & CAN_ERR_FLAG)
+    {
+        put_eff_id(buf, cf->can_id & (CAN_ERR_MASK | CAN_ERR_FLAG));
+        offset = 10;
+    }
+    else if (cf->can_id & CAN_EFF_FLAG)
+    {
+        put_eff_id(buf, cf->can_id & CAN_EFF_MASK);
+        offset = 10;
+    }
+    else
+    {
+        if (view & CANLIB_VIEW_INDENT_SFF)
+        {
+            put_sff_id(buf + 5, cf->can_id & CAN_SFF_MASK);
+            offset = 10;
+        }
+        else
+        {
+            put_sff_id(buf, cf->can_id & CAN_SFF_MASK);
+            offset = 5;
+        }
+    }
+
+    /* The len value is sanitized by maxdlen (see above) */
+    if (maxdlen == CAN_MAX_DLEN)
+    {
+        buf[offset + 1] = '[';
+        buf[offset + 2] = len + '0';
+        buf[offset + 3] = ']';
+
+        /* standard CAN frames may have RTR enabled */
+        if (cf->can_id & CAN_RTR_FLAG)
+        {
+            sprintf(buf + offset + 5, " remote request");
+            return;
+        }
+    }
+    else
+    {
+        buf[offset] = '[';
+        buf[offset + 1] = (len / 10) + '0';
+        buf[offset + 2] = (len % 10) + '0';
+        buf[offset + 3] = ']';
+    }
+    offset += 5;
+
+    if (view & CANLIB_VIEW_BINARY)
+    {
+        dlen = 9; /* _10101010 */
+        if (view & CANLIB_VIEW_SWAP)
+        {
+            for (i = len - 1; i >= 0; i--)
+            {
+                buf[offset++] = (i == len - 1) ? ' ' : SWAP_DELIMITER;
+                for (j = 7; j >= 0; j--)
+                    buf[offset++] = (1 << j & cf->data[i]) ? '1' : '0';
+            }
+        }
+        else
+        {
+            for (i = 0; i < len; i++)
+            {
+                buf[offset++] = ' ';
+                for (j = 7; j >= 0; j--)
+                    buf[offset++] = (1 << j & cf->data[i]) ? '1' : '0';
+            }
+        }
+    }
+    else
+    {
+        dlen = 3; /* _AA */
+        if (view & CANLIB_VIEW_SWAP)
+        {
+            for (i = len - 1; i >= 0; i--)
+            {
+                if (i == len - 1)
+                    buf[offset++] = ' ';
+                else
+                    buf[offset++] = SWAP_DELIMITER;
+
+                put_hex_byte(buf + offset, cf->data[i]);
+                offset += 2;
+            }
+        }
+        else
+        {
+            for (i = 0; i < len; i++)
+            {
+                buf[offset++] = ' ';
+                put_hex_byte(buf + offset, cf->data[i]);
+                offset += 2;
+            }
+        }
+    }
+
+    buf[offset] = 0; /* terminate string */
+
+    /*
+     * The ASCII & ERRORFRAME output is put at a fixed len behind the data.
+     * For now we support ASCII output only for payload length up to 8 bytes.
+     * Does it make sense to write 64 ASCII byte behind 64 ASCII HEX data on the console?
+     */
+    if (len > CAN_MAX_DLEN)
+        return;
+
+    if (cf->can_id & CAN_ERR_FLAG)
+        sprintf(buf + offset, "%*s", dlen * (8 - len) + 13, "ERRORFRAME");
+    else if (view & CANLIB_VIEW_ASCII)
+    {
+        j = dlen * (8 - len) + 4;
+        if (view & CANLIB_VIEW_SWAP)
+        {
+            sprintf(buf + offset, "%*s", j, "`");
+            offset += j;
+            for (i = len - 1; i >= 0; i--)
+                if ((cf->data[i] > 0x1F) && (cf->data[i] < 0x7F))
+                    buf[offset++] = cf->data[i];
+                else
+                    buf[offset++] = '.';
+
+            sprintf(buf + offset, "`");
+        }
+        else
+        {
+            sprintf(buf + offset, "%*s", j, "'");
+            offset += j;
+            for (i = 0; i < len; i++)
+                if ((cf->data[i] > 0x1F) && (cf->data[i] < 0x7F))
+                    buf[offset++] = cf->data[i];
+                else
+                    buf[offset++] = '.';
+
+            sprintf(buf + offset, "'");
+        }
+    }
+}
+
+static int snprintf_error_data(char *buf, size_t len, uint8_t err, const char **arr, int arr_len)
+{
+    int i, n = 0, count = 0;
+
+    if (!err || len <= 0)
+        return 0;
+
+    for (i = 0; i < arr_len; i++)
+    {
+        if (err & (1 << i))
+        {
+            if (count)
+                n += snprintf(buf + n, len - n, ",");
+            n += snprintf(buf + n, len - n, "%s", arr[i]);
+            count++;
+        }
+    }
+
+    return n;
+}
+
+static int snprintf_error_lostarb(char *buf, size_t len, const struct canfd_frame *cf)
+{
+    if (len <= 0)
+        return 0;
+    return snprintf(buf, len, "{at bit %d}", cf->data[0]);
+}
+
+static int snprintf_error_ctrl(char *buf, size_t len, const struct canfd_frame *cf)
+{
+    int n = 0;
+
+    if (len <= 0)
+        return 0;
+
+    n += snprintf(buf + n, len - n, "{");
+    n += snprintf_error_data(buf + n, len - n, cf->data[1], controller_problems, ARRAY_SIZE(controller_problems));
+    n += snprintf(buf + n, len - n, "}");
+
+    return n;
+}
+
+static int snprintf_error_prot(char *buf, size_t len, const struct canfd_frame *cf)
+{
+    int n = 0;
+
+    if (len <= 0)
+        return 0;
+
+    n += snprintf(buf + n, len - n, "{{");
+    n += snprintf_error_data(buf + n, len - n, cf->data[2], protocol_violation_types, ARRAY_SIZE(protocol_violation_types));
+    n += snprintf(buf + n, len - n, "}{");
+    if (cf->data[3] > 0 && cf->data[3] < ARRAY_SIZE(protocol_violation_locations))
+        n += snprintf(buf + n, len - n, "%s", protocol_violation_locations[cf->data[3]]);
+    n += snprintf(buf + n, len - n, "}}");
+
+    return n;
+}
+
+#pragma endregion

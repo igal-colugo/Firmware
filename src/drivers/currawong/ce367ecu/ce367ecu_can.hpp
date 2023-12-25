@@ -33,7 +33,18 @@
 
 #pragma once
 
-//#include <nuttx/can/can.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <net/if.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+
+#include <netpacket/can.h>
+#include <netutils/netlib.h>
+#include <nuttx/can.h>
 
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
@@ -50,6 +61,84 @@
 #include "stm32.h"
 
 using namespace time_literals;
+
+#pragma region Can send definitions
+
+/* Compatibility for NuttX */
+typedef uint8_t __u8;
+typedef uint32_t __u32;
+
+#define CE367ECU_MEASURE_INTERVAL 200_ms
+
+/* buffer sizes for CAN frame string representations */
+
+#define CL_ID (sizeof("12345678##1"))
+#define CL_DATA sizeof(".AA")
+#define CL_BINDATA sizeof(".10101010")
+
+/* CAN FD ASCII hex short representation with DATA_SEPERATORs */
+#define CL_CFSZ (2 * CL_ID + 64 * CL_DATA)
+
+/* CAN FD ASCII hex long representation with binary output */
+#define CL_LONGCFSZ (2 * CL_ID + sizeof("   [255]  ") + (64 * CL_BINDATA))
+
+#define CANLIB_VIEW_ASCII 0x1
+#define CANLIB_VIEW_BINARY 0x2
+#define CANLIB_VIEW_SWAP 0x4
+#define CANLIB_VIEW_ERROR 0x8
+#define CANLIB_VIEW_INDENT_SFF 0x10
+
+#define SWAP_DELIMITER '`'
+
+#define CANID_DELIM '#'
+#define DATA_SEPERATOR '.'
+
+const char hex_asc_upper[] = "0123456789ABCDEF";
+
+#define hex_asc_upper_lo(x) hex_asc_upper[((x) & 0x0F)]
+#define hex_asc_upper_hi(x) hex_asc_upper[((x) & 0xF0) >> 4]
+
+#define put_sff_id(buf, id) _put_id(buf, 2, id)
+#define put_eff_id(buf, id) _put_id(buf, 7, id)
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
+
+/* CAN DLC to real data length conversion helpers */
+
+static const unsigned char dlc2len[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64};
+static const unsigned char len2dlc[] = {0,  1,  2,  3,  4,  5,  6,  7,  8, /* 0 - 8 */
+                                        9,  9,  9,  9,                     /* 9 - 12 */
+                                        10, 10, 10, 10,                    /* 13 - 16 */
+                                        11, 11, 11, 11,                    /* 17 - 20 */
+                                        12, 12, 12, 12,                    /* 21 - 24 */
+                                        13, 13, 13, 13, 13, 13, 13, 13,    /* 25 - 32 */
+                                        14, 14, 14, 14, 14, 14, 14, 14,    /* 33 - 40 */
+                                        14, 14, 14, 14, 14, 14, 14, 14,    /* 41 - 48 */
+                                        15, 15, 15, 15, 15, 15, 15, 15,    /* 49 - 56 */
+                                        15, 15, 15, 15, 15, 15, 15, 15};   /* 57 - 64 */
+static const char *error_classes[] = {
+    "tx-timeout", "lost-arbitration", "controller-problem", "protocol-violation", "transceiver-status", "no-acknowledgement-on-tx", "bus-off", "bus-error", "restarted-after-bus-off",
+};
+static const char *controller_problems[] = {
+    "rx-overflow", "tx-overflow", "rx-error-warning", "tx-error-warning", "rx-error-passive", "tx-error-passive", "back-to-error-active",
+};
+static const char *protocol_violation_types[] = {
+    "single-bit-error", "frame-format-error", "bit-stuffing-error", "tx-dominant-bit-error", "tx-recessive-bit-error", "bus-overload", "active-error", "error-on-tx",
+};
+static const char *protocol_violation_locations[] = {
+    "unspecified",   "unspecified",       "id.28-to-id.21", "start-of-frame",         "bit-srtr",      "bit-ide",        "id.20-to-id.18",     "id.17-to-id.13",
+    "crc-sequence",  "reserved-bit-0",    "data-field",     "data-length-code",       "bit-rtr",       "reserved-bit-1", "id.4-to-id.0",       "id.12-to-id.5",
+    "unspecified",   "active-error-flag", "intermission",   "tolerate-dominant-bits", "unspecified",   "unspecified",    "passive-error-flag", "error-delimiter",
+    "crc-delimiter", "acknowledge-slot",  "end-of-frame",   "acknowledge-delimiter",  "overload-flag", "unspecified",    "unspecified",        "unspecified",
+};
+
+#pragma endregion Can send definitions
+
+#pragma region Can dump definitions
+
+#pragma endregion Can dump definitions
 
 typedef struct __attribute__((packed))
 {
@@ -77,7 +166,6 @@ typedef struct __attribute__((packed))
     uint16_t remaining_capacity_mah;
     uint32_t error_info;
 } CE367ECUCanMessage;
-
 typedef struct
 {
     uint64_t timestamp_usec;
@@ -93,22 +181,185 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     virtual ~CE367ECUCan();
 
     void print_info();
-
-    int start();
-
-    int16_t receive(CanFrame *received_frame);
+    void start();
+    void stop();
 
   private:
+    bool _initialized{false};
+
+    void Run() override;
+
+    int update();
+    int collect();
+
+#pragma region Can send functions
+
+    static inline void put_hex_byte(char *buf, __u8 byte)
+    {
+        buf[0] = hex_asc_upper_hi(byte);
+        buf[1] = hex_asc_upper_lo(byte);
+    }
+    static inline void _put_id(char *buf, int end_offset, canid_t id)
+    {
+        /* build 3 (SFF) or 8 (EFF) digit CAN identifier */
+        while (end_offset >= 0)
+        {
+            buf[end_offset--] = hex_asc_upper_lo(id);
+            id >>= 4;
+        }
+    }
+
+    static int snprintf_error_data(char *buf, size_t len, uint8_t err, const char **arr, int arr_len);
+    static int snprintf_error_lostarb(char *buf, size_t len, const struct canfd_frame *cf);
+    static int snprintf_error_ctrl(char *buf, size_t len, const struct canfd_frame *cf);
+    static int snprintf_error_prot(char *buf, size_t len, const struct canfd_frame *cf);
+
+    /* CAN DLC to real data length conversion helpers especially for CAN FD */
+    /* get data length from can_dlc with sanitized can_dlc */
+    unsigned char can_dlc2len(unsigned char can_dlc);
+    /* map the sanitized data length to an appropriate data length code */
+    unsigned char can_len2dlc(unsigned char len);
+    unsigned char asc2nibble(char c);
+    /*
+     * Returns the decimal value of a given ASCII hex character.
+     *
+     * While 0..9, a..f, A..F are valid ASCII hex characters.
+     * On invalid characters the value 16 is returned for error handling.
+     */
+    int hexstring2data(char *arg, unsigned char *data, int maxdlen);
+    /*
+     * Converts a given ASCII hex string to a (binary) byte string.
+     *
+     * A valid ASCII hex string consists of an even number of up to 16 chars.
+     * Leading zeros '00' in the ASCII hex string are interpreted.
+     *
+     * Examples:
+     *
+     * "1234"   => data[0] = 0x12, data[1] = 0x34
+     * "001234" => data[0] = 0x00, data[1] = 0x12, data[2] = 0x34
+     *
+     * Return values:
+     * 0 = success
+     * 1 = error (in length or the given characters are no ASCII hex characters)
+     *
+     * Remark: The not written data[] elements are initialized with zero.
+     *
+     */
+    int parse_canframe(char *cs, struct canfd_frame *cf);
+    /*
+     * Transfers a valid ASCII string describing a CAN frame into struct canfd_frame.
+     *
+     * CAN 2.0 frames
+     * - string layout <can_id>#{R{len}|data}
+     * - {data} has 0 to 8 hex-values that can (optionally) be separated by '.'
+     * - {len} can take values from 0 to 8 and can be omitted if zero
+     * - return value on successful parsing: CAN_MTU
+     *
+     * CAN FD frames
+     * - string layout <can_id>##<flags>{data}
+     * - <flags> a single ASCII Hex value (0 .. F) which defines canfd_frame.flags
+     * - {data} has 0 to 64 hex-values that can (optionally) be separated by '.'
+     * - return value on successful parsing: CANFD_MTU
+     *
+     * Return value on detected problems: 0
+     *
+     * <can_id> can have 3 (standard frame format) or 8 (extended frame format)
+     * hexadecimal chars
+     *
+     *
+     * Examples:
+     *
+     * 123# -> standard CAN-Id = 0x123, len = 0
+     * 12345678# -> extended CAN-Id = 0x12345678, len = 0
+     * 123#R -> standard CAN-Id = 0x123, len = 0, RTR-frame
+     * 123#R0 -> standard CAN-Id = 0x123, len = 0, RTR-frame
+     * 123#R7 -> standard CAN-Id = 0x123, len = 7, RTR-frame
+     * 7A1#r -> standard CAN-Id = 0x7A1, len = 0, RTR-frame
+     *
+     * 123#00 -> standard CAN-Id = 0x123, len = 1, data[0] = 0x00
+     * 123#1122334455667788 -> standard CAN-Id = 0x123, len = 8
+     * 123#11.22.33.44.55.66.77.88 -> standard CAN-Id = 0x123, len = 8
+     * 123#11.2233.44556677.88 -> standard CAN-Id = 0x123, len = 8
+     * 32345678#112233 -> error frame with CAN_ERR_FLAG (0x2000000) set
+     *
+     * 123##0112233 -> CAN FD frame standard CAN-Id = 0x123, flags = 0, len = 3
+     * 123##1112233 -> CAN FD frame, flags = CANFD_BRS, len = 3
+     * 123##2112233 -> CAN FD frame, flags = CANFD_ESI, len = 3
+     * 123##3 -> CAN FD frame, flags = (CANFD_ESI | CANFD_BRS), len = 0
+     *     ^^
+     *     CAN FD extension to handle the canfd_frame.flags content
+     *
+     * Simple facts on this compact ASCII CAN frame representation:
+     *
+     * - 3 digits: standard frame format
+     * - 8 digits: extendend frame format OR error frame
+     * - 8 digits with CAN_ERR_FLAG (0x2000000) set: error frame
+     * - an error frame is never a RTR frame
+     * - CAN FD frames do not have a RTR bit
+     */
+    void fprint_canframe(FILE *stream, struct canfd_frame *cf, char *eol, int sep, int maxdlen);
+    void sprint_canframe(char *buf, struct canfd_frame *cf, int sep, int maxdlen);
+    /*
+     * Creates a CAN frame hexadecimal output in compact format.
+     * The CAN data[] is separated by '.' when sep != 0.
+     *
+     * The type of the CAN frame (CAN 2.0 / CAN FD) is specified by maxdlen:
+     * maxdlen = 8 -> CAN2.0 frame
+     * maxdlen = 64 -> CAN FD frame
+     *
+     * 12345678#112233 -> extended CAN-Id = 0x12345678, len = 3, data, sep = 0
+     * 12345678#R -> extended CAN-Id = 0x12345678, RTR, len = 0
+     * 12345678#R5 -> extended CAN-Id = 0x12345678, RTR, len = 5
+     * 123#11.22.33.44.55.66.77.88 -> standard CAN-Id = 0x123, dlc = 8, sep = 1
+     * 32345678#112233 -> error frame with CAN_ERR_FLAG (0x2000000) set
+     * 123##0112233 -> CAN FD frame standard CAN-Id = 0x123, flags = 0, len = 3
+     * 123##2112233 -> CAN FD frame, flags = CANFD_ESI, len = 3
+     *
+     * Examples:
+     *
+     * fprint_canframe(stdout, &frame, "\n", 0); // with eol to STDOUT
+     * fprint_canframe(stderr, &frame, NULL, 0); // no eol to STDERR
+     *
+     */
+    void fprint_long_canframe(FILE *stream, struct canfd_frame *cf, char *eol, int view, int maxdlen);
+    void sprint_long_canframe(char *buf, struct canfd_frame *cf, int view, int maxdlen);
+    /*
+     * Creates a CAN frame hexadecimal output in user readable format.
+     *
+     * The type of the CAN frame (CAN 2.0 / CAN FD) is specified by maxdlen:
+     * maxdlen = 8 -> CAN2.0 frame
+     * maxdlen = 64 -> CAN FD frame
+     *
+     * 12345678   [3]  11 22 33 -> extended CAN-Id = 0x12345678, dlc = 3, data
+     * 12345678   [0]  remote request -> extended CAN-Id = 0x12345678, RTR
+     * 14B0DC51   [8]  4A 94 E8 2A EC 58 55 62   'J..*.XUb' -> (with ASCII output)
+     * 20001111   [7]  C6 23 7B 32 69 98 3C      ERRORFRAME -> (CAN_ERR_FLAG set)
+     * 12345678  [03]  11 22 33 -> CAN FD with extended CAN-Id = 0x12345678, dlc = 3
+     *
+     * 123   [3]  11 22 33         -> CANLIB_VIEW_INDENT_SFF == 0
+     *      123   [3]  11 22 33    -> CANLIB_VIEW_INDENT_SFF == set
+     *
+     * Examples:
+     *
+     * // CAN FD frame with eol to STDOUT
+     * fprint_long_canframe(stdout, &frame, "\n", 0, CANFD_MAX_DLEN);
+     *
+     * // CAN 2.0 frame without eol to STDERR
+     * fprint_long_canframe(stderr, &frame, NULL, 0, CAN_MAX_DLEN);
+     *
+     */
+    /*
+     * Creates a CAN error frame output in user readable format.
+     */
     static constexpr uint32_t SAMPLE_RATE{100}; // samples per second (10ms)
     static constexpr size_t TAIL_BYTE_START_OF_TRANSFER{128};
 
     perf_counter_t _comms_error{perf_alloc(PC_COUNT, MODULE_NAME ": comms_error")};
     perf_counter_t _sample_perf{perf_alloc(PC_ELAPSED, MODULE_NAME ": sample")};
 
-    void Run() override;
+#pragma endregion Can send functions
 
-    int _fd{-1};
-    bool _initialized{false};
+#pragma region Can dump functions
 
-    uORB::Publication<battery_status_s> _battery_status_pub{ORB_ID::battery_status};
+#pragma endregion Can dump functions
 };
