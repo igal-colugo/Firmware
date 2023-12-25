@@ -41,6 +41,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 
 #include <netpacket/can.h>
 #include <netutils/netlib.h>
@@ -137,6 +138,68 @@ static const char *protocol_violation_locations[] = {
 #pragma endregion Can send definitions
 
 #pragma region Can dump definitions
+
+/* for hardware timestamps - since Linux 2.6.30 */
+#ifndef SO_TIMESTAMPING
+#define SO_TIMESTAMPING 37
+#endif
+
+/* from #include <linux/net_tstamp.h> - since Linux 2.6.30 */
+#define SOF_TIMESTAMPING_SOFTWARE (1 << 4)
+#define SOF_TIMESTAMPING_RX_SOFTWARE (1 << 3)
+#define SOF_TIMESTAMPING_RAW_HARDWARE (1 << 6)
+
+#define MAXSOCK 16    /* max. number of CAN interfaces given on the cmdline */
+#define MAXIFNAMES 30 /* size of receive name index to omit ioctls */
+#define MAXCOL 6      /* number of different colors for colorized output */
+#define ANYDEV "any"  /* name of interface to receive from any CAN interface */
+#define ANL "\r\n"    /* newline in ASC mode */
+
+#define SILENT_INI 42 /* detect user setting on commandline */
+#define SILENT_OFF 0  /* no silent mode */
+#define SILENT_ANI 1  /* silent mode with animation */
+#define SILENT_ON 2   /* silent mode (completely silent) */
+
+#define ATTBOLD "\33[1m"
+
+#define FGBLACK "\33[30m"
+#define FGRED "\33[31m"
+#define FGGREEN "\33[32m"
+#define FGYELLOW "\33[33m"
+#define FGBLUE "\33[34m"
+#define FGMAGENTA "\33[35m"
+#define FGCYAN "\33[36m"
+#define FGWHITE "\33[37m"
+
+#define BOLD ATTBOLD
+#define RED ATTBOLD FGRED
+#define GREEN ATTBOLD FGGREEN
+#define YELLOW ATTBOLD FGYELLOW
+#define BLUE ATTBOLD FGBLUE
+#define MAGENTA ATTBOLD FGMAGENTA
+#define CYAN ATTBOLD FGCYAN
+
+#define MAXANI 4
+
+/* reset to default */
+
+#define ATTRESET "\33[0m"
+
+const char col_on[MAXCOL][19] = {BLUE, RED, GREEN, BOLD, MAGENTA, CYAN};
+const char col_off[] = ATTRESET;
+
+static char *cmdlinename[MAXSOCK];
+static __u32 dropcnt[MAXSOCK];
+static __u32 last_dropcnt[MAXSOCK];
+static char devname[MAXIFNAMES][IFNAMSIZ + 1];
+static int dindex[MAXIFNAMES];
+static int max_devname_len; /* to prevent frazzled device name output */
+const int canfd_on = 1;
+
+const char anichar[MAXANI] = {'|', '/', '-', '\\'};
+const char extra_m_info[4][4] = {"- -", "B -", "- E", "B E"};
+
+static volatile int running = 1;
 
 #pragma endregion Can dump definitions
 
@@ -360,6 +423,8 @@ class CE367ECUCan : public px4::ScheduledWorkItem
 #pragma endregion Can send functions
 
 #pragma region Can dump functions
+
+    int idx2dindex(int ifidx, int socket);
 
 #pragma endregion Can dump functions
 };
