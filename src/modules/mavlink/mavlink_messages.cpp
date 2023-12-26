@@ -213,6 +213,10 @@ union px4_custom_mode get_px4_custom_mode(uint8_t nav_state)
         custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_AUTO;
         custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_LOITER;
         break;
+    case vehicle_status_s::NAVIGATION_STATE_AUTO_CCAMGUIDE:
+        custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_AUTO;
+        custom_mode.sub_mode = PX4_CUSTOM_SUB_MODE_AUTO_CCAMGUIDE;
+        break;
 
     case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:
         custom_mode.main_mode = PX4_CUSTOM_MAIN_MODE_AUTO;

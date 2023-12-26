@@ -1016,6 +1016,10 @@ bool Commander::handle_command(const vehicle_command_s &cmd)
                         desired_main_state = commander_state_s::MAIN_STATE_AUTO_LOITER;
                         break;
 
+                    case PX4_CUSTOM_SUB_MODE_AUTO_CCAMGUIDE:
+                        desired_main_state = commander_state_s::MAIN_STATE_AUTO_CCAMGUIDE;
+                        break;
+
                     case PX4_CUSTOM_SUB_MODE_AUTO_MISSION:
                         desired_main_state = commander_state_s::MAIN_STATE_AUTO_MISSION;
                         break;
@@ -3752,6 +3756,7 @@ void Commander::update_control_mode()
     case vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND:
     case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:
     case vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER:
+    case vehicle_status_s::NAVIGATION_STATE_AUTO_CCAMGUIDE:
     case vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF:
     case vehicle_status_s::NAVIGATION_STATE_AUTO_VTOL_TAKEOFF:
         _vehicle_control_mode.flag_control_auto_enabled = true;
