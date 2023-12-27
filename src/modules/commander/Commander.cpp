@@ -696,6 +696,9 @@ static inline navigation_mode_t navigation_mode(uint8_t main_state)
     case commander_state_s::MAIN_STATE_AUTO_LOITER:
         return navigation_mode_t::auto_loiter;
 
+    case commander_state_s::MAIN_STATE_AUTO_CCAMGUIDE:
+        return navigation_mode_t::auto_ccam_guide;
+
     case commander_state_s::MAIN_STATE_AUTO_RTL:
         return navigation_mode_t::auto_rtl;
 
@@ -727,7 +730,7 @@ static inline navigation_mode_t navigation_mode(uint8_t main_state)
         return navigation_mode_t::auto_vtol_takeoff;
     }
 
-    static_assert(commander_state_s::MAIN_STATE_MAX - 1 == (int) navigation_mode_t::auto_vtol_takeoff, "enum definition mismatch");
+    static_assert(commander_state_s::MAIN_STATE_MAX - 2 == (int) navigation_mode_t::auto_vtol_takeoff, "enum definition mismatch");
 
     return navigation_mode_t::unknown;
 }
@@ -750,6 +753,9 @@ static constexpr const char *main_state_str(uint8_t main_state)
 
     case commander_state_s::MAIN_STATE_AUTO_LOITER:
         return "Hold";
+
+    case commander_state_s::MAIN_STATE_AUTO_CCAMGUIDE:
+        return "CCG";
 
     case commander_state_s::MAIN_STATE_AUTO_RTL:
         return "RTL";
