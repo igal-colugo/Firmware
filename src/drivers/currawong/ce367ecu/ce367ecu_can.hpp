@@ -61,6 +61,11 @@
 
 #include "stm32.h"
 
+#include "ECUDefines.hpp"
+#include "ECUPackets.hpp"
+#include "ECUProtocol.hpp"
+#include "ECUSettings.hpp"
+
 using namespace time_literals;
 
 #pragma region Can send definitions
@@ -69,7 +74,7 @@ using namespace time_literals;
 typedef uint8_t __u8;
 typedef uint32_t __u32;
 
-#define CE367ECU_MEASURE_INTERVAL 200_ms
+#define CE367ECU_MEASURE_INTERVAL 100_ms
 
 /* buffer sizes for CAN frame string representations */
 
@@ -188,7 +193,6 @@ static const char *protocol_violation_locations[] = {
 const char col_on[MAXCOL][19] = {BLUE, RED, GREEN, BOLD, MAGENTA, CYAN};
 const char col_off[] = ATTRESET;
 
-static char *cmdlinename[MAXSOCK];
 static __u32 dropcnt[MAXSOCK];
 static __u32 last_dropcnt[MAXSOCK];
 static char devname[MAXIFNAMES][IFNAMSIZ + 1];
@@ -199,9 +203,22 @@ const int canfd_on = 1;
 const char anichar[MAXANI] = {'|', '/', '-', '\\'};
 const char extra_m_info[4][4] = {"- -", "B -", "- E", "B E"};
 
-static volatile int running = 1;
-
 #pragma endregion Can dump definitions
+
+#pragma region Currawong definitions
+
+// maximum number of ESC allowed on CAN bus simultaneously
+#define PICCOLO_CAN_MAX_NUM_ESC 16
+#define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
+
+#define PICCOLO_CAN_MAX_NUM_SERVO 16
+#define PICCOLO_CAN_MAX_GROUP_SERVO (PICCOLO_CAN_MAX_NUM_SERVO / 4)
+
+#define PICCOLO_MSG_RATE_HZ_MIN 1
+#define PICCOLO_MSG_RATE_HZ_MAX 500
+#define PICCOLO_MSG_RATE_HZ_DEFAULT 50
+
+#pragma endregion Currawong definitions
 
 typedef struct __attribute__((packed))
 {
@@ -229,31 +246,62 @@ typedef struct __attribute__((packed))
     uint16_t remaining_capacity_mah;
     uint32_t error_info;
 } CE367ECUCanMessage;
-typedef struct
-{
-    uint64_t timestamp_usec;
-    uint32_t extended_can_id;
-    size_t payload_size;
-    const void *payload;
-} CanFrame;
+union PiccoloFrameID {
+    uint32_t frame_id;
+    struct __attribute__((packed))
+    {
+        uint16_t device_address;
+        uint8_t message_type;
+        uint8_t group_id : 5;
+        uint8_t error_message_frame_flag : 1;
+        uint8_t remote_transmission_request_flag : 1;
+        uint8_t frame_format_flag : 1;
+    } word;
+};
 
 class CE367ECUCan : public px4::ScheduledWorkItem
 {
   public:
+    // Piccolo actuator types differentiate between actuator frames
+    enum class ActuatorType : uint8_t
+    {
+        SERVO = 0x00,
+        ESC = 0x20,
+    };
+
+    struct CurrawongECU_Info_t
+    {
+        float command;
+    } _ecu_info;
+
+  public:
     CE367ECUCan();
     virtual ~CE367ECUCan();
+
+    int can_port = 0;
+    int real_number_devices = 0;
 
     void print_info();
     void start();
     void stop();
 
   private:
+    uint16_t _esc_tx_counter = 0;
+    uint16_t _servo_tx_counter = 0;
+    uint16_t _ecu_tx_counter = 0;
+
+    // Piccolo CAN parameters
+    int32_t _esc_bm; //! ESC selection bitmask
+    int32_t _srv_bm; //! Servo selection bitmask
+    int16_t _ecu_id; //! ECU Node ID
+
     bool _initialized{false};
 
     void Run() override;
 
+    int send_data(int can_port, char *data);
     int update();
-    int collect();
+    void collect();
 
 #pragma region Can send functions
 
@@ -271,11 +319,6 @@ class CE367ECUCan : public px4::ScheduledWorkItem
             id >>= 4;
         }
     }
-
-    static int snprintf_error_data(char *buf, size_t len, uint8_t err, const char **arr, int arr_len);
-    static int snprintf_error_lostarb(char *buf, size_t len, const struct canfd_frame *cf);
-    static int snprintf_error_ctrl(char *buf, size_t len, const struct canfd_frame *cf);
-    static int snprintf_error_prot(char *buf, size_t len, const struct canfd_frame *cf);
 
     /* CAN DLC to real data length conversion helpers especially for CAN FD */
     /* get data length from can_dlc with sanitized can_dlc */
@@ -411,9 +454,6 @@ class CE367ECUCan : public px4::ScheduledWorkItem
      * fprint_long_canframe(stderr, &frame, NULL, 0, CAN_MAX_DLEN);
      *
      */
-    /*
-     * Creates a CAN error frame output in user readable format.
-     */
     static constexpr uint32_t SAMPLE_RATE{100}; // samples per second (10ms)
     static constexpr size_t TAIL_BYTE_START_OF_TRANSFER{128};
 
@@ -427,4 +467,25 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     int idx2dindex(int ifidx, int socket);
 
 #pragma endregion Can dump functions
+
+#pragma region Currawong functions
+
+    // write frame on CAN bus, returns true on success
+    int write_frame(int can_port, int real_number_devices, canfd_frame *out_frame, uint64_t timeout);
+    // read frame on CAN bus, returns true on succses
+    int read_frame(int can_port, int real_number_devices, canfd_frame *recv_frame, uint64_t timeout);
+    // send ECU commands over CAN
+    void send_ecu_messages(void);
+    // interpret an ECU message received over CAN
+    bool handle_ecu_message(canfd_frame *frame);
+    // send ESC commands over CAN
+    void send_esc_messages(void);
+    // interpret an ESC message received over CAN
+    bool handle_esc_message(canfd_frame *frame);
+    // send servo commands over CAN
+    void send_servo_messages(void);
+    // interpret a servo message received over CAN
+    bool handle_servo_message(canfd_frame *frame);
+
+#pragma endregion Currawong functions
 };

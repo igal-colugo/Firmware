@@ -30,6 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
+#add_subdirectory(piccolo_protocol)
+
 px4_add_module(
 	MODULE drivers__currawong__ce367ecu
 	MAIN ce367ecu
@@ -39,6 +41,15 @@ px4_add_module(
 		ce367ecu_main.cpp
 		ce367ecu_can.cpp
 		ce367ecu_serial.cpp
+		fielddecode.cpp
+		fieldencode.cpp
+		scaleddecode.cpp
+		scaledencode.cpp
+		ECUDefines.cpp
+		ECUProtocol.cpp
+		ECUPackets.cpp
+		ECUSettings.cpp
+
 	MODULE_CONFIG
 		module.yaml
 	DEPENDS

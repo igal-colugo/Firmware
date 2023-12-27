@@ -32,14 +32,13 @@
  ****************************************************************************/
 
 /**
- * @file TattuCan.cpp
- * @author Jacob Dahl <dahl.jakejacob@gmail.com>
+ * @file ce367ecu_can.cpp
+ * @author Vlad Smirnov <vlad@colugo-sys.com>
  *
- * Driver for the Tattu 12S 1600mAh Smart Battery connected over CAN.
+ * Driver for the Currawong ce367ecu engine controller connected over CAN.
  *
  * This driver simply decodes the CAN frames based on the specification
- * as provided in the Tattu datasheet DOC 001 REV D, which is highly
- * specific to the 12S 1600mAh battery. Other models of Tattu batteries
+ * as provided in the Currawong datasheet CE367 ECU Type B. Other models of Currawong engine controllers
  * will NOT work with this driver in its current form.
  *
  */
@@ -50,8 +49,15 @@ CE367ECUCan::CE367ECUCan() : ScheduledWorkItem(MODULE_NAME, px4::wq_configuratio
 {
     int res = stm32_fdcansockinitialize(0);
     res = stm32_fdcansockinitialize(1);
+
     netlib_ifup("can0");
     netlib_ifup("can1");
+
+    can_port = 1;
+    real_number_devices = 1;
+    _ecu_id = 0xFFFF;
+
+    _initialized = true;
 }
 
 CE367ECUCan::~CE367ECUCan()
@@ -62,8 +68,9 @@ CE367ECUCan::~CE367ECUCan()
 
 void CE367ECUCan::Run()
 {
-    collect();
     update();
+    // send_data(1, "00000000#AAAA");
+    collect();
     // px4_sleep(50);
 }
 
@@ -83,6 +90,88 @@ int CE367ECUCan::update()
 {
     int return_value = 0;
 
+    canfd_frame out_frame = {};
+    memset(&out_frame, 0, sizeof(canfd_frame)); /* init CAN FD frame, e.g. LEN = 0 */
+
+    PiccoloFrameID piccolo_frame_id = {};
+    memset(&piccolo_frame_id, 0, sizeof(PiccoloFrameID));
+
+    piccolo_frame_id.word.frame_format_flag = 1;
+    piccolo_frame_id.word.group_id = 0x08;
+    piccolo_frame_id.word.message_type = 0x03;
+    piccolo_frame_id.word.device_address = 0xFFFF;
+
+    out_frame.can_id = piccolo_frame_id.frame_id; // 0x8803FFFF; // 0x8300FFFF;
+    out_frame.len = 4;
+    out_frame.data[0] = 55;
+    out_frame.data[1] = 55;
+    out_frame.data[2] = 55;
+    out_frame.data[3] = 55;
+    // out_frame.data[4] = 55;
+    // out_frame.data[5] = 55;
+    // out_frame.data[6] = 55;
+    // out_frame.data[7] = 55;
+
+    return_value = write_frame(can_port, real_number_devices, &out_frame, 0);
+
+    //@note Vlad in implementation state
+
+    uint16_t escCmdRateMs = (uint16_t) (1000.0f / (1.0f / (2.0f * (CE367ECU_MEASURE_INTERVAL / 1000000.0f))));
+    uint16_t servoCmdRateMs = (uint16_t) (1000.0f / (1.0f / (2.0f * (CE367ECU_MEASURE_INTERVAL / 1000000.0f))));
+    uint16_t ecuCmdRateMs = (uint16_t) (1000.0f / (1.0f / (2.0f * (CE367ECU_MEASURE_INTERVAL / 1000000.0f))));
+
+    // Transmit ecu throttle commands at regular intervals
+    if ((_ecu_tx_counter++) * (CE367ECU_MEASURE_INTERVAL / 1000.0f) >= ecuCmdRateMs)
+    {
+        _ecu_tx_counter = 0;
+        send_ecu_messages();
+    }
+
+    /*
+
+    // Transmit ESC commands at regular intervals
+    if (_esc_tx_counter++ > escCmdRateMs)
+    {
+        _esc_tx_counter = 0;
+        send_esc_messages();
+        }
+        // Transmit servo commands at regular intervals
+        if (_servo_tx_counter++ > servoCmdRateMs)
+        {
+            _servo_tx_counter = 0;
+            send_servo_messages();
+        }
+
+    */
+
+    //----------------------------------
+
+    return return_value;
+}
+
+/*
+    send CAN-frames via CAN_RAW sockets.
+    <device> <can_frame>
+    <can_frame>
+    <can_id>#{data} for 'classic' CAN 2.0 data frames
+    <can_id>#R{len} for 'classic' CAN 2.0 data frames
+    <can_id>##<flags>{data} for CAN FD frames
+    <can_id>
+    3 (SFF) or 8 (EFF) hex chars
+    {data}
+    0..8 (0..64 CAN FD) ASCII hex-values (optionally separated by '.'
+    {len}
+    an optional 0..8 value as RTR frames can contain a valid dlc field
+    <flags>
+    a single ASCII Hex value (0 .. F) which defines canfd_frame.flags
+    Examples:
+    5A1#11.2233.44556677.88 / 123#DEADBEEF / 5AA# / 123##1 / 213##311223344 /
+    1F334455#1122334455667788 / 123#R / 00000123#R3
+*/
+int CE367ECUCan::send_data(int can_port, char *data)
+{
+    int return_value = 0;
+    char *port = nullptr;
     int s; /* can raw socket */
     int required_mtu;
     int mtu;
@@ -91,27 +180,33 @@ int CE367ECUCan::update()
     struct canfd_frame frame;
     struct ifreq ifr;
 
+    if (can_port == 1)
+    {
+        port = "can0";
+    }
+    if (can_port == 2)
+    {
+        port = "can1";
+    }
+
     /* parse CAN frame */
-    required_mtu = this->parse_canframe("00000005#AAAABBBBCCCCDDDD", &frame);
+    required_mtu = parse_canframe(data, &frame);
     if (!required_mtu)
     {
-        fprintf(stderr, "\nWrong CAN-frame format!\n\n");
         return -1;
     }
 
     /* open socket */
     if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
     {
-        perror("socket");
         return -1;
     }
 
-    strncpy(ifr.ifr_name, "can1", IFNAMSIZ - 1);
+    strncpy(ifr.ifr_name, port, IFNAMSIZ - 1);
     ifr.ifr_name[IFNAMSIZ - 1] = '\0';
     ifr.ifr_ifindex = if_nametoindex(ifr.ifr_name);
     if (!ifr.ifr_ifindex)
     {
-        perror("if_nametoindex");
         return -1;
     }
 
@@ -124,21 +219,18 @@ int CE367ECUCan::update()
         /* check if the frame fits into the CAN netdevice */
         if (ioctl(s, SIOCGIFMTU, &ifr) < 0)
         {
-            perror("SIOCGIFMTU");
             return -1;
         }
         mtu = ifr.ifr_mtu;
 
         if (mtu != CANFD_MTU)
         {
-            printf("CAN interface is not CAN FD capable - sorry.\n");
             return -1;
         }
 
         /* interface is ok - try to switch the socket into CAN FD mode */
         if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)))
         {
-            printf("error when enabling CAN FD support\n");
             return -1;
         }
 
@@ -154,14 +246,12 @@ int CE367ECUCan::update()
 
     if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0)
     {
-        perror("bind");
         return -1;
     }
 
     /* send frame */
     if (write(s, &frame, required_mtu) != required_mtu)
     {
-        perror("write");
         return -1;
     }
 
@@ -170,22 +260,21 @@ int CE367ECUCan::update()
     return return_value;
 }
 
-int CE367ECUCan::collect()
+void CE367ECUCan::collect()
+{
+    canfd_frame recv_frame = {};
+    int return_value = read_frame(can_port, real_number_devices, &recv_frame, 0);
+}
+
+int CE367ECUCan::read_frame(int can_port, int real_number_devices, canfd_frame *recv_frame, uint64_t time_out)
 {
     int return_value = 0;
 
     fd_set rdfs;
+    char *port = nullptr;
     int s[MAXSOCK];
-    unsigned char timestamp = 0;
-    unsigned char hwtimestamp = 0;
     unsigned char down_causes_exit = 1;
-    unsigned char dropmonitor = 0;
-    unsigned char extra_msg_info = 0;
-    unsigned char silent = SILENT_INI;
-    unsigned char silentani = 0;
-    unsigned char color = 0;
     unsigned char view = 0;
-    unsigned char logfrmt = 0;
     int count = 0;
     int rcvbuf_size = 0;
     int opt, ret;
@@ -199,197 +288,80 @@ int CE367ECUCan::collect()
     struct cmsghdr *cmsg;
     struct can_filter *rfilter;
     can_err_mask_t err_mask;
-    struct canfd_frame frame;
+    struct canfd_frame *frame = recv_frame;
     int nbytes, i, maxdlen;
     struct ifreq ifr;
     struct timeval tv, last_tv;
     struct timeval timeout, timeout_config = {0, 0}, *timeout_current = NULL;
-    FILE *logfile = NULL;
 
     last_tv.tv_sec = 0;
     last_tv.tv_usec = 0;
 
-    // while ((opt = getopt(argc, argv, "t:HciaSs:lDdxLn:r:heT:?")) != -1)
-    // {
-    //     switch (opt)
-    //     {
-    //     case 't':
-    //         timestamp = optarg[0];
-    //         if ((timestamp != 'a') && (timestamp != 'A') && (timestamp != 'd') && (timestamp != 'z'))
-    //         {
-    //             fprintf(stderr, "%s: unknown timestamp mode '%c' - ignored\n", basename(argv[0]), optarg[0]);
-    //             timestamp = 0;
-    //         }
-    //         break;
-
-    //     case 'H':
-    //         hwtimestamp = 1;
-    //         break;
-
-    //     case 'c':
-    //         color++;
-    //         break;
-
-    //     case 'i':
-    //         view |= CANLIB_VIEW_BINARY;
-    //         break;
-
-    //     case 'a':
-    //         view |= CANLIB_VIEW_ASCII;
-    //         break;
-
-    //     case 'S':
-    //         view |= CANLIB_VIEW_SWAP;
-    //         break;
-
-    //     case 'e':
-    //         view |= CANLIB_VIEW_ERROR;
-    //         break;
-
-    //     case 's':
-    //         silent = atoi(optarg);
-    //         if (silent > SILENT_ON)
-    //         {
-    //             print_usage(basename(argv[0]));
-    //             exit(1);
-    //         }
-    //         break;
-
-    //     case 'l':
-    //         log = 1;
-    //         break;
-
-    //     case 'D':
-    //         down_causes_exit = 0;
-    //         break;
-
-    //     case 'd':
-    //         dropmonitor = 1;
-    //         break;
-
-    //     case 'x':
-    //         extra_msg_info = 1;
-    //         break;
-
-    //     case 'L':
-    //         logfrmt = 1;
-    //         break;
-
-    //     case 'n':
-    //         count = atoi(optarg);
-    //         if (count < 1)
-    //         {
-    //             print_usage(basename(argv[0]));
-    //             exit(1);
-    //         }
-    //         break;
-
-    //     case 'r':
-    //         rcvbuf_size = atoi(optarg);
-    //         if (rcvbuf_size < 1)
-    //         {
-    //             print_usage(basename(argv[0]));
-    //             exit(1);
-    //         }
-    //         break;
-
-    //     case 'T':
-    //         errno = 0;
-    //         timeout_config.tv_usec = strtol(optarg, NULL, 0);
-    //         if (errno != 0)
-    //         {
-    //             print_usage(basename(argv[0]));
-    //             exit(1);
-    //         }
-    //         timeout_config.tv_sec = timeout_config.tv_usec / 1000;
-    //         timeout_config.tv_usec = (timeout_config.tv_usec % 1000) * 1000;
-    //         timeout_current = &timeout;
-    //         break;
-    //     default:
-    //         print_usage(basename(argv[0]));
-    //         exit(1);
-    //         break;
-    //     }
-    // }
-
-    // if (optind == argc)
-    // {
-    //     print_usage(basename(argv[0]));
-    //     exit(0);
-    // }
-
-    if (silent == SILENT_INI)
-    {
-        silent = SILENT_OFF; /* default output */
-    }
-
-    currmax = 1; // argc - optind; /* find real number of CAN devices */
-
+    currmax = real_number_devices; /* find real number of CAN devices */
     if (currmax > MAXSOCK)
     {
-        fprintf(stderr, "More than %d CAN devices given on commandline!\n", MAXSOCK);
-        return 1;
+        return -1;
+    }
+
+    if (can_port == 1)
+    {
+        port = "can0";
+    }
+    if (can_port == 2)
+    {
+        port = "can1";
     }
 
     for (i = 0; i < currmax; i++)
     {
-
-        ptr = "can1"; // argv[optind + i];
+        ptr = port;
         nptr = strchr(ptr, ',');
-
-#ifdef DEBUG
-        printf("open %d '%s'.\n", i, ptr);
-#endif
 
         s[i] = socket(PF_CAN, SOCK_RAW, CAN_RAW);
         if (s[i] < 0)
         {
-            perror("socket");
-            return 1;
+            return -1;
         }
 
-        cmdlinename[i] = ptr; /* save pointer to cmdline name of this socket */
-
         if (nptr)
+        {
             nbytes = nptr - ptr; /* interface name is up the first ',' */
+        }
         else
+        {
             nbytes = strlen(ptr); /* no ',' found => no filter definitions */
+        }
 
         if (nbytes >= IFNAMSIZ)
         {
-            fprintf(stderr, "name of CAN device '%s' is too long!\n", ptr);
-            return 1;
+            return -1;
         }
-
         if (nbytes > max_devname_len)
+        {
             max_devname_len = nbytes; /* for nice printing */
+        }
 
         addr.can_family = AF_CAN;
 
         memset(&ifr.ifr_name, 0, sizeof(ifr.ifr_name));
         strncpy(ifr.ifr_name, ptr, nbytes);
 
-#ifdef DEBUG
-        printf("using interface name '%s'.\n", ifr.ifr_name);
-#endif
-
         if (strcmp(ANYDEV, ifr.ifr_name))
         {
             if (ioctl(s[i], SIOCGIFINDEX, &ifr) < 0)
             {
-                perror("SIOCGIFINDEX");
-                exit(1);
+                return -1;
             }
             addr.can_ifindex = ifr.ifr_ifindex;
         }
         else
+        {
             addr.can_ifindex = 0; /* any can interface */
+        }
 
         if (nptr)
         {
-
             /* found a ',' after the interface name => check for filters */
-
             /* determine number of filters to alloc the filter space */
             numfilter = 0;
             ptr = nptr;
@@ -403,8 +375,7 @@ int CE367ECUCan::collect()
             rfilter = (can_filter *) (malloc(sizeof(struct can_filter) * numfilter));
             if (!rfilter)
             {
-                fprintf(stderr, "Failed to create filter space!\n");
-                return 1;
+                return -1;
             }
 
             numfilter = 0;
@@ -413,7 +384,6 @@ int CE367ECUCan::collect()
 
             while (nptr)
             {
-
                 ptr = nptr + 1;          /* hop behind the ',' */
                 nptr = strchr(ptr, ','); /* update exit condition */
 
@@ -421,7 +391,9 @@ int CE367ECUCan::collect()
                 {
                     rfilter[numfilter].can_mask &= ~CAN_ERR_FLAG;
                     if (*(ptr + 8) == ':')
+                    {
                         rfilter[numfilter].can_id |= CAN_EFF_FLAG;
+                    }
                     numfilter++;
                 }
                 else if (sscanf(ptr, "%" SCNx32 "~%" SCNx32, &rfilter[numfilter].can_id, &rfilter[numfilter].can_mask) == 2)
@@ -429,7 +401,9 @@ int CE367ECUCan::collect()
                     rfilter[numfilter].can_id |= CAN_INV_FILTER;
                     rfilter[numfilter].can_mask &= ~CAN_ERR_FLAG;
                     if (*(ptr + 8) == '~')
+                    {
                         rfilter[numfilter].can_id |= CAN_EFF_FLAG;
+                    }
                     numfilter++;
                 }
                 else if (*ptr == 'j' || *ptr == 'J')
@@ -438,22 +412,22 @@ int CE367ECUCan::collect()
                 }
                 else if (sscanf(ptr, "#%" SCNx32, &err_mask) != 1)
                 {
-                    fprintf(stderr, "Error in filter option parsing: '%s'\n", ptr);
-                    return 1;
+                    return -1;
                 }
             }
 
             if (err_mask)
+            {
                 setsockopt(s[i], SOL_CAN_RAW, CAN_RAW_ERR_FILTER, &err_mask, sizeof(err_mask));
-
+            }
             if (join_filter && setsockopt(s[i], SOL_CAN_RAW, CAN_RAW_JOIN_FILTERS, &join_filter, sizeof(join_filter)) < 0)
             {
-                perror("setsockopt CAN_RAW_JOIN_FILTERS not supported by your Linux Kernel");
-                return 1;
+                return -1;
             }
-
             if (numfilter)
+            {
                 setsockopt(s[i], SOL_CAN_RAW, CAN_RAW_FILTER, rfilter, numfilter * sizeof(struct can_filter));
+            }
 
             free(rfilter);
 
@@ -464,114 +438,61 @@ int CE367ECUCan::collect()
 
         if (rcvbuf_size)
         {
-
             int curr_rcvbuf_size;
             socklen_t curr_rcvbuf_size_len = sizeof(curr_rcvbuf_size);
 
             /* try SO_RCVBUFFORCE first, if we run with CAP_NET_ADMIN */
             if (setsockopt(s[i], SOL_SOCKET, SO_RCVBUFFORCE, &rcvbuf_size, sizeof(rcvbuf_size)) < 0)
             {
-#ifdef DEBUG
-                printf("SO_RCVBUFFORCE failed so try SO_RCVBUF ...\n");
-#endif
                 if (setsockopt(s[i], SOL_SOCKET, SO_RCVBUF, &rcvbuf_size, sizeof(rcvbuf_size)) < 0)
                 {
-                    perror("setsockopt SO_RCVBUF");
-                    return 1;
+                    return -1;
                 }
-
                 if (getsockopt(s[i], SOL_SOCKET, SO_RCVBUF, &curr_rcvbuf_size, &curr_rcvbuf_size_len) < 0)
                 {
-                    perror("getsockopt SO_RCVBUF");
-                    return 1;
+                    return -1;
                 }
-
-                /* Only print a warning the first time we detect the adjustment */
-                /* n.b.: The wanted size is doubled in Linux in net/sore/sock.c */
-                if (!i && curr_rcvbuf_size < rcvbuf_size * 2)
-                    fprintf(stderr, "The socket receive buffer size was "
-                                    "adjusted due to /proc/sys/net/core/rmem_max.\n");
-            }
-        }
-
-        if (timestamp || logfrmt)
-        {
-
-            if (hwtimestamp)
-            {
-                const int timestamping_flags = (SOF_TIMESTAMPING_SOFTWARE | SOF_TIMESTAMPING_RX_SOFTWARE | SOF_TIMESTAMPING_RAW_HARDWARE);
-
-                if (setsockopt(s[i], SOL_SOCKET, SO_TIMESTAMPING, &timestamping_flags, sizeof(timestamping_flags)) < 0)
-                {
-                    perror("setsockopt SO_TIMESTAMPING is not supported by your Linux kernel");
-                    return 1;
-                }
-            }
-            else
-            {
-                const int timestamp_on = 1;
-
-                if (setsockopt(s[i], SOL_SOCKET, SO_TIMESTAMP, &timestamp_on, sizeof(timestamp_on)) < 0)
-                {
-                    perror("setsockopt SO_TIMESTAMP");
-                    return 1;
-                }
-            }
-        }
-
-        if (dropmonitor)
-        {
-
-            const int dropmonitor_on = 1;
-
-            if (setsockopt(s[i], SOL_SOCKET, SO_RXQ_OVFL, &dropmonitor_on, sizeof(dropmonitor_on)) < 0)
-            {
-                perror("setsockopt SO_RXQ_OVFL not supported by your Linux Kernel");
-                return 1;
             }
         }
 
         if (bind(s[i], (struct sockaddr *) &addr, sizeof(addr)) < 0)
         {
-            perror("bind");
-            return 1;
+            return -1;
         }
     }
 
     /* these settings are static and can be held out of the hot path */
-    iov.iov_base = &frame;
+    iov.iov_base = frame;
     msg.msg_name = &addr;
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
     msg.msg_control = &ctrlmsg;
 
-    // while (running)
-    //{
-
     FD_ZERO(&rdfs);
     for (i = 0; i < currmax; i++)
+    {
         FD_SET(s[i], &rdfs);
+    }
 
     if (timeout_current)
+    {
         *timeout_current = timeout_config;
+    }
 
     if ((ret = select(s[currmax - 1] + 1, &rdfs, NULL, NULL, timeout_current)) <= 0)
     {
-        // perror("select");
-        running = 0;
-        return 0; // continue;
+        return -1;
     }
 
     for (i = 0; i < currmax; i++)
-    { /* check all CAN RAW sockets */
-
+    {
+        /* check all CAN RAW sockets */
         if (FD_ISSET(s[i], &rdfs))
         {
-
             int idx;
 
             /* these settings may be modified by recvmsg() */
-            iov.iov_len = sizeof(frame);
+            iov.iov_len = sizeof(canfd_frame);
             msg.msg_namelen = sizeof(addr);
             msg.msg_controllen = sizeof(ctrlmsg);
             msg.msg_flags = 0;
@@ -583,25 +504,24 @@ int CE367ECUCan::collect()
             {
                 if ((errno == ENETDOWN) && !down_causes_exit)
                 {
-                    fprintf(stderr, "%s: interface down\n", devname[idx]);
                     continue;
                 }
-                perror("read");
-                return 1;
+
+                return -1;
             }
 
             if ((size_t) nbytes == CAN_MTU)
+            {
                 maxdlen = CAN_MAX_DLEN;
+            }
             else if ((size_t) nbytes == CANFD_MTU)
+            {
                 maxdlen = CANFD_MAX_DLEN;
+            }
             else
             {
-                fprintf(stderr, "read: incomplete CAN frame\n");
-                return 1;
+                return -1;
             }
-
-            if (count && (--count == 0))
-                running = 0;
 
             for (cmsg = CMSG_FIRSTHDR(&msg); cmsg && (cmsg->cmsg_level == SOL_SOCKET); cmsg = CMSG_NXTHDR(&msg, cmsg))
             {
@@ -611,7 +531,6 @@ int CE367ECUCan::collect()
                 }
                 else if (cmsg->cmsg_type == SO_TIMESTAMPING)
                 {
-
                     struct timespec *stamp = (struct timespec *) CMSG_DATA(cmsg);
 
                     /*
@@ -625,119 +544,117 @@ int CE367ECUCan::collect()
                     tv.tv_usec = stamp[2].tv_nsec / 1000;
                 }
                 else if (cmsg->cmsg_type == SO_RXQ_OVFL)
+                {
                     memcpy(&dropcnt[i], CMSG_DATA(cmsg), sizeof(__u32));
+                }
             }
 
             /* check for (unlikely) dropped frames on this specific socket */
             if (dropcnt[i] != last_dropcnt[i])
             {
-
                 __u32 frames = dropcnt[i] - last_dropcnt[i];
-
-                if (silent != SILENT_ON)
-                    printf("DROPCOUNT: dropped %" PRId32 " CAN frame%s on '%s' socket (total drops %" PRId32 ")\n", (uint32_t) frames, (frames > 1) ? "s" : "", devname[idx],
-                           (uint32_t) dropcnt[i]);
 
                 last_dropcnt[i] = dropcnt[i];
             }
 
             /* once we detected a EFF frame indent SFF frames accordingly */
-            if (frame.can_id & CAN_EFF_FLAG)
+            if (frame->can_id & CAN_EFF_FLAG)
+            {
                 view |= CANLIB_VIEW_INDENT_SFF;
-
-            if ((logfrmt) && (silent == SILENT_OFF))
-            {
-                char buf[CL_CFSZ]; /* max length */
-
-                /* print CAN frame in log file style to stdout */
-                sprint_canframe(buf, &frame, 0, maxdlen);
-                printf("(%010ju.%06ld) %*s %s\n", (uintmax_t) tv.tv_sec, tv.tv_usec, max_devname_len, devname[idx], buf);
-                goto out_fflush; /* no other output to stdout */
             }
-
-            if (silent != SILENT_OFF)
-            {
-                if (silent == SILENT_ANI)
-                {
-                    printf("%c\b", anichar[silentani %= MAXANI]);
-                    silentani++;
-                }
-                goto out_fflush; /* no other output to stdout */
-            }
-
-            printf(" %s", (color > 2) ? col_on[idx % MAXCOL] : "");
-
-            switch (timestamp)
-            {
-
-            case 'a': /* absolute with timestamp */
-                printf("(%010ju.%06ld) ", (uintmax_t) tv.tv_sec, tv.tv_usec);
-                break;
-
-            case 'A': /* absolute with date */
-            {
-                struct tm tm;
-                char timestring[25];
-
-                tm = *localtime(&tv.tv_sec);
-                strftime(timestring, 24, "%Y-%m-%d %H:%M:%S", &tm);
-                printf("(%s.%06ld) ", timestring, tv.tv_usec);
-            }
-            break;
-
-            case 'd': /* delta */
-            case 'z': /* starting with zero */
-            {
-                struct timeval diff;
-
-                if (last_tv.tv_sec == 0) /* first init */
-                    last_tv = tv;
-                diff.tv_sec = tv.tv_sec - last_tv.tv_sec;
-                diff.tv_usec = tv.tv_usec - last_tv.tv_usec;
-                if (diff.tv_usec < 0)
-                    diff.tv_sec--, diff.tv_usec += 1000000;
-                if (diff.tv_sec < 0)
-                    diff.tv_sec = diff.tv_usec = 0;
-                printf("(%03ju.%06ld) ", (uintmax_t) diff.tv_sec, diff.tv_usec);
-
-                if (timestamp == 'd')
-                    last_tv = tv; /* update for delta calculation */
-            }
-            break;
-
-            default: /* no timestamp output */
-                break;
-            }
-
-            printf(" %s", (color && (color < 3)) ? col_on[idx % MAXCOL] : "");
-            printf("%*s", max_devname_len, devname[idx]);
-
-            if (extra_msg_info)
-            {
-
-                if (msg.msg_flags & MSG_DONTROUTE)
-                    printf("  TX %s", extra_m_info[frame.flags & 3]);
-                else
-                    printf("  RX %s", extra_m_info[frame.flags & 3]);
-            }
-
-            printf("%s  ", (color == 1) ? col_off : "");
-
-            fprint_long_canframe(stdout, &frame, NULL, view, maxdlen);
-
-            printf("%s", (color > 1) ? col_off : "");
-            printf("\n");
         }
-
-    out_fflush:
-        fflush(stdout);
     }
-    //}
 
     for (i = 0; i < currmax; i++)
+    {
         close(s[i]);
+    }
 
-    return 0;
+    return return_value;
+}
+/*
+ * Controller Area Network Identifier structure
+ *
+ * bit 0-28	: CAN identifier (11/29 bit)
+ * bit 29	: error message frame flag (0 = data frame, 1 = error message)
+ * bit 30	: remote transmission request flag (1 = rtr frame)
+ * bit 31	: frame format flag (0 = standard 11 bit, 1 = extended 29 bit)
+ */
+int CE367ECUCan::write_frame(int can_port, int real_number_devices, canfd_frame *out_frame, uint64_t time_out)
+{
+    int return_value = 0;
+    char *port = nullptr;
+    int s; /* can raw socket */
+    int required_mtu;
+    int mtu;
+    int enable_canfd = 1;
+    struct sockaddr_can addr;
+    struct canfd_frame *frame = out_frame;
+    struct ifreq ifr;
+
+    if (can_port == 1)
+    {
+        port = "can0";
+    }
+    if (can_port == 2)
+    {
+        port = "can1";
+    }
+
+    /* open socket */
+    if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
+    {
+        return -1;
+    }
+
+    strncpy(ifr.ifr_name, port, IFNAMSIZ - 1);
+    ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+    ifr.ifr_ifindex = if_nametoindex(ifr.ifr_name);
+    if (!ifr.ifr_ifindex)
+    {
+        return -1;
+    }
+
+    memset(&addr, 0, sizeof(addr));
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+
+    /* check if the frame fits into the CAN netdevice */
+    if (ioctl(s, SIOCGIFMTU, &ifr) < 0)
+    {
+        return -1;
+    }
+    mtu = ifr.ifr_mtu;
+
+    if (mtu != CANFD_MTU)
+    {
+        return -1;
+    }
+
+    /* interface is ok - try to switch the socket into CAN FD mode */
+    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)))
+    {
+        return -1;
+    }
+
+    /* ensure discrete CAN FD length values 0..8, 12, 16, 20, 24, 32, 64 */
+    frame->len = can_dlc2len(can_len2dlc(frame->len));
+
+    /* disable default receive filter on this RAW socket */
+    /* This is obsolete as we do not read from the socket at all, but for */
+    /* this reason we can remove the receive list in the Kernel to save a */
+    /* little (really a very little!) CPU usage.                          */
+    setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
+
+    if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+    {
+        return -1;
+    }
+
+    /* send frame */
+    return_value = write(s, frame, sizeof(can_frame)); //(sizeof(frame->can_id) + sizeof(frame->len) + sizeof(frame->flags) + sizeof(frame->__res0) + sizeof(frame->__res1) + frame->len));
+
+    close(s);
 
     return return_value;
 }
@@ -1134,65 +1051,6 @@ void CE367ECUCan::sprint_long_canframe(char *buf, struct canfd_frame *cf, int vi
     }
 }
 
-static int snprintf_error_data(char *buf, size_t len, uint8_t err, const char **arr, int arr_len)
-{
-    int i, n = 0, count = 0;
-
-    if (!err || len <= 0)
-        return 0;
-
-    for (i = 0; i < arr_len; i++)
-    {
-        if (err & (1 << i))
-        {
-            if (count)
-                n += snprintf(buf + n, len - n, ",");
-            n += snprintf(buf + n, len - n, "%s", arr[i]);
-            count++;
-        }
-    }
-
-    return n;
-}
-
-static int snprintf_error_lostarb(char *buf, size_t len, const struct canfd_frame *cf)
-{
-    if (len <= 0)
-        return 0;
-    return snprintf(buf, len, "{at bit %d}", cf->data[0]);
-}
-
-static int snprintf_error_ctrl(char *buf, size_t len, const struct canfd_frame *cf)
-{
-    int n = 0;
-
-    if (len <= 0)
-        return 0;
-
-    n += snprintf(buf + n, len - n, "{");
-    n += snprintf_error_data(buf + n, len - n, cf->data[1], controller_problems, ARRAY_SIZE(controller_problems));
-    n += snprintf(buf + n, len - n, "}");
-
-    return n;
-}
-
-static int snprintf_error_prot(char *buf, size_t len, const struct canfd_frame *cf)
-{
-    int n = 0;
-
-    if (len <= 0)
-        return 0;
-
-    n += snprintf(buf + n, len - n, "{{");
-    n += snprintf_error_data(buf + n, len - n, cf->data[2], protocol_violation_types, ARRAY_SIZE(protocol_violation_types));
-    n += snprintf(buf + n, len - n, "}{");
-    if (cf->data[3] > 0 && cf->data[3] < ARRAY_SIZE(protocol_violation_locations))
-        n += snprintf(buf + n, len - n, "%s", protocol_violation_locations[cf->data[3]]);
-    n += snprintf(buf + n, len - n, "}}");
-
-    return n;
-}
-
 #pragma endregion
 
 #pragma region Can dump functions
@@ -1251,3 +1109,32 @@ int CE367ECUCan::idx2dindex(int ifidx, int socket)
 }
 
 #pragma endregion Can dump functions
+
+#pragma region Currawong functions
+
+void CE367ECUCan::send_ecu_messages()
+{
+    canfd_frame txFrame{};
+
+    // No ECU node id set, don't send anything
+    if (_ecu_id == 0)
+    {
+        return;
+    }
+
+    PiccoloFrameID piccolo_frame_id = {};
+    memset(&piccolo_frame_id, 0, sizeof(PiccoloFrameID));
+
+    piccolo_frame_id.word.frame_format_flag = 1;
+    // piccolo_frame_id.word.group_id = 0x08;
+    // piccolo_frame_id.word.message_type = 0x03;
+    piccolo_frame_id.word.device_address = 0xFFFF;
+
+    encodeECU_ThrottleCommandPacket(&txFrame, 50.0); //_ecu_info.command);
+    txFrame.can_id |= (uint8_t) _ecu_id;
+    txFrame.can_id |= piccolo_frame_id.frame_id;
+
+    write_frame(can_port, real_number_devices, &txFrame, 0);
+}
+
+#pragma endregion Currawong functions
