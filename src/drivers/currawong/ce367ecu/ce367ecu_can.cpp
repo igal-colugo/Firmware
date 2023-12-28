@@ -68,8 +68,8 @@ CE367ECUCan::~CE367ECUCan()
 
 void CE367ECUCan::Run()
 {
+    //@example send_data(1, "00000000#AAAABBBBCCCCDDDDAAAABBBB");
     update();
-    // send_data(1, "00000000#AAAA");
     collect();
     // px4_sleep(50);
 }
@@ -77,7 +77,7 @@ void CE367ECUCan::Run()
 void CE367ECUCan::start()
 {
     // Schedule the driver at regular intervals.
-    ScheduleOnInterval(CE367ECU_MEASURE_INTERVAL, CE367ECU_MEASURE_INTERVAL);
+    ScheduleOnInterval(CE367ECU_CAN_MEASURE_INTERVAL);
 }
 
 void CE367ECUCan::stop()
@@ -90,8 +90,10 @@ int CE367ECUCan::update()
 {
     int return_value = 0;
 
+    //@example
+    /*
     canfd_frame out_frame = {};
-    memset(&out_frame, 0, sizeof(canfd_frame)); /* init CAN FD frame, e.g. LEN = 0 */
+    memset(&out_frame, 0, sizeof(canfd_frame)); //init CAN FD frame, e.g. LEN = 0
 
     PiccoloFrameID piccolo_frame_id = {};
     memset(&piccolo_frame_id, 0, sizeof(PiccoloFrameID));
@@ -113,38 +115,39 @@ int CE367ECUCan::update()
     // out_frame.data[7] = 55;
 
     return_value = write_frame(can_port, real_number_devices, &out_frame, 0);
+    */
 
     //@note Vlad in implementation state
 
-    uint16_t escCmdRateMs = (uint16_t) (1000.0f / (1.0f / (2.0f * (CE367ECU_MEASURE_INTERVAL / 1000000.0f))));
-    uint16_t servoCmdRateMs = (uint16_t) (1000.0f / (1.0f / (2.0f * (CE367ECU_MEASURE_INTERVAL / 1000000.0f))));
-    uint16_t ecuCmdRateMs = (uint16_t) (1000.0f / (1.0f / (2.0f * (CE367ECU_MEASURE_INTERVAL / 1000000.0f))));
+    uint16_t servoCmdRate = 2;
+    uint16_t ecuCmdRate = 2;
+
+    //@todo Vlad:subscribe to pwm uorb messages
 
     // Transmit ecu throttle commands at regular intervals
-    if ((_ecu_tx_counter++) * (CE367ECU_MEASURE_INTERVAL / 1000.0f) >= ecuCmdRateMs)
+    if (_ecu_tx_counter >= 1)
     {
         _ecu_tx_counter = 0;
-        send_ecu_messages();
+        //@todo Vlad:set scaled value from throttle motor
+        send_ecu_messages(50.0);
     }
 
     /*
-
     // Transmit ESC commands at regular intervals
-    if (_esc_tx_counter++ > escCmdRateMs)
+    if (_esc_tx_counter++ > escCmdRate)
     {
         _esc_tx_counter = 0;
         send_esc_messages();
         }
         // Transmit servo commands at regular intervals
-        if (_servo_tx_counter++ > servoCmdRateMs)
+        if (_servo_tx_counter++ > servoCmdRate)
         {
             _servo_tx_counter = 0;
             send_servo_messages();
         }
-
     */
 
-    //----------------------------------
+    _ecu_tx_counter++;
 
     return return_value;
 }
@@ -263,7 +266,53 @@ int CE367ECUCan::send_data(int can_port, char *data)
 void CE367ECUCan::collect()
 {
     canfd_frame recv_frame = {};
-    int return_value = read_frame(can_port, real_number_devices, &recv_frame, 0);
+    // CAN Frame ID components
+    uint8_t frame_id_group;   // Piccolo message group
+    uint16_t frame_id_device; // Device identifier
+    // int return_value = read_frame(can_port, real_number_devices, &recv_frame, 0);
+
+    // Look for any message responses on the CAN bus
+    if (read_frame(can_port, real_number_devices, &recv_frame, 0) >= 0)
+    {
+        // Extract group and device ID values from the frame identifier
+        frame_id_group = (recv_frame.can_id >> 24) & 0x1F;
+        frame_id_device = (recv_frame.can_id >> 8) & 0xFF;
+
+        switch (MessageGroup(frame_id_group))
+        {
+        // ESC messages exist in the ACTUATOR group
+        case MessageGroup::ACTUATOR:
+
+            switch (ActuatorType(frame_id_device))
+            {
+                // case ActuatorType::SERVO:
+                //     if (handle_servo_message(rxFrame))
+                //     {
+                //         // Returns true if the message was successfully decoded
+                //     }
+                //     break;
+                // case ActuatorType::ESC:
+                //     if (handle_esc_message(rxFrame))
+                //     {
+                //         // Returns true if the message was successfully decoded
+                //     }
+                //     break;
+
+            default:
+                break;
+            }
+
+        case MessageGroup::ECU_OUT:
+            if (handle_ecu_message(&recv_frame))
+            {
+                // Returns true if the message was successfully decoded
+            }
+            break;
+
+        default:
+            break;
+        }
+    }
 }
 
 int CE367ECUCan::read_frame(int can_port, int real_number_devices, canfd_frame *recv_frame, uint64_t time_out)
@@ -652,7 +701,8 @@ int CE367ECUCan::write_frame(int can_port, int real_number_devices, canfd_frame 
     }
 
     /* send frame */
-    return_value = write(s, frame, sizeof(can_frame)); //(sizeof(frame->can_id) + sizeof(frame->len) + sizeof(frame->flags) + sizeof(frame->__res0) + sizeof(frame->__res1) + frame->len));
+    //@note Vlad: size is 8 bytes message id and 8 bytes of data == 16 bytes
+    return_value = write(s, frame, sizeof(can_frame));
 
     close(s);
 
@@ -1112,7 +1162,7 @@ int CE367ECUCan::idx2dindex(int ifidx, int socket)
 
 #pragma region Currawong functions
 
-void CE367ECUCan::send_ecu_messages()
+void CE367ECUCan::send_ecu_messages(float throttle_percent)
 {
     canfd_frame txFrame{};
 
@@ -1130,11 +1180,49 @@ void CE367ECUCan::send_ecu_messages()
     // piccolo_frame_id.word.message_type = 0x03;
     piccolo_frame_id.word.device_address = 0xFFFF;
 
-    encodeECU_ThrottleCommandPacket(&txFrame, 50.0); //_ecu_info.command);
+    encodeECU_ThrottleCommandPacket(&txFrame, throttle_percent); //_ecu_info.command);
     txFrame.can_id |= (uint8_t) _ecu_id;
     txFrame.can_id |= piccolo_frame_id.frame_id;
 
     write_frame(can_port, real_number_devices, &txFrame, 0);
 }
 
+bool CE367ECUCan::handle_ecu_message(canfd_frame *frame)
+{
+    bool valid = true;
+
+    // There are differences between Ardupilot EFI_State and types/scaling of Piccolo packets.
+    // First decode to Piccolo structs, and then store the data we need in internal_state with any scaling required.
+
+    // Structs to decode Piccolo messages into
+    ECU_TelemetryFast_t telemetry_fast={};
+    ECU_TelemetrySlow0_t telemetry_slow0={};
+    ECU_TelemetrySlow1_t telemetry_slow1={};
+    ECU_TelemetrySlow2_t telemetry_slow2={};
+
+    // Throw the message at the decoding functions
+    if (decodeECU_TelemetryFastPacketStructure(frame, &telemetry_fast))
+    {
+    }
+    else if (decodeECU_TelemetrySlow0PacketStructure(frame, &telemetry_slow0))
+    {
+    }
+    else if (decodeECU_TelemetrySlow1PacketStructure(frame, &telemetry_slow1))
+    {
+    }
+    else if (decodeECU_TelemetrySlow2PacketStructure(frame, &telemetry_slow2))
+    {
+    }
+    else
+    {
+        valid = false;
+    }
+
+    if (valid)
+    {
+        // internal_state.last_updated_ms = AP_HAL::millis();
+    }
+
+    return valid;
+}
 #pragma endregion Currawong functions

@@ -74,7 +74,7 @@ using namespace time_literals;
 typedef uint8_t __u8;
 typedef uint32_t __u32;
 
-#define CE367ECU_MEASURE_INTERVAL 100_ms
+#define CE367ECU_CAN_MEASURE_INTERVAL 50_ms
 
 /* buffer sizes for CAN frame string representations */
 
@@ -475,7 +475,7 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     // read frame on CAN bus, returns true on succses
     int read_frame(int can_port, int real_number_devices, canfd_frame *recv_frame, uint64_t timeout);
     // send ECU commands over CAN
-    void send_ecu_messages(void);
+    void send_ecu_messages(float throttle_percent);
     // interpret an ECU message received over CAN
     bool handle_ecu_message(canfd_frame *frame);
     // send ESC commands over CAN

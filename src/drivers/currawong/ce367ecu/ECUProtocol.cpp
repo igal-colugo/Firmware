@@ -150,6 +150,28 @@ uint8_t *getECUPacketData(void *pkt)
 
     return (uint8_t *) frame->data;
 }
+//! \return the ID of a packet from the packet header
+uint32_t getECUPacketID(const void *pkt)
+{
+    canfd_frame *frame = (canfd_frame *) pkt;
+
+    // Extract the message ID field from the 29-bit ID
+    return (uint32_t) ((frame->can_id >> 16) & 0xFF);
+}
+//! \return the size of a packet from the packet header
+int getECUPacketSize(const void *pkt)
+{
+    canfd_frame *frame = (canfd_frame *) pkt;
+
+    return (int) frame->len;
+}
+//! \return the packet data pointer from the packet, const
+const uint8_t *getECUPacketDataConst(const void *pkt)
+{
+    canfd_frame *frame = (canfd_frame *) pkt;
+
+    return (const uint8_t *) frame->data;
+}
 //! Complete a packet after the data have been encoded
 void finishECUPacket(void *pkt, int size, uint32_t packetID)
 {
