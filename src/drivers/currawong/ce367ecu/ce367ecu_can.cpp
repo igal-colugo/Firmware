@@ -45,16 +45,18 @@
 
 #include "ce367ecu_can.hpp"
 
-CE367ECUCan::CE367ECUCan() : ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::can)
+CE367ECUCan::CE367ECUCan(int can_port) : ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::can)
 {
-    int res = stm32_fdcansockinitialize(0);
+    int res = 0;
+
+    res = stm32_fdcansockinitialize(0);
     res = stm32_fdcansockinitialize(1);
 
     netlib_ifup("can0");
     netlib_ifup("can1");
 
-    can_port = 1;
-    real_number_devices = 1;
+    _can_port = can_port;
+    _real_number_devices = 1;
     _ecu_id = 0xFFFF;
 
     _initialized = true;
@@ -183,11 +185,11 @@ int CE367ECUCan::send_data(int can_port, char *data)
     struct canfd_frame frame;
     struct ifreq ifr;
 
-    if (can_port == 1)
+    if (can_port == 0)
     {
         port = "can0";
     }
-    if (can_port == 2)
+    if (can_port == 1)
     {
         port = "can1";
     }
@@ -272,7 +274,7 @@ void CE367ECUCan::collect()
     // int return_value = read_frame(can_port, real_number_devices, &recv_frame, 0);
 
     // Look for any message responses on the CAN bus
-    if (read_frame(can_port, real_number_devices, &recv_frame, 0) >= 0)
+    if (read_frame(_can_port, _real_number_devices, &recv_frame, 0) >= 0)
     {
         // Extract group and device ID values from the frame identifier
         frame_id_group = (recv_frame.can_id >> 24) & 0x1F;
@@ -352,11 +354,11 @@ int CE367ECUCan::read_frame(int can_port, int real_number_devices, canfd_frame *
         return -1;
     }
 
-    if (can_port == 1)
+    if (can_port == 0)
     {
         port = "can0";
     }
-    if (can_port == 2)
+    if (can_port == 1)
     {
         port = "can1";
     }
@@ -641,11 +643,11 @@ int CE367ECUCan::write_frame(int can_port, int real_number_devices, canfd_frame 
     struct canfd_frame *frame = out_frame;
     struct ifreq ifr;
 
-    if (can_port == 1)
+    if (can_port == 0)
     {
         port = "can0";
     }
-    if (can_port == 2)
+    if (can_port == 1)
     {
         port = "can1";
     }
@@ -1184,7 +1186,7 @@ void CE367ECUCan::send_ecu_messages(float throttle_percent)
     txFrame.can_id |= (uint8_t) _ecu_id;
     txFrame.can_id |= piccolo_frame_id.frame_id;
 
-    write_frame(can_port, real_number_devices, &txFrame, 0);
+    write_frame(_can_port, _real_number_devices, &txFrame, 0);
 }
 
 bool CE367ECUCan::handle_ecu_message(canfd_frame *frame)
@@ -1195,10 +1197,10 @@ bool CE367ECUCan::handle_ecu_message(canfd_frame *frame)
     // First decode to Piccolo structs, and then store the data we need in internal_state with any scaling required.
 
     // Structs to decode Piccolo messages into
-    ECU_TelemetryFast_t telemetry_fast={};
-    ECU_TelemetrySlow0_t telemetry_slow0={};
-    ECU_TelemetrySlow1_t telemetry_slow1={};
-    ECU_TelemetrySlow2_t telemetry_slow2={};
+    ECU_TelemetryFast_t telemetry_fast = {};
+    ECU_TelemetrySlow0_t telemetry_slow0 = {};
+    ECU_TelemetrySlow1_t telemetry_slow1 = {};
+    ECU_TelemetrySlow2_t telemetry_slow2 = {};
 
     // Throw the message at the decoding functions
     if (decodeECU_TelemetryFastPacketStructure(frame, &telemetry_fast))

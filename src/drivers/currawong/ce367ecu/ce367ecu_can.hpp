@@ -61,10 +61,10 @@
 
 #include "stm32.h"
 
-#include "ECUDefines.hpp"
-#include "ECUPackets.hpp"
-#include "ECUProtocol.hpp"
-#include "ECUSettings.hpp"
+#include "piccolo_protocol/ECUDefines.hpp"
+#include "piccolo_protocol/ECUPackets.hpp"
+#include "piccolo_protocol/ECUProtocol.hpp"
+#include "piccolo_protocol/ECUSettings.hpp"
 
 using namespace time_literals;
 
@@ -275,17 +275,18 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     } _ecu_info;
 
   public:
-    CE367ECUCan();
+    CE367ECUCan(int can_port);
     virtual ~CE367ECUCan();
-
-    int can_port = 0;
-    int real_number_devices = 0;
 
     void print_info();
     void start();
     void stop();
 
   private:
+
+    int _can_port = 0;
+    int _real_number_devices = 0;
+
     uint16_t _esc_tx_counter = 0;
     uint16_t _servo_tx_counter = 0;
     uint16_t _ecu_tx_counter = 0;

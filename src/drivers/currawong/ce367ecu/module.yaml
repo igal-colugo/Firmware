@@ -1,21 +1,6 @@
 module_name: CE367ECU
 serial_config:
-    - command: ce367ecu start -d ${SERIAL_DEV} -c p:CE367ECU_COMM
+    - command: ce367ecu start -d ${SERIAL_DEV}
       port_config_param:
         name:  CE367ECU_CFG
         group: Drivers
-
-parameters:
-    - group: Drivers
-      definitions:
-        CE367ECU_COMM:
-            description:
-                short: Driver communication type
-                long: |
-                    Driver communication type
-            type: enum
-            values:
-                0: SERIAL
-                1: CAN
-            reboot_required: true
-            default: 0

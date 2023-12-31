@@ -74,7 +74,7 @@ static int start(const char *port, uint8_t communication)
         // Start the driver.
         g_dev_serial->start();
     }
-    if (communication == 1)
+    else if (communication == 1)
     {
         if (g_dev_can != nullptr)
         {
@@ -82,7 +82,26 @@ static int start(const char *port, uint8_t communication)
             return PX4_ERROR;
         }
 
-        g_dev_can = new CE367ECUCan();
+        g_dev_can = new CE367ECUCan(0);
+
+        if (g_dev_can == nullptr)
+        {
+            PX4_ERR("object instantiate failed");
+            return PX4_ERROR;
+        }
+
+        // Start the driver.
+        g_dev_can->start();
+    }
+    else if (communication == 2)
+    {
+        if (g_dev_can != nullptr)
+        {
+            PX4_ERR("already started");
+            return PX4_ERROR;
+        }
+
+        g_dev_can = new CE367ECUCan(1);
 
         if (g_dev_can == nullptr)
         {
@@ -160,26 +179,25 @@ extern "C" __EXPORT int ce367ecu_main(int argc, char *argv[])
     const char *port = nullptr;
     uint8_t communication = 0;
 
-    while ((ch = px4_getopt(argc, argv, "d:c:", &myoptind, &myoptarg)) != EOF)
+    while ((ch = px4_getopt(argc, argv, "d:", &myoptind, &myoptarg)) != EOF)
     {
         switch (ch)
         {
         case 'd':
             port = myoptarg;
-            break;
-
-        case 'c':
-        {
-            int com = -1;
-
-            if (px4_get_parameter_value(myoptarg, com) != 0)
+            if (!strcmp(port, "can1"))
             {
-                PX4_ERR("communication failed");
-                return -1;
+                communication = 1;
             }
-            communication = (uint8_t) com;
+            else if (!strcmp(port, "can2"))
+            {
+                communication = 2;
+            }
+            else
+            {
+                communication = 0;
+            }
             break;
-        }
 
         default:
             PX4_WARN("Unknown option");

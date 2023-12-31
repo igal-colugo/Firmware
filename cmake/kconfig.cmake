@@ -283,6 +283,12 @@ if(EXISTS ${BOARD_DEFCONFIG})
 	if(SERIAL_PPB)
         list(APPEND board_serial_ports PPB:${SERIAL_PPB})
 	endif()
+    if(SERIAL_CAN1)
+        list(APPEND board_serial_ports CAN1:${SERIAL_CAN1})
+	endif()
+    if(SERIAL_CAN2)
+        list(APPEND board_serial_ports CAN2:${SERIAL_CAN2})
+	endif()
 
 
 	# ROMFS

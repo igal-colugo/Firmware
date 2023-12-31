@@ -166,6 +166,13 @@ menu "Serial ports"
 
     config BOARD_SERIAL_PPB
         string "PPB (Pixhawk Payload Bus) tty port"
+
+    config BOARD_SERIAL_CAN1
+        string "CAN1 tty port"
+
+    config BOARD_SERIAL_CAN2
+        string "CAN2 tty port"
+
 endmenu
 
 menu "drivers"
