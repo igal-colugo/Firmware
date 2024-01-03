@@ -66,6 +66,11 @@
 #include "piccolo_protocol/ECUProtocol.hpp"
 #include "piccolo_protocol/ECUSettings.hpp"
 
+#include "piccolo_protocol/PMUDefines.hpp"
+#include "piccolo_protocol/PMUPackets.hpp"
+#include "piccolo_protocol/PMUProtocol.hpp"
+#include "piccolo_protocol/PMUSettings.hpp"
+
 using namespace time_literals;
 
 #pragma region Can send definitions
@@ -283,7 +288,6 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     void stop();
 
   private:
-
     int _can_port = 0;
     int _real_number_devices = 0;
 
@@ -479,6 +483,10 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     void send_ecu_messages(float throttle_percent);
     // interpret an ECU message received over CAN
     bool handle_ecu_message(canfd_frame *frame);
+    // send PMU commands over CAN
+    void send_pmu_messages(float throttle_percent);
+    // interpret an PMU message received over CAN
+    bool handle_pmu_message(canfd_frame *frame);
     // send ESC commands over CAN
     void send_esc_messages(void);
     // interpret an ESC message received over CAN

@@ -60,6 +60,8 @@ CE367ECUCan::CE367ECUCan(int can_port) : ScheduledWorkItem(MODULE_NAME, px4::wq_
     _ecu_id = 0xFFFF;
 
     _initialized = true;
+
+    //int task_id = px4_task_spawn_cmd("ce367ecu_collect", SCHED_DEFAULT, SCHED_PRIORITY_SLOW_DRIVER, 1024, collect, (char *const *) nullptr);
 }
 
 CE367ECUCan::~CE367ECUCan()
@@ -274,45 +276,43 @@ void CE367ECUCan::collect()
     // int return_value = read_frame(can_port, real_number_devices, &recv_frame, 0);
 
     // Look for any message responses on the CAN bus
-    if (read_frame(_can_port, _real_number_devices, &recv_frame, 0) >= 0)
+    while (read_frame(_can_port, _real_number_devices, &recv_frame, 0) >= 0)
     {
         // Extract group and device ID values from the frame identifier
         frame_id_group = (recv_frame.can_id >> 24) & 0x1F;
         frame_id_device = (recv_frame.can_id >> 8) & 0xFF;
 
-        switch (MessageGroup(frame_id_group))
+        if (MessageGroup(frame_id_group) == MessageGroup::ACTUATOR)
         {
-        // ESC messages exist in the ACTUATOR group
-        case MessageGroup::ACTUATOR:
-
-            switch (ActuatorType(frame_id_device))
+            // ESC messages exist in the ACTUATOR group
+            if (ActuatorType(frame_id_device) == ActuatorType::SERVO)
             {
-                // case ActuatorType::SERVO:
                 //     if (handle_servo_message(rxFrame))
                 //     {
                 //         // Returns true if the message was successfully decoded
                 //     }
-                //     break;
-                // case ActuatorType::ESC:
+            }
+            if (ActuatorType(frame_id_device) == ActuatorType::ESC)
+            {
                 //     if (handle_esc_message(rxFrame))
                 //     {
                 //         // Returns true if the message was successfully decoded
                 //     }
-                //     break;
-
-            default:
-                break;
             }
-
-        case MessageGroup::ECU_OUT:
+        }
+        if (MessageGroup(frame_id_group) == MessageGroup::ECU_OUT)
+        {
             if (handle_ecu_message(&recv_frame))
             {
                 // Returns true if the message was successfully decoded
             }
-            break;
-
-        default:
-            break;
+        }
+        if (PMUMessageGroup(frame_id_group) == PMUMessageGroup::PMU)
+        {
+            if (handle_pmu_message(&recv_frame))
+            {
+                // Returns true if the message was successfully decoded
+            }
         }
     }
 }
@@ -1227,4 +1227,73 @@ bool CE367ECUCan::handle_ecu_message(canfd_frame *frame)
 
     return valid;
 }
+
+void CE367ECUCan::send_pmu_messages(float throttle_percent)
+{
+    canfd_frame txFrame{};
+
+    // No ECU node id set, don't send anything
+    if (_ecu_id == 0)
+    {
+        return;
+    }
+
+    PiccoloFrameID piccolo_frame_id = {};
+    memset(&piccolo_frame_id, 0, sizeof(PiccoloFrameID));
+
+    piccolo_frame_id.word.frame_format_flag = 1;
+    // piccolo_frame_id.word.group_id = 0x08;
+    // piccolo_frame_id.word.message_type = 0x03;
+    piccolo_frame_id.word.device_address = 0xFFFF;
+
+    encodeECU_ThrottleCommandPacket(&txFrame, throttle_percent); //_ecu_info.command);
+    txFrame.can_id |= (uint8_t) _ecu_id;
+    txFrame.can_id |= piccolo_frame_id.frame_id;
+
+    write_frame(_can_port, _real_number_devices, &txFrame, 0);
+}
+
+bool CE367ECUCan::handle_pmu_message(canfd_frame *frame)
+{
+    bool valid = true;
+
+    // There are differences between Ardupilot EFI_State and types/scaling of Piccolo packets.
+    // First decode to Piccolo structs, and then store the data we need in internal_state with any scaling required.
+
+    // Structs to decode Piccolo messages into
+    PMU_Voltages_t voltages = {};
+    PMU_Currents_t currents = {};
+    PMU_BatteryStatuses_t battery_statuses = {};
+    PMU_Temperatures_t temperatures = {};
+    PMU_Miscellaneous_t miscellaneous = {};
+
+    // Throw the message at the decoding functions
+    if (decodePMU_VoltagesPacketStructure(frame, &voltages))
+    {
+    }
+    else if (decodePMU_CurrentsPacketStructure(frame, &currents))
+    {
+    }
+    else if (decodePMU_BatteryStatusesPacketStructure(frame, &battery_statuses))
+    {
+    }
+    else if (decodePMU_TemperaturesPacketStructure(frame, &temperatures))
+    {
+    }
+    else if (decodePMU_MiscellaneousPacketStructure(frame, &miscellaneous))
+    {
+    }
+    else
+    {
+        valid = false;
+    }
+
+    if (valid)
+    {
+        // internal_state.last_updated_ms = AP_HAL::millis();
+    }
+
+    return valid;
+}
+
 #pragma endregion Currawong functions

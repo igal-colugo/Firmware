@@ -49,6 +49,10 @@ px4_add_module(
 		piccolo_protocol/ECUProtocol.cpp
 		piccolo_protocol/ECUPackets.cpp
 		piccolo_protocol/ECUSettings.cpp
+		piccolo_protocol/PMUDefines.cpp
+		piccolo_protocol/PMUProtocol.cpp
+		piccolo_protocol/PMUPackets.cpp
+		piccolo_protocol/PMUSettings.cpp
 
 	MODULE_CONFIG
 		module.yaml

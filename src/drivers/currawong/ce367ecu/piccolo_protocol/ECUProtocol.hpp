@@ -62,6 +62,7 @@ extern "C"
         ECU_OUT = 0x08,   // Messages *from* an ECU
         ECU_IN = 0x09,    // Message *to* an ECU
         SYSTEM = 0x19,    // System messages (e.g. bootloader)
+        PMU = 0x1E,
     };
 
     /*!
