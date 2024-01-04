@@ -315,6 +315,8 @@ void CE367ECUCan::collect()
     uint16_t frame_id_device; // Device identifier
     // int return_value = read_frame(can_port, real_number_devices, &recv_frame, 0);
 
+    currawong_ce367ecu_status_s currawong_ce367ecu_status{};
+
     // Look for any message responses on the CAN bus
     if (read_frame(_can_port, _real_number_devices, &recv_frame, 0) >= 0)
     {
@@ -359,6 +361,8 @@ void CE367ECUCan::collect()
             int debug_1 = 1;
             debug_1 = debug_1 + 1;
         }
+        
+        _currawong_ce367ecu_status_pub.publish(currawong_ce367ecu_status);
     }
 }
 

@@ -65,6 +65,7 @@ set(msg_files
 	commander_state.msg
 	control_allocator_status.msg
 	cpuload.msg
+	currawong_ce367ecu_status.msg
 	debug_vect_clg.msg
 	differential_pressure.msg
 	distance_sensor.msg

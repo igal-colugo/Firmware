@@ -78,6 +78,7 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/actuator_outputs.h>
+#include <uORB/topics/currawong_ce367ecu_status.h>
 
 using namespace time_literals;
 
@@ -317,6 +318,7 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     bool _initialized{false};
 
     uORB::Subscription _actuator_outputs_sub{ORB_ID(actuator_outputs)};
+    uORB::Publication<currawong_ce367ecu_status_s> _currawong_ce367ecu_status_pub{ORB_ID(currawong_ce367ecu_status)};
 
     void Run() override;
 
