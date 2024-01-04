@@ -4,3 +4,39 @@ serial_config:
       port_config_param:
         name:  CE367ECU_CFG
         group: Drivers
+
+parameters:
+    - group: Drivers
+      definitions:
+        CE367ECU_MTR:
+            description:
+                short: Motor output index
+                long: |
+                    Set motor output index
+            type: int32
+            min: 1
+            max: 8
+            reboot_required: true
+            default: 3
+
+        CE367ECU_MTR_MIN:
+            description:
+                short: Motor output minimum value
+                long: |
+                    Set motor output minimum value
+            type: int32
+            min: 0
+            max: 3000
+            reboot_required: true
+            default: 900
+
+        CE367ECU_MTR_MAX:
+            description:
+                short: Motor output maximum value
+                long: |
+                    Set motor output maximum value
+            type: int32
+            min: 0
+            max: 3000
+            reboot_required: true
+            default: 2000

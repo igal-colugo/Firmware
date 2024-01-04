@@ -45,7 +45,7 @@
 
 #include "ce367ecu_can.hpp"
 
-CE367ECUCan::CE367ECUCan(int can_port) : ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::can)
+CE367ECUCan::CE367ECUCan(int can_port, bool is_collector) : ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::can)
 {
     int res = 0;
 
@@ -55,13 +55,36 @@ CE367ECUCan::CE367ECUCan(int can_port) : ScheduledWorkItem(MODULE_NAME, px4::wq_
     netlib_ifup("can0");
     netlib_ifup("can1");
 
+    _is_collector = is_collector;
     _can_port = can_port;
     _real_number_devices = 1;
     _ecu_id = 0xFFFF;
 
     _initialized = true;
 
-    //int task_id = px4_task_spawn_cmd("ce367ecu_collect", SCHED_DEFAULT, SCHED_PRIORITY_SLOW_DRIVER, 1024, collect, (char *const *) nullptr);
+    if (PX4_OK != param_get(param_find("CE367ECU_MTR"), &_motor_index))
+    {
+        PX4_ERR("Could not get param CE367ECU_MTR");
+    }
+    if (_motor_index < 1)
+    {
+        _motor_index = 1;
+    }
+    if (_motor_index > 8)
+    {
+        _motor_index = 8;
+    }
+    _motor_index = _motor_index - 1;
+    if (PX4_OK != param_get(param_find("CE367ECU_MTR_MIN"), &_motor_minimum_value))
+    {
+        PX4_ERR("Could not get param CE367ECU_MTR_MIN");
+    }
+    if (PX4_OK != param_get(param_find("CE367ECU_MTR_MAX"), &_motor_maximum_value))
+    {
+        PX4_ERR("Could not get param CE367ECU_MTR_MAX");
+    }
+
+    // int task_id = px4_task_spawn_cmd("ce367ecu_collect", SCHED_DEFAULT, SCHED_PRIORITY_SLOW_DRIVER, 1024, collect, (char *const *) nullptr);
 }
 
 CE367ECUCan::~CE367ECUCan()
@@ -73,15 +96,21 @@ CE367ECUCan::~CE367ECUCan()
 void CE367ECUCan::Run()
 {
     //@example send_data(1, "00000000#AAAABBBBCCCCDDDDAAAABBBB");
-    update();
-    collect();
+    if (_is_collector == false)
+    {
+        update();
+    }
+    else
+    {
+        collect();
+    }
     // px4_sleep(50);
 }
 
-void CE367ECUCan::start()
+void CE367ECUCan::start(uint32_t interval_us)
 {
     // Schedule the driver at regular intervals.
-    ScheduleOnInterval(CE367ECU_CAN_MEASURE_INTERVAL);
+    ScheduleOnInterval(interval_us);
 }
 
 void CE367ECUCan::stop()
@@ -127,13 +156,24 @@ int CE367ECUCan::update()
     uint16_t ecuCmdRate = 2;
 
     //@todo Vlad:subscribe to pwm uorb messages
+    actuator_outputs_s actuator_outputs{};
+    actuator_controls_s actuator_controls{};
+
+    // MavlinkV1
+    if (_actuator_outputs_sub.updated())
+    {
+        if (_actuator_outputs_sub.copy(&actuator_outputs))
+        {
+            send_ecu_messages((((float) actuator_outputs.output[_motor_index] - (float) _motor_minimum_value) / abs((float) _motor_maximum_value - (float) _motor_minimum_value)) * 100.0f);
+        }
+    }
 
     // Transmit ecu throttle commands at regular intervals
     if (_ecu_tx_counter >= 1)
     {
         _ecu_tx_counter = 0;
         //@todo Vlad:set scaled value from throttle motor
-        send_ecu_messages(50.0);
+        // send_ecu_messages(50.0);
     }
 
     /*
@@ -179,13 +219,13 @@ int CE367ECUCan::send_data(int can_port, char *data)
 {
     int return_value = 0;
     char *port = nullptr;
-    int s; /* can raw socket */
-    int required_mtu;
-    int mtu;
+    int raw_socket = 0; /* can raw socket */
+    int required_mtu = 0;
+    int mtu = 0;
     int enable_canfd = 1;
-    struct sockaddr_can addr;
-    struct canfd_frame frame;
-    struct ifreq ifr;
+    struct sockaddr_can addr = {};
+    struct canfd_frame frame = {};
+    struct ifreq ifr = {};
 
     if (can_port == 0)
     {
@@ -204,7 +244,7 @@ int CE367ECUCan::send_data(int can_port, char *data)
     }
 
     /* open socket */
-    if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
+    if ((raw_socket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
     {
         return -1;
     }
@@ -224,7 +264,7 @@ int CE367ECUCan::send_data(int can_port, char *data)
     if (required_mtu > (int) CAN_MTU)
     {
         /* check if the frame fits into the CAN netdevice */
-        if (ioctl(s, SIOCGIFMTU, &ifr) < 0)
+        if (ioctl(raw_socket, SIOCGIFMTU, &ifr) < 0)
         {
             return -1;
         }
@@ -236,7 +276,7 @@ int CE367ECUCan::send_data(int can_port, char *data)
         }
 
         /* interface is ok - try to switch the socket into CAN FD mode */
-        if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)))
+        if (setsockopt(raw_socket, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)))
         {
             return -1;
         }
@@ -249,20 +289,20 @@ int CE367ECUCan::send_data(int can_port, char *data)
     /* This is obsolete as we do not read from the socket at all, but for */
     /* this reason we can remove the receive list in the Kernel to save a */
     /* little (really a very little!) CPU usage.                          */
-    setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
+    setsockopt(raw_socket, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
 
-    if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+    if (bind(raw_socket, (struct sockaddr *) &addr, sizeof(addr)) < 0)
     {
         return -1;
     }
 
     /* send frame */
-    if (write(s, &frame, required_mtu) != required_mtu)
+    if (write(raw_socket, &frame, required_mtu) != required_mtu)
     {
         return -1;
     }
 
-    close(s);
+    close(raw_socket);
 
     return return_value;
 }
@@ -276,7 +316,7 @@ void CE367ECUCan::collect()
     // int return_value = read_frame(can_port, real_number_devices, &recv_frame, 0);
 
     // Look for any message responses on the CAN bus
-    while (read_frame(_can_port, _real_number_devices, &recv_frame, 0) >= 0)
+    if (read_frame(_can_port, _real_number_devices, &recv_frame, 0) >= 0)
     {
         // Extract group and device ID values from the frame identifier
         frame_id_group = (recv_frame.can_id >> 24) & 0x1F;
@@ -300,19 +340,24 @@ void CE367ECUCan::collect()
                 //     }
             }
         }
-        if (MessageGroup(frame_id_group) == MessageGroup::ECU_OUT)
+        else if (MessageGroup(frame_id_group) == MessageGroup::ECU_OUT)
         {
             if (handle_ecu_message(&recv_frame))
             {
                 // Returns true if the message was successfully decoded
             }
         }
-        if (PMUMessageGroup(frame_id_group) == PMUMessageGroup::PMU)
+        else if (PMUMessageGroup(frame_id_group) == PMUMessageGroup::PMU)
         {
             if (handle_pmu_message(&recv_frame))
             {
                 // Returns true if the message was successfully decoded
             }
+        }
+        else
+        {
+            int debug_1 = 1;
+            debug_1 = debug_1 + 1;
         }
     }
 }
@@ -323,7 +368,7 @@ int CE367ECUCan::read_frame(int can_port, int real_number_devices, canfd_frame *
 
     fd_set rdfs;
     char *port = nullptr;
-    int s[MAXSOCK];
+    int raw_socket = 0; //[MAXSOCK] = {};
     unsigned char down_causes_exit = 1;
     unsigned char view = 0;
     int count = 0;
@@ -332,27 +377,21 @@ int CE367ECUCan::read_frame(int can_port, int real_number_devices, canfd_frame *
     int currmax, numfilter;
     int join_filter;
     char *ptr, *nptr;
-    struct sockaddr_can addr;
+    struct sockaddr_can addr = {};
     char ctrlmsg[CMSG_SPACE(sizeof(struct timeval) + 3 * sizeof(struct timespec) + sizeof(__u32))];
-    struct iovec iov;
-    struct msghdr msg;
-    struct cmsghdr *cmsg;
-    struct can_filter *rfilter;
+    struct iovec iov = {};
+    struct msghdr msg = {};
+    struct cmsghdr *cmsg = nullptr;
+    struct can_filter *rfilter = nullptr;
     can_err_mask_t err_mask;
     struct canfd_frame *frame = recv_frame;
     int nbytes, i, maxdlen;
-    struct ifreq ifr;
+    struct ifreq ifr = {};
     struct timeval tv, last_tv;
     struct timeval timeout, timeout_config = {0, 0}, *timeout_current = NULL;
 
     last_tv.tv_sec = 0;
     last_tv.tv_usec = 0;
-
-    currmax = real_number_devices; /* find real number of CAN devices */
-    if (currmax > MAXSOCK)
-    {
-        return -1;
-    }
 
     if (can_port == 0)
     {
@@ -363,153 +402,151 @@ int CE367ECUCan::read_frame(int can_port, int real_number_devices, canfd_frame *
         port = "can1";
     }
 
-    for (i = 0; i < currmax; i++)
+    //@note open socket
+    ptr = port;
+    nptr = strchr(ptr, ',');
+
+    raw_socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    if (raw_socket < 0)
     {
-        ptr = port;
-        nptr = strchr(ptr, ',');
+        return -1;
+    }
 
-        s[i] = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-        if (s[i] < 0)
+    if (nptr)
+    {
+        nbytes = nptr - ptr; /* interface name is up the first ',' */
+    }
+    else
+    {
+        nbytes = strlen(ptr); /* no ',' found => no filter definitions */
+    }
+
+    if (nbytes >= IFNAMSIZ)
+    {
+        return -1;
+    }
+    if (nbytes > max_devname_len)
+    {
+        max_devname_len = nbytes; /* for nice printing */
+    }
+
+    addr.can_family = AF_CAN;
+
+    memset(&ifr.ifr_name, 0, sizeof(ifr.ifr_name));
+    strncpy(ifr.ifr_name, ptr, nbytes);
+
+    if (strcmp(ANYDEV, ifr.ifr_name))
+    {
+        if (ioctl(raw_socket, SIOCGIFINDEX, &ifr) < 0)
+        {
+            return -1;
+        }
+        addr.can_ifindex = ifr.ifr_ifindex;
+    }
+    else
+    {
+        addr.can_ifindex = 0; /* any can interface */
+    }
+
+    if (nptr)
+    {
+        /* found a ',' after the interface name => check for filters */
+        /* determine number of filters to alloc the filter space */
+        numfilter = 0;
+        ptr = nptr;
+        while (ptr)
+        {
+            numfilter++;
+            ptr++;                  /* hop behind the ',' */
+            ptr = strchr(ptr, ','); /* exit condition */
+        }
+
+        rfilter = (can_filter *) (malloc(sizeof(struct can_filter) * numfilter));
+        if (!rfilter)
         {
             return -1;
         }
 
-        if (nptr)
-        {
-            nbytes = nptr - ptr; /* interface name is up the first ',' */
-        }
-        else
-        {
-            nbytes = strlen(ptr); /* no ',' found => no filter definitions */
-        }
+        numfilter = 0;
+        err_mask = 0;
+        join_filter = 0;
 
-        if (nbytes >= IFNAMSIZ)
+        while (nptr)
         {
-            return -1;
-        }
-        if (nbytes > max_devname_len)
-        {
-            max_devname_len = nbytes; /* for nice printing */
-        }
+            ptr = nptr + 1;          /* hop behind the ',' */
+            nptr = strchr(ptr, ','); /* update exit condition */
 
-        addr.can_family = AF_CAN;
-
-        memset(&ifr.ifr_name, 0, sizeof(ifr.ifr_name));
-        strncpy(ifr.ifr_name, ptr, nbytes);
-
-        if (strcmp(ANYDEV, ifr.ifr_name))
-        {
-            if (ioctl(s[i], SIOCGIFINDEX, &ifr) < 0)
+            if (sscanf(ptr, "%" SCNx32 ":%" SCNx32, &rfilter[numfilter].can_id, &rfilter[numfilter].can_mask) == 2)
             {
-                return -1;
-            }
-            addr.can_ifindex = ifr.ifr_ifindex;
-        }
-        else
-        {
-            addr.can_ifindex = 0; /* any can interface */
-        }
-
-        if (nptr)
-        {
-            /* found a ',' after the interface name => check for filters */
-            /* determine number of filters to alloc the filter space */
-            numfilter = 0;
-            ptr = nptr;
-            while (ptr)
-            {
+                rfilter[numfilter].can_mask &= ~CAN_ERR_FLAG;
+                if (*(ptr + 8) == ':')
+                {
+                    rfilter[numfilter].can_id |= CAN_EFF_FLAG;
+                }
                 numfilter++;
-                ptr++;                  /* hop behind the ',' */
-                ptr = strchr(ptr, ','); /* exit condition */
             }
-
-            rfilter = (can_filter *) (malloc(sizeof(struct can_filter) * numfilter));
-            if (!rfilter)
+            else if (sscanf(ptr, "%" SCNx32 "~%" SCNx32, &rfilter[numfilter].can_id, &rfilter[numfilter].can_mask) == 2)
+            {
+                rfilter[numfilter].can_id |= CAN_INV_FILTER;
+                rfilter[numfilter].can_mask &= ~CAN_ERR_FLAG;
+                if (*(ptr + 8) == '~')
+                {
+                    rfilter[numfilter].can_id |= CAN_EFF_FLAG;
+                }
+                numfilter++;
+            }
+            else if (*ptr == 'j' || *ptr == 'J')
+            {
+                join_filter = 1;
+            }
+            else if (sscanf(ptr, "#%" SCNx32, &err_mask) != 1)
             {
                 return -1;
-            }
-
-            numfilter = 0;
-            err_mask = 0;
-            join_filter = 0;
-
-            while (nptr)
-            {
-                ptr = nptr + 1;          /* hop behind the ',' */
-                nptr = strchr(ptr, ','); /* update exit condition */
-
-                if (sscanf(ptr, "%" SCNx32 ":%" SCNx32, &rfilter[numfilter].can_id, &rfilter[numfilter].can_mask) == 2)
-                {
-                    rfilter[numfilter].can_mask &= ~CAN_ERR_FLAG;
-                    if (*(ptr + 8) == ':')
-                    {
-                        rfilter[numfilter].can_id |= CAN_EFF_FLAG;
-                    }
-                    numfilter++;
-                }
-                else if (sscanf(ptr, "%" SCNx32 "~%" SCNx32, &rfilter[numfilter].can_id, &rfilter[numfilter].can_mask) == 2)
-                {
-                    rfilter[numfilter].can_id |= CAN_INV_FILTER;
-                    rfilter[numfilter].can_mask &= ~CAN_ERR_FLAG;
-                    if (*(ptr + 8) == '~')
-                    {
-                        rfilter[numfilter].can_id |= CAN_EFF_FLAG;
-                    }
-                    numfilter++;
-                }
-                else if (*ptr == 'j' || *ptr == 'J')
-                {
-                    join_filter = 1;
-                }
-                else if (sscanf(ptr, "#%" SCNx32, &err_mask) != 1)
-                {
-                    return -1;
-                }
-            }
-
-            if (err_mask)
-            {
-                setsockopt(s[i], SOL_CAN_RAW, CAN_RAW_ERR_FILTER, &err_mask, sizeof(err_mask));
-            }
-            if (join_filter && setsockopt(s[i], SOL_CAN_RAW, CAN_RAW_JOIN_FILTERS, &join_filter, sizeof(join_filter)) < 0)
-            {
-                return -1;
-            }
-            if (numfilter)
-            {
-                setsockopt(s[i], SOL_CAN_RAW, CAN_RAW_FILTER, rfilter, numfilter * sizeof(struct can_filter));
-            }
-
-            free(rfilter);
-
-        } /* if (nptr) */
-
-        /* try to switch the socket into CAN FD mode */
-        setsockopt(s[i], SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &canfd_on, sizeof(canfd_on));
-
-        if (rcvbuf_size)
-        {
-            int curr_rcvbuf_size;
-            socklen_t curr_rcvbuf_size_len = sizeof(curr_rcvbuf_size);
-
-            /* try SO_RCVBUFFORCE first, if we run with CAP_NET_ADMIN */
-            if (setsockopt(s[i], SOL_SOCKET, SO_RCVBUFFORCE, &rcvbuf_size, sizeof(rcvbuf_size)) < 0)
-            {
-                if (setsockopt(s[i], SOL_SOCKET, SO_RCVBUF, &rcvbuf_size, sizeof(rcvbuf_size)) < 0)
-                {
-                    return -1;
-                }
-                if (getsockopt(s[i], SOL_SOCKET, SO_RCVBUF, &curr_rcvbuf_size, &curr_rcvbuf_size_len) < 0)
-                {
-                    return -1;
-                }
             }
         }
 
-        if (bind(s[i], (struct sockaddr *) &addr, sizeof(addr)) < 0)
+        if (err_mask)
+        {
+            setsockopt(raw_socket, SOL_CAN_RAW, CAN_RAW_ERR_FILTER, &err_mask, sizeof(err_mask));
+        }
+        if (join_filter && setsockopt(raw_socket, SOL_CAN_RAW, CAN_RAW_JOIN_FILTERS, &join_filter, sizeof(join_filter)) < 0)
         {
             return -1;
         }
+        if (numfilter)
+        {
+            setsockopt(raw_socket, SOL_CAN_RAW, CAN_RAW_FILTER, rfilter, numfilter * sizeof(struct can_filter));
+        }
+
+        free(rfilter);
+
+    } /* if (nptr) */
+
+    /* try to switch the socket into CAN FD mode */
+    setsockopt(raw_socket, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &canfd_on, sizeof(canfd_on));
+
+    if (rcvbuf_size)
+    {
+        int curr_rcvbuf_size;
+        socklen_t curr_rcvbuf_size_len = sizeof(curr_rcvbuf_size);
+
+        /* try SO_RCVBUFFORCE first, if we run with CAP_NET_ADMIN */
+        if (setsockopt(raw_socket, SOL_SOCKET, SO_RCVBUFFORCE, &rcvbuf_size, sizeof(rcvbuf_size)) < 0)
+        {
+            if (setsockopt(raw_socket, SOL_SOCKET, SO_RCVBUF, &rcvbuf_size, sizeof(rcvbuf_size)) < 0)
+            {
+                return -1;
+            }
+            if (getsockopt(raw_socket, SOL_SOCKET, SO_RCVBUF, &curr_rcvbuf_size, &curr_rcvbuf_size_len) < 0)
+            {
+                return -1;
+            }
+        }
+    }
+
+    if (bind(raw_socket, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+    {
+        return -1;
     }
 
     /* these settings are static and can be held out of the hot path */
@@ -520,106 +557,100 @@ int CE367ECUCan::read_frame(int can_port, int real_number_devices, canfd_frame *
     msg.msg_control = &ctrlmsg;
 
     FD_ZERO(&rdfs);
-    for (i = 0; i < currmax; i++)
-    {
-        FD_SET(s[i], &rdfs);
-    }
+    FD_SET(raw_socket, &rdfs);
 
     if (timeout_current)
     {
         *timeout_current = timeout_config;
     }
 
-    if ((ret = select(s[currmax - 1] + 1, &rdfs, NULL, NULL, timeout_current)) <= 0)
+    if ((ret = select(raw_socket + 1, &rdfs, NULL, NULL, timeout_current)) <= 0)
     {
         return -1;
     }
 
-    for (i = 0; i < currmax; i++)
+    //@note recieve data from socket
+    /* check all CAN RAW sockets */
+    if (FD_ISSET(raw_socket, &rdfs))
     {
-        /* check all CAN RAW sockets */
-        if (FD_ISSET(s[i], &rdfs))
+        int idx;
+
+        /* these settings may be modified by recvmsg() */
+        iov.iov_len = sizeof(canfd_frame);
+        msg.msg_namelen = sizeof(addr);
+        msg.msg_controllen = sizeof(ctrlmsg);
+        msg.msg_flags = 0;
+
+        nbytes = recvmsg(raw_socket, &msg, 0);
+        idx = idx2dindex(addr.can_ifindex, raw_socket);
+
+        if (nbytes < 0)
         {
-            int idx;
-
-            /* these settings may be modified by recvmsg() */
-            iov.iov_len = sizeof(canfd_frame);
-            msg.msg_namelen = sizeof(addr);
-            msg.msg_controllen = sizeof(ctrlmsg);
-            msg.msg_flags = 0;
-
-            nbytes = recvmsg(s[i], &msg, 0);
-            idx = idx2dindex(addr.can_ifindex, s[i]);
-
-            if (nbytes < 0)
+            if ((errno == ENETDOWN) && !down_causes_exit)
             {
-                if ((errno == ENETDOWN) && !down_causes_exit)
-                {
-                    continue;
-                }
-
-                return -1;
-            }
-
-            if ((size_t) nbytes == CAN_MTU)
-            {
-                maxdlen = CAN_MAX_DLEN;
-            }
-            else if ((size_t) nbytes == CANFD_MTU)
-            {
-                maxdlen = CANFD_MAX_DLEN;
+                // continue;
             }
             else
             {
                 return -1;
             }
+        }
 
-            for (cmsg = CMSG_FIRSTHDR(&msg); cmsg && (cmsg->cmsg_level == SOL_SOCKET); cmsg = CMSG_NXTHDR(&msg, cmsg))
+        if ((size_t) nbytes == CAN_MTU)
+        {
+            maxdlen = CAN_MAX_DLEN;
+        }
+        else if ((size_t) nbytes == CANFD_MTU)
+        {
+            maxdlen = CANFD_MAX_DLEN;
+        }
+        else
+        {
+            return -1;
+        }
+
+        for (cmsg = CMSG_FIRSTHDR(&msg); cmsg && (cmsg->cmsg_level == SOL_SOCKET); cmsg = CMSG_NXTHDR(&msg, cmsg))
+        {
+            if (cmsg->cmsg_type == SO_TIMESTAMP)
             {
-                if (cmsg->cmsg_type == SO_TIMESTAMP)
-                {
-                    memcpy(&tv, CMSG_DATA(cmsg), sizeof(tv));
-                }
-                else if (cmsg->cmsg_type == SO_TIMESTAMPING)
-                {
-                    struct timespec *stamp = (struct timespec *) CMSG_DATA(cmsg);
-
-                    /*
-                     * stamp[0] is the software timestamp
-                     * stamp[1] is deprecated
-                     * stamp[2] is the raw hardware timestamp
-                     * See chapter 2.1.2 Receive timestamps in
-                     * linux/Documentation/networking/timestamping.txt
-                     */
-                    tv.tv_sec = stamp[2].tv_sec;
-                    tv.tv_usec = stamp[2].tv_nsec / 1000;
-                }
-                else if (cmsg->cmsg_type == SO_RXQ_OVFL)
-                {
-                    memcpy(&dropcnt[i], CMSG_DATA(cmsg), sizeof(__u32));
-                }
+                memcpy(&tv, CMSG_DATA(cmsg), sizeof(tv));
             }
-
-            /* check for (unlikely) dropped frames on this specific socket */
-            if (dropcnt[i] != last_dropcnt[i])
+            else if (cmsg->cmsg_type == SO_TIMESTAMPING)
             {
-                __u32 frames = dropcnt[i] - last_dropcnt[i];
+                struct timespec *stamp = (struct timespec *) CMSG_DATA(cmsg);
 
-                last_dropcnt[i] = dropcnt[i];
+                /*
+                 * stamp[0] is the software timestamp
+                 * stamp[1] is deprecated
+                 * stamp[2] is the raw hardware timestamp
+                 * See chapter 2.1.2 Receive timestamps in
+                 * linux/Documentation/networking/timestamping.txt
+                 */
+                tv.tv_sec = stamp[2].tv_sec;
+                tv.tv_usec = stamp[2].tv_nsec / 1000;
             }
-
-            /* once we detected a EFF frame indent SFF frames accordingly */
-            if (frame->can_id & CAN_EFF_FLAG)
+            else if (cmsg->cmsg_type == SO_RXQ_OVFL)
             {
-                view |= CANLIB_VIEW_INDENT_SFF;
+                memcpy(&dropcnt[i], CMSG_DATA(cmsg), sizeof(__u32));
             }
         }
-    }
 
-    for (i = 0; i < currmax; i++)
-    {
-        close(s[i]);
+        /* check for (unlikely) dropped frames on this specific socket */
+        if (dropcnt[0] != last_dropcnt[0])
+        {
+            __u32 frames = dropcnt[0] - last_dropcnt[0];
+
+            last_dropcnt[0] = dropcnt[0];
+        }
+
+        /* once we detected a EFF frame indent SFF frames accordingly */
+        if (frame->can_id & CAN_EFF_FLAG)
+        {
+            view |= CANLIB_VIEW_INDENT_SFF;
+        }
     }
+    //@note close socket
+    close(raw_socket);
 
     return return_value;
 }
@@ -635,13 +666,13 @@ int CE367ECUCan::write_frame(int can_port, int real_number_devices, canfd_frame 
 {
     int return_value = 0;
     char *port = nullptr;
-    int s; /* can raw socket */
-    int required_mtu;
-    int mtu;
+    int raw_socket = 0; /* can raw socket */
+    int required_mtu = 0;
+    int mtu = 0;
     int enable_canfd = 1;
-    struct sockaddr_can addr;
+    struct sockaddr_can addr = {};
     struct canfd_frame *frame = out_frame;
-    struct ifreq ifr;
+    struct ifreq ifr = {};
 
     if (can_port == 0)
     {
@@ -653,7 +684,7 @@ int CE367ECUCan::write_frame(int can_port, int real_number_devices, canfd_frame 
     }
 
     /* open socket */
-    if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
+    if ((raw_socket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
     {
         return -1;
     }
@@ -671,7 +702,7 @@ int CE367ECUCan::write_frame(int can_port, int real_number_devices, canfd_frame 
     addr.can_ifindex = ifr.ifr_ifindex;
 
     /* check if the frame fits into the CAN netdevice */
-    if (ioctl(s, SIOCGIFMTU, &ifr) < 0)
+    if (ioctl(raw_socket, SIOCGIFMTU, &ifr) < 0)
     {
         return -1;
     }
@@ -683,7 +714,7 @@ int CE367ECUCan::write_frame(int can_port, int real_number_devices, canfd_frame 
     }
 
     /* interface is ok - try to switch the socket into CAN FD mode */
-    if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)))
+    if (setsockopt(raw_socket, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &enable_canfd, sizeof(enable_canfd)))
     {
         return -1;
     }
@@ -695,18 +726,18 @@ int CE367ECUCan::write_frame(int can_port, int real_number_devices, canfd_frame 
     /* This is obsolete as we do not read from the socket at all, but for */
     /* this reason we can remove the receive list in the Kernel to save a */
     /* little (really a very little!) CPU usage.                          */
-    setsockopt(s, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
+    setsockopt(raw_socket, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
 
-    if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+    if (bind(raw_socket, (struct sockaddr *) &addr, sizeof(addr)) < 0)
     {
         return -1;
     }
 
     /* send frame */
     //@note Vlad: size is 8 bytes message id and 8 bytes of data == 16 bytes
-    return_value = write(s, frame, sizeof(can_frame));
+    return_value = write(raw_socket, frame, sizeof(can_frame));
 
-    close(s);
+    close(raw_socket);
 
     return return_value;
 }

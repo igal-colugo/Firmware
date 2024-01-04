@@ -42,7 +42,8 @@ namespace ce367ecu
 {
 
 CE367ECUSerial *g_dev_serial{nullptr};
-CE367ECUCan *g_dev_can{nullptr};
+CE367ECUCan *g_dev_can_updater{nullptr};
+CE367ECUCan *g_dev_can_collector{nullptr};
 
 static int start(const char *port, uint8_t communication)
 {
@@ -76,41 +77,45 @@ static int start(const char *port, uint8_t communication)
     }
     else if (communication == 1)
     {
-        if (g_dev_can != nullptr)
+        if (g_dev_can_updater != nullptr || g_dev_can_collector != nullptr)
         {
             PX4_ERR("already started");
             return PX4_ERROR;
         }
 
-        g_dev_can = new CE367ECUCan(0);
+        g_dev_can_updater = new CE367ECUCan(0, false);
+        g_dev_can_collector = new CE367ECUCan(0, true);
 
-        if (g_dev_can == nullptr)
+        if (g_dev_can_updater == nullptr || g_dev_can_collector == nullptr)
         {
             PX4_ERR("object instantiate failed");
             return PX4_ERROR;
         }
 
         // Start the driver.
-        g_dev_can->start();
+        g_dev_can_updater->start(20_ms);
+        g_dev_can_collector->start(50_ms);
     }
     else if (communication == 2)
     {
-        if (g_dev_can != nullptr)
+        if (g_dev_can_updater != nullptr || g_dev_can_collector != nullptr)
         {
             PX4_ERR("already started");
             return PX4_ERROR;
         }
 
-        g_dev_can = new CE367ECUCan(1);
+        g_dev_can_updater = new CE367ECUCan(1, false);
+        g_dev_can_collector = new CE367ECUCan(1, true);
 
-        if (g_dev_can == nullptr)
+        if (g_dev_can_updater == nullptr || g_dev_can_collector == nullptr)
         {
             PX4_ERR("object instantiate failed");
             return PX4_ERROR;
         }
 
         // Start the driver.
-        g_dev_can->start();
+        g_dev_can_updater->start(20_ms);
+        g_dev_can_collector->start(50_ms);
     }
 
     return PX4_OK;

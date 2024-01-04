@@ -47,8 +47,11 @@
 #include <netutils/netlib.h>
 #include <nuttx/can.h>
 
+#include <lib/parameters/param.h>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+
+#include <lib/mathlib/mathlib.h>
 
 #include <uORB/Publication.hpp>
 #include <uORB/topics/battery_status.h>
@@ -70,6 +73,11 @@
 #include "piccolo_protocol/PMUPackets.hpp"
 #include "piccolo_protocol/PMUProtocol.hpp"
 #include "piccolo_protocol/PMUSettings.hpp"
+
+#include <uORB/Publication.hpp>
+#include <uORB/Subscription.hpp>
+#include <uORB/topics/actuator_controls.h>
+#include <uORB/topics/actuator_outputs.h>
 
 using namespace time_literals;
 
@@ -280,16 +288,22 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     } _ecu_info;
 
   public:
-    CE367ECUCan(int can_port);
+    CE367ECUCan(int can_port, bool is_collector);
     virtual ~CE367ECUCan();
 
     void print_info();
-    void start();
+    void start(uint32_t interval_us);
     void stop();
 
   private:
+    bool _is_collector = false;
     int _can_port = 0;
     int _real_number_devices = 0;
+    int _raw_socket = 0;
+
+    int32_t _motor_index = 0;
+    int32_t _motor_minimum_value = 0;
+    int32_t _motor_maximum_value = 0;
 
     uint16_t _esc_tx_counter = 0;
     uint16_t _servo_tx_counter = 0;
@@ -301,6 +315,8 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     int16_t _ecu_id; //! ECU Node ID
 
     bool _initialized{false};
+
+    uORB::Subscription _actuator_outputs_sub{ORB_ID(actuator_outputs)};
 
     void Run() override;
 
