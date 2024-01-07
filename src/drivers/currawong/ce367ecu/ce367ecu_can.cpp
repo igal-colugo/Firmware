@@ -315,8 +315,6 @@ void CE367ECUCan::collect()
     uint16_t frame_id_device; // Device identifier
     // int return_value = read_frame(can_port, real_number_devices, &recv_frame, 0);
 
-    currawong_ce367ecu_status_s currawong_ce367ecu_status{};
-
     // Look for any message responses on the CAN bus
     if (read_frame(_can_port, _real_number_devices, &recv_frame, 0) >= 0)
     {
@@ -361,8 +359,8 @@ void CE367ECUCan::collect()
             int debug_1 = 1;
             debug_1 = debug_1 + 1;
         }
-        
-        _currawong_ce367ecu_status_pub.publish(currawong_ce367ecu_status);
+
+        _currawong_ce367ecu_status_pub.publish(_currawong_ce367ecu_status);
     }
 }
 
@@ -1240,6 +1238,9 @@ bool CE367ECUCan::handle_ecu_message(canfd_frame *frame)
     // Throw the message at the decoding functions
     if (decodeECU_TelemetryFastPacketStructure(frame, &telemetry_fast))
     {
+        _currawong_ce367ecu_status.ecu_throttle = 55.0f;//telemetry_fast.throttle;
+        _currawong_ce367ecu_status.ecu_rpm = telemetry_fast.rpm;
+        _currawong_ce367ecu_status.ecu_fuel_used = telemetry_fast.fuelUsed;
     }
     else if (decodeECU_TelemetrySlow0PacketStructure(frame, &telemetry_slow0))
     {

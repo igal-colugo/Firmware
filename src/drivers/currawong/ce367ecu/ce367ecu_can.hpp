@@ -317,6 +317,8 @@ class CE367ECUCan : public px4::ScheduledWorkItem
 
     bool _initialized{false};
 
+    currawong_ce367ecu_status_s _currawong_ce367ecu_status{};
+
     uORB::Subscription _actuator_outputs_sub{ORB_ID(actuator_outputs)};
     uORB::Publication<currawong_ce367ecu_status_s> _currawong_ce367ecu_status_pub{ORB_ID(currawong_ce367ecu_status)};
 

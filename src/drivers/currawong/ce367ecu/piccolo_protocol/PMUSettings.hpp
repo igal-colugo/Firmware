@@ -220,4 +220,4 @@ typedef struct
 #ifdef __cplusplus
 }
 #endif
-#endif // _ECUSETTINGS_H
+#endif // _PMUSETTINGS_H

@@ -215,4 +215,4 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-#endif // _ECUDEFINES_H
+#endif // _PMUDEFINES_H
