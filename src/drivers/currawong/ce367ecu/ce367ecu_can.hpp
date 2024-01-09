@@ -79,6 +79,7 @@
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/currawong_ce367ecu_status.h>
+#include <uORB/topics/vehicle_command.h>
 
 using namespace time_literals;
 
@@ -310,16 +311,22 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     uint16_t _servo_tx_counter = 0;
     uint16_t _ecu_tx_counter = 0;
 
+    uint16_t _publisher_counter = 0;
+
     // Piccolo CAN parameters
     int32_t _esc_bm; //! ESC selection bitmask
     int32_t _srv_bm; //! Servo selection bitmask
     int16_t _ecu_id; //! ECU Node ID
+    int16_t _pmu_id; //! PMU Node ID
 
     bool _initialized{false};
 
     currawong_ce367ecu_status_s _currawong_ce367ecu_status{};
+    actuator_outputs_s _actuator_outputs{};
+    vehicle_command_s _vehicle_command{};
 
     uORB::Subscription _actuator_outputs_sub{ORB_ID(actuator_outputs)};
+    uORB::Subscription _vehicle_command_sub{ORB_ID(vehicle_command)};
     uORB::Publication<currawong_ce367ecu_status_s> _currawong_ce367ecu_status_pub{ORB_ID(currawong_ce367ecu_status)};
 
     void Run() override;
@@ -515,6 +522,10 @@ class CE367ECUCan : public px4::ScheduledWorkItem
     void send_servo_messages(void);
     // interpret a servo message received over CAN
     bool handle_servo_message(canfd_frame *frame);
+
+    void start_cranking_engine(void);
+    void stop_cranking_engine(void);
+    void reset_cranking_engine(void);
 
 #pragma endregion Currawong functions
 };

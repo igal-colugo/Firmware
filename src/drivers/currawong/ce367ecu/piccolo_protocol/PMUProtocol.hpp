@@ -119,35 +119,32 @@ extern "C"
      */
     typedef enum
     {
-        PKT_PMU_VOLTAGES = 0x00,       //!< High priority telemetry data from the ECU
-        PKT_PMU_CURRENTS,              //!< First low priority telemetry packet from the ECU
-        PKT_PMU_BATTERY_STATUSES,            //!< Second low priority telemetry packet from the ECU
-        PKT_PMU_TEMPERATURES,            //!< Third low priority telemetry packet from the ECU
-        PKT_PMU_MISCELLANEOUS,           //!< Fourth low priority telemetry packet from the ECU (reserved for future use)
-        PKT_PMU_THROTTLE_CALIBRATION = 0x05, //!< Throttle calibration values
-        PKT_PMU_THROTTLE,                    //!< ECU throttle command
-        PKT_PMU_THROTTLE_COMBINED,           //!< ECU Throttle command (position and pulse)
-        PKT_PMU_RPM_COMMAND,                 //!< RPM setpoint command
-        PKT_PMU_RPM_CALIBRATION,             //!< RPM control loop calibration values
-        PKT_PMU_HARDWARE_CONFIG,             //!< Serial number information
-        PKT_PMU_SOFTWARE_VERSION,            //!< Firmware version information
-        PKT_PMU_TPS_DELAY_CONFIG,            //!< Throttle delay configuration
-        PKT_PMU_TELEMETRY_SETTINGS,          //!< Telemetry configuration
-        PKT_PMU_PUMP_CONFIG,                 //!< ECU Pump configuration packet 1 of 2
-        PKT_PMU_ERROR_MSG,                   //!< Error messages
-        PKT_PMU_POWER_CYCLES = 0x10,         //!< System information
-        PKT_PMU_PUMP_2_CONFIG,               //!< ECU Pump configuration packet 2 of 2
-        PKT_PMU_PUMP_DEBUG,                  //!< Pump debug information
-        PKT_PMU_TOTAL_ENGINE_TIME,           //!< Total engine run-time
-        PKT_PMU_SYS_CMD,                     //!< ECU System command
-        PKT_PMU_USER_DATA,                   //!< User-configurable data bytes
-        PKT_PMU_THROTTLE_CURVE_0,            //!< Throttle curve data, packet 1 of 2
-        PKT_PMU_THROTTLE_CURVE_1,            //!< Throttle curve data, packet 2 of 2
-        PKT_PMU_GPIO,                        //!< GPIO settings
-        PKT_PMU_SETTINGS_DATA,               //!< Non-volatile settings information
-        PKT_PMU_AUTRONIC_MEMORY,             //!< Read or write Autronic RAM
-        PKT_PMU_CHT_LOOP,                    //!< Control loop settings for the CHT control loop
-        PKT_PMU_CANAUTRONIC_RELAY = 0x1F     //!< Relay Autronic data across CAN
+        PKT_PMU_VOLTAGES = 0x00,            //!< High priority telemetry data from the ECU
+        PKT_PMU_CURRENTS,                   //!< First low priority telemetry packet from the ECU
+        PKT_PMU_BATTERY_STATUSES,           //!< Second low priority telemetry packet from the ECU
+        PKT_PMU_TEMPERATURES,               //!< Third low priority telemetry packet from the ECU
+        PKT_PMU_MISCELLANEOUS,              //!< Fourth low priority telemetry packet from the ECU (reserved for future use)
+        PKT_PMU_MEASUREMENT_REQUEST = 0x0F, //!< Request a set of measurement values
+        PKT_PMU_SET_VA,                     //!< Set Avionics voltage
+        PKT_PMU_SET_VP,                     //!< Set Payload voltage
+        PKT_PMU_SET_VS,                     //!< Set Servo voltage
+        PKT_PMU_SET_VB,                     //!< Set Battery voltage
+        PKT_PMU_SET_PP,                     //!< Set packet period
+        PKT_PMU_SET_PS,                     //!< Set packets streamed
+        PKT_PMU_SET_TO,                     //!< Set temperature offset
+        PKT_PMU_SET_TU,                     //!< Set upper temperature limit
+        PKT_PMU_SET_SO,                     //!< Set upper temperature limit
+        PKT_PMU_SET_CT,                     //!< Set cranking time
+        PKT_PMU_SET_CA,                     //!< Set CAN address
+        PKT_PMU_SET_OUTPUT_STATES = 0x20,   //!< Control or determine the enable status of the various outputs
+        PKT_PMU_ENABLE_OUTPUTS,             //!< Turn specified outputs on
+        PKT_PMU_DISABLE_OUTPUTS,            //!< Turn specified outputs off
+        PKT_PMU_SET_GENERATION_STATE,       //!< Turn electrical power generation on and off
+        PKT_PMU_START,                      //!< Start cranking the engine
+        PKT_PMU_STOP,                       //!< Stop cranking the engine
+        PKT_PMU_RESET,                      //!< Restart the PMU
+        PKT_PMU_SERIAL_NUMBER,              //!< Request PMU serial number
+        PKT_PMU_FIRMWARE                   //!< Request firmware information
     } PMUPackets;
 
     //! \return the label of a 'ECUPackets' enum entry, based on its value

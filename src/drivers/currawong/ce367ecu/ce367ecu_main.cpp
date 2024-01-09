@@ -93,7 +93,7 @@ static int start(const char *port, uint8_t communication)
         }
 
         // Start the driver.
-        g_dev_can_updater->start(20_ms);
+        g_dev_can_updater->start(50_ms);
         g_dev_can_collector->start(50_ms);
     }
     else if (communication == 2)
@@ -114,7 +114,7 @@ static int start(const char *port, uint8_t communication)
         }
 
         // Start the driver.
-        g_dev_can_updater->start(20_ms);
+        g_dev_can_updater->start(50_ms);
         g_dev_can_collector->start(50_ms);
     }
 

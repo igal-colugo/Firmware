@@ -59,6 +59,7 @@ CE367ECUCan::CE367ECUCan(int can_port, bool is_collector) : ScheduledWorkItem(MO
     _can_port = can_port;
     _real_number_devices = 1;
     _ecu_id = 0xFFFF;
+    _pmu_id = 0xFFFF;
 
     _initialized = true;
 
@@ -156,24 +157,31 @@ int CE367ECUCan::update()
     uint16_t ecuCmdRate = 2;
 
     //@todo Vlad:subscribe to pwm uorb messages
-    actuator_outputs_s actuator_outputs{};
-    actuator_controls_s actuator_controls{};
 
     // MavlinkV1
     if (_actuator_outputs_sub.updated())
     {
-        if (_actuator_outputs_sub.copy(&actuator_outputs))
+        if (_actuator_outputs_sub.copy(&_actuator_outputs))
         {
-            send_ecu_messages((((float) actuator_outputs.output[_motor_index] - (float) _motor_minimum_value) / abs((float) _motor_maximum_value - (float) _motor_minimum_value)) * 100.0f);
+            send_ecu_messages((((float) _actuator_outputs.output[_motor_index] - (float) _motor_minimum_value) / abs((float) _motor_maximum_value - (float) _motor_minimum_value)) * 100.0f);
+        }
+    }
+
+    if (_vehicle_command_sub.update(&_vehicle_command))
+    {
+        if (_vehicle_command.command == 60601)
+        {
+            start_cranking_engine();
         }
     }
 
     // Transmit ecu throttle commands at regular intervals
-    if (_ecu_tx_counter >= 1)
+    if (_ecu_tx_counter >= 10)
     {
         _ecu_tx_counter = 0;
         //@todo Vlad:set scaled value from throttle motor
         // send_ecu_messages(50.0);
+        // start_cranking_engine();
     }
 
     /*
@@ -359,7 +367,12 @@ void CE367ECUCan::collect()
             int debug_1 = 1;
             debug_1 = debug_1 + 1;
         }
+    }
 
+    _publisher_counter++;
+    if (_publisher_counter > 1) // every 100 ms
+    {
+        _publisher_counter = 0;
         _currawong_ce367ecu_status_pub.publish(_currawong_ce367ecu_status);
     }
 }
@@ -1215,7 +1228,7 @@ void CE367ECUCan::send_ecu_messages(float throttle_percent)
     // piccolo_frame_id.word.message_type = 0x03;
     piccolo_frame_id.word.device_address = 0xFFFF;
 
-    encodeECU_ThrottleCommandPacket(&txFrame, throttle_percent); //_ecu_info.command);
+    encodeECU_ThrottleCommandPacket(&txFrame, throttle_percent);
     txFrame.can_id |= (uint8_t) _ecu_id;
     txFrame.can_id |= piccolo_frame_id.frame_id;
 
@@ -1238,7 +1251,7 @@ bool CE367ECUCan::handle_ecu_message(canfd_frame *frame)
     // Throw the message at the decoding functions
     if (decodeECU_TelemetryFastPacketStructure(frame, &telemetry_fast))
     {
-        _currawong_ce367ecu_status.ecu_throttle = 55.0f;//telemetry_fast.throttle;
+        _currawong_ce367ecu_status.ecu_throttle = telemetry_fast.throttle;
         _currawong_ce367ecu_status.ecu_rpm = telemetry_fast.rpm;
         _currawong_ce367ecu_status.ecu_fuel_used = telemetry_fast.fuelUsed;
     }
@@ -1269,7 +1282,7 @@ void CE367ECUCan::send_pmu_messages(float throttle_percent)
     canfd_frame txFrame{};
 
     // No ECU node id set, don't send anything
-    if (_ecu_id == 0)
+    if (_pmu_id == 0)
     {
         return;
     }
@@ -1283,7 +1296,82 @@ void CE367ECUCan::send_pmu_messages(float throttle_percent)
     piccolo_frame_id.word.device_address = 0xFFFF;
 
     encodeECU_ThrottleCommandPacket(&txFrame, throttle_percent); //_ecu_info.command);
-    txFrame.can_id |= (uint8_t) _ecu_id;
+    txFrame.can_id |= (uint8_t) _pmu_id;
+    txFrame.can_id |= piccolo_frame_id.frame_id;
+
+    write_frame(_can_port, _real_number_devices, &txFrame, 0);
+}
+
+void CE367ECUCan::start_cranking_engine()
+{
+    canfd_frame txFrame{};
+
+    // No ECU node id set, don't send anything
+    if (_pmu_id == 0)
+    {
+        return;
+    }
+
+    PiccoloFrameID piccolo_frame_id = {};
+    memset(&piccolo_frame_id, 0, sizeof(PiccoloFrameID));
+
+    piccolo_frame_id.word.frame_format_flag = 1;
+    // piccolo_frame_id.word.group_id = 0x08;
+    // piccolo_frame_id.word.message_type = 0x03;
+    piccolo_frame_id.word.device_address = 0xFFFF;
+
+    encodePMU_StartPacketStructure(&txFrame, nullptr);
+    txFrame.can_id |= (uint8_t) _pmu_id;
+    txFrame.can_id |= piccolo_frame_id.frame_id;
+
+    write_frame(_can_port, _real_number_devices, &txFrame, 0);
+}
+
+void CE367ECUCan::stop_cranking_engine()
+{
+    canfd_frame txFrame{};
+
+    // No ECU node id set, don't send anything
+    if (_pmu_id == 0)
+    {
+        return;
+    }
+
+    PiccoloFrameID piccolo_frame_id = {};
+    memset(&piccolo_frame_id, 0, sizeof(PiccoloFrameID));
+
+    piccolo_frame_id.word.frame_format_flag = 1;
+    // piccolo_frame_id.word.group_id = 0x08;
+    // piccolo_frame_id.word.message_type = 0x03;
+    piccolo_frame_id.word.device_address = 0xFFFF;
+
+    encodePMU_StopPacketStructure(&txFrame, nullptr);
+    txFrame.can_id |= (uint8_t) _pmu_id;
+    txFrame.can_id |= piccolo_frame_id.frame_id;
+
+    write_frame(_can_port, _real_number_devices, &txFrame, 0);
+}
+
+void CE367ECUCan::reset_cranking_engine()
+{
+    canfd_frame txFrame{};
+
+    // No ECU node id set, don't send anything
+    if (_pmu_id == 0)
+    {
+        return;
+    }
+
+    PiccoloFrameID piccolo_frame_id = {};
+    memset(&piccolo_frame_id, 0, sizeof(PiccoloFrameID));
+
+    piccolo_frame_id.word.frame_format_flag = 1;
+    // piccolo_frame_id.word.group_id = 0x08;
+    // piccolo_frame_id.word.message_type = 0x03;
+    piccolo_frame_id.word.device_address = 0xFFFF;
+
+    encodePMU_ResetPacketStructure(&txFrame, nullptr);
+    txFrame.can_id |= (uint8_t) _pmu_id;
     txFrame.can_id |= piccolo_frame_id.frame_id;
 
     write_frame(_can_port, _real_number_devices, &txFrame, 0);
