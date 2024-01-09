@@ -169,9 +169,16 @@ int CE367ECUCan::update()
 
     if (_vehicle_command_sub.update(&_vehicle_command))
     {
-        if (_vehicle_command.command == 60601)
+        if (_vehicle_command.command == MAV_CMD_CE367_SET_STARTER)
         {
-            start_cranking_engine();
+            if (_vehicle_command.param1 == 1)
+            {
+                start_cranking_engine();
+            }
+            else if (_vehicle_command.param1 == 0)
+            {
+                stop_cranking_engine();
+            }
         }
     }
 

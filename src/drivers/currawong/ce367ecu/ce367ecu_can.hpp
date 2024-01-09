@@ -89,6 +89,8 @@ using namespace time_literals;
 typedef uint8_t __u8;
 typedef uint32_t __u32;
 
+#define MAV_CMD_CE367_SET_STARTER (60601)
+
 #define CE367ECU_CAN_MEASURE_INTERVAL 50_ms
 
 /* buffer sizes for CAN frame string representations */
