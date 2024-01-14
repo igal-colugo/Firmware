@@ -107,7 +107,7 @@ px4_add_module(
 	COMPILE_FLAGS
 		#-DCANARD_ASSERT
 		-DUINT32_C\(x\)=__UINT32_C\(x\)
-		-O0
+		#-O0
 		${DRIVERS_UAVCAN_V1_OPTIONS}
 	INCLUDES
 		${LIBCANARD_DIR}/libcanard/

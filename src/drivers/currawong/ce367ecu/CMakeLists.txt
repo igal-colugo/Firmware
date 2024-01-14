@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (C) 2017-2019 Intel Corporation. All rights reserved.
+#   Copyright (c) 2021 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,16 +30,30 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
+#add_subdirectory(piccolo_protocol)
+
 px4_add_module(
-	MODULE drivers__gimbal__viewpro
-	MAIN viewpro
+	MODULE drivers__currawong__ce367ecu
+	MAIN ce367ecu
 	COMPILE_FLAGS
-		-Wno-cast-align # TODO: fix and enable
-		#-O0
+		-O0
 	SRCS
-		ViewPro.cpp
-		ViewPro.hpp
-		viewpro_main.cpp
+		ce367ecu_main.cpp
+		ce367ecu_can.cpp
+		ce367ecu_serial.cpp
+		piccolo_protocol/fielddecode.cpp
+		piccolo_protocol/fieldencode.cpp
+		piccolo_protocol/scaleddecode.cpp
+		piccolo_protocol/scaledencode.cpp
+		piccolo_protocol/ECUDefines.cpp
+		piccolo_protocol/ECUProtocol.cpp
+		piccolo_protocol/ECUPackets.cpp
+		piccolo_protocol/ECUSettings.cpp
+		piccolo_protocol/PMUDefines.cpp
+		piccolo_protocol/PMUProtocol.cpp
+		piccolo_protocol/PMUPackets.cpp
+		piccolo_protocol/PMUSettings.cpp
+
 	MODULE_CONFIG
 		module.yaml
 	DEPENDS

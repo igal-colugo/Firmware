@@ -67,6 +67,7 @@
 #include "streams/BATTERY_STATUS.hpp"
 #include "streams/CAMERA_IMAGE_CAPTURED.hpp"
 #include "streams/CAMERA_TRIGGER.hpp"
+#include "streams/CE367_STATUS.hpp"
 #include "streams/COLLISION.hpp"
 #include "streams/COMMAND_LONG.hpp"
 #include "streams/COMPONENT_INFORMATION.hpp"
@@ -524,6 +525,9 @@ static const StreamListItem streams_list[] = {
 #if defined(ASIO_STATUS_HPP)
     create_stream_list_item<MavlinkStreamAsioStatus>(),
 #endif // ASIO_STATUS_HPP
+#if defined(CE367_STATUS_HPP)
+    create_stream_list_item<MavlinkStreamCE367Status>()
+#endif // CE367_STATUS_HPP
 #if defined(HFE_STATUS_HPP)
         create_stream_list_item<MavlinkStreamHfeStatus>()
 #endif // HFE_STATUS_HPP

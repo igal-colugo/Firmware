@@ -1,0 +1,5 @@
+menuconfig DRIVERS_CURRAWONG_CE367ECU
+	bool "ce367ecu"
+	default n
+	---help---
+		Enable support for viewpro

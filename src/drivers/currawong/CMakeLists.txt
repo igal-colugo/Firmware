@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (C) 2017-2019 Intel Corporation. All rights reserved.
+#   Copyright (c) 2017 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,17 +30,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-px4_add_module(
-	MODULE drivers__gimbal__viewpro
-	MAIN viewpro
-	COMPILE_FLAGS
-		-Wno-cast-align # TODO: fix and enable
-		#-O0
-	SRCS
-		ViewPro.cpp
-		ViewPro.hpp
-		viewpro_main.cpp
-	MODULE_CONFIG
-		module.yaml
-	DEPENDS
-	)
+
+add_subdirectory(ce367ecu)

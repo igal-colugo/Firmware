@@ -143,6 +143,19 @@ serial_ports = {
         "default_baudrate": 57600,
         },
 
+    # CAN1 Port
+    "CAN1": {
+        "label": "CAN 1",
+        "index": 501,
+        "default_baudrate": 0,
+        },
+
+    # CAN2 Port
+    "CAN2": {
+        "label": "CAN 2",
+        "index": 502,
+        "default_baudrate": 0,
+        },
     }
 
 parser = argparse.ArgumentParser(description='Generate Serial params & startup script')

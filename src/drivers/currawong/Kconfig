@@ -1,0 +1,10 @@
+menu "Currawong"
+    menuconfig COMMON_CURRAWONG
+        bool "Common currawong"
+        default n
+        select DRIVERS_CURRAWONG_CE367ECU
+        ---help---
+            Enable default set of currawong drivers
+
+    rsource "*/Kconfig"
+endmenu
