@@ -526,7 +526,7 @@ static const StreamListItem streams_list[] = {
     create_stream_list_item<MavlinkStreamAsioStatus>(),
 #endif // ASIO_STATUS_HPP
 #if defined(CE367_STATUS_HPP)
-    create_stream_list_item<MavlinkStreamCE367Status>()
+    create_stream_list_item<MavlinkStreamCE367Status>(),
 #endif // CE367_STATUS_HPP
 #if defined(HFE_STATUS_HPP)
         create_stream_list_item<MavlinkStreamHfeStatus>()
