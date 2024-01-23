@@ -48,6 +48,7 @@ bool PreFlightCheck::modeCheck(orb_advert_t *mavlink_log_pub, const bool report_
 	case vehicle_status_s::NAVIGATION_STATE_POSCTL:
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER:
+	case vehicle_status_s::NAVIGATION_STATE_AUTO_CCAMGUIDE:
 	case vehicle_status_s::NAVIGATION_STATE_ACRO:
 	case vehicle_status_s::NAVIGATION_STATE_OFFBOARD:
 	case vehicle_status_s::NAVIGATION_STATE_STAB:

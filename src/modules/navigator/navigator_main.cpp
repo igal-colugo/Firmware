@@ -632,6 +632,11 @@ void Navigator::run()
             navigation_mode_new = &_loiter;
             break;
 
+        case vehicle_status_s::NAVIGATION_STATE_AUTO_CCAMGUIDE:
+            _pos_sp_triplet_published_invalid_once = false;
+            navigation_mode_new = &_cCamGuide;
+            break;
+
         case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL: {
             _pos_sp_triplet_published_invalid_once = false;
 
