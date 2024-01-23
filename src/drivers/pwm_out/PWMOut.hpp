@@ -68,6 +68,7 @@ using namespace time_literals;
 #endif
 
 #define PX4FMU_DEVICE_PATH	"/dev/px4fmu"
+#define REAL_PWM_PARAM_PREFIX "PWM_MAIN"
 
 static constexpr int PWM_OUT_MAX_INSTANCES{(DIRECT_PWM_OUTPUT_CHANNELS > 8) ? 2 : 1};
 extern pthread_mutex_t pwm_out_module_mutex;
@@ -127,9 +128,9 @@ private:
 
 	static const int MAX_PER_INSTANCE{8};
 
-	MixingOutput _mixing_output {PARAM_PREFIX, FMU_MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, true};
+    MixingOutput _mixing_output{REAL_PWM_PARAM_PREFIX, FMU_MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, true};
 
-	uint32_t	_backup_schedule_interval_us{1_s};
+    uint32_t	_backup_schedule_interval_us{1_s};
 
 	unsigned	_pwm_default_rate{50};
 	unsigned	_pwm_alt_rate{50};

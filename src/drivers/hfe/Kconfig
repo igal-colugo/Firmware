@@ -1,0 +1,10 @@
+menu "HFE"
+    menuconfig COMMON_HFE
+        bool "Common hfe"
+        default n
+        select DRIVERS_HFE_DA35EFI
+        ---help---
+            Enable default set of hfe drivers
+
+    rsource "*/Kconfig"
+endmenu

@@ -35,7 +35,7 @@ px4_add_module(
 	MAIN viewpro
 	COMPILE_FLAGS
 		-Wno-cast-align # TODO: fix and enable
-		-O0
+		#-O0
 	SRCS
 		ViewPro.cpp
 		ViewPro.hpp

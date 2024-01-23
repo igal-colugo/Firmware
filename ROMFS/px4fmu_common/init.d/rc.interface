@@ -81,6 +81,8 @@ then
 		then
 			tune_control play error
 		fi
+
+	#	set OUTPUT_MODE io
 	fi
 
 	if [ $OUTPUT_MODE = uavcan_esc ]

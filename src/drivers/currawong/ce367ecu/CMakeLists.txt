@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015-2020 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2021 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,25 +30,31 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-
-set(REAL_PWM_PARAM_PREFIX PWM_MAIN)
-
-if(CONFIG_BOARD_IO)
-	set(REAL_PWM_PARAM_PREFIX PWM_AUX)
-endif()
+#add_subdirectory(piccolo_protocol)
 
 px4_add_module(
-	MODULE drivers__pwm_out
-	MAIN pwm_out
+	MODULE drivers__currawong__ce367ecu
+	MAIN ce367ecu
 	COMPILE_FLAGS
-		-DPARAM_PREFIX="${REAL_PWM_PARAM_PREFIX}"
+		-O0
 	SRCS
-		PWMOut.cpp
-		PWMOut.hpp
+		ce367ecu_main.cpp
+		ce367ecu_can.cpp
+		ce367ecu_serial.cpp
+		piccolo_protocol/fielddecode.cpp
+		piccolo_protocol/fieldencode.cpp
+		piccolo_protocol/scaleddecode.cpp
+		piccolo_protocol/scaledencode.cpp
+		piccolo_protocol/ECUDefines.cpp
+		piccolo_protocol/ECUProtocol.cpp
+		piccolo_protocol/ECUPackets.cpp
+		piccolo_protocol/ECUSettings.cpp
+		piccolo_protocol/PMUDefines.cpp
+		piccolo_protocol/PMUProtocol.cpp
+		piccolo_protocol/PMUPackets.cpp
+		piccolo_protocol/PMUSettings.cpp
+
 	MODULE_CONFIG
 		module.yaml
 	DEPENDS
-		arch_io_pins
-		mixer
-		mixer_module
 	)

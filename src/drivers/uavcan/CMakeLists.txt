@@ -84,6 +84,8 @@ add_compile_options(
 	-Wno-cast-align # TODO: fix and enable
 	-Wno-deprecated-copy # TODO: fix
 	-Wno-address-of-packed-member
+	#-DDEBUG_BUILD   # uncomment for PX4_DEBUG output
+	#-O0             # uncomment when debugging
 )
 add_subdirectory(${LIBUAVCAN_DIR} libuavcan EXCLUDE_FROM_ALL)
 add_dependencies(uavcan prebuild_targets)

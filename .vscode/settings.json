@@ -141,5 +141,6 @@
         "python.analysis.extraPaths": [
                 "/opt/ros/foxy/lib/python3.8/site-packages"
         ],
-        "cortex-debug.variableUseNaturalFormat": true // Added for rp2040
+        "cortex-debug.variableUseNaturalFormat": false,
+        "inline-bookmarks.default.words.blue": "@audit\\-info[\\s], @todo[\\s], @note[\\s],@example[\\s],@remind[\\s], @follow-up[\\s]" // Added for rp2040
 }

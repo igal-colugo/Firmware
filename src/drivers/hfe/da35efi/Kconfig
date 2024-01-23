@@ -1,0 +1,5 @@
+menuconfig DRIVERS_HFE_DA35EFI
+	bool "da35efi"
+	default n
+	---help---
+		Enable support for hfe engine

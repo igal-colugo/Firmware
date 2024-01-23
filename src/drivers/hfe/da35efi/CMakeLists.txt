@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015-2020 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2021 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,25 +30,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
-
-set(REAL_PWM_PARAM_PREFIX PWM_MAIN)
-
-if(CONFIG_BOARD_IO)
-	set(REAL_PWM_PARAM_PREFIX PWM_AUX)
-endif()
-
 px4_add_module(
-	MODULE drivers__pwm_out
-	MAIN pwm_out
+	MODULE drivers__hfe__da35efi
+	MAIN da35efi
 	COMPILE_FLAGS
-		-DPARAM_PREFIX="${REAL_PWM_PARAM_PREFIX}"
+		#-O0
 	SRCS
-		PWMOut.cpp
-		PWMOut.hpp
+		da35efi_main.cpp
+		da35efi_serial.cpp
 	MODULE_CONFIG
 		module.yaml
 	DEPENDS
-		arch_io_pins
-		mixer
-		mixer_module
 	)

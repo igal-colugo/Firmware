@@ -67,6 +67,7 @@
 #include "streams/BATTERY_STATUS.hpp"
 #include "streams/CAMERA_IMAGE_CAPTURED.hpp"
 #include "streams/CAMERA_TRIGGER.hpp"
+#include "streams/CE367_STATUS.hpp"
 #include "streams/COLLISION.hpp"
 #include "streams/COMMAND_LONG.hpp"
 #include "streams/COMPONENT_INFORMATION.hpp"
@@ -84,6 +85,7 @@
 #include "streams/GPS_RTCM_DATA.hpp"
 #include "streams/GPS_STATUS.hpp"
 #include "streams/HEARTBEAT.hpp"
+#include "streams/HFE_STATUS.hpp"
 #include "streams/HIGHRES_IMU.hpp"
 #include "streams/HIL_ACTUATOR_CONTROLS.hpp"
 #include "streams/HIL_STATE_QUATERNION.hpp"
@@ -525,8 +527,14 @@ static const StreamListItem streams_list[] = {
     create_stream_list_item<MavlinkStreamGPSRTCMData>(),
 #endif // GPS_RTCM_DATA_HPP
 #if defined(ASIO_STATUS_HPP)
-    create_stream_list_item<MavlinkStreamAsioStatus>()
+    create_stream_list_item<MavlinkStreamAsioStatus>(),
 #endif // ASIO_STATUS_HPP
+#if defined(CE367_STATUS_HPP)
+    create_stream_list_item<MavlinkStreamCE367Status>(),
+#endif // CE367_STATUS_HPP
+#if defined(HFE_STATUS_HPP)
+        create_stream_list_item<MavlinkStreamHfeStatus>()
+#endif // HFE_STATUS_HPP
 };
 
 const char *get_stream_name(const uint16_t msg_id)

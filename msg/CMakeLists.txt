@@ -65,6 +65,7 @@ set(msg_files
 	commander_state.msg
 	control_allocator_status.msg
 	cpuload.msg
+	currawong_ce367ecu_status.msg
 	debug_vect_clg.msg
 	differential_pressure.msg
 	distance_sensor.msg
@@ -96,6 +97,7 @@ set(msg_files
 	gps_dump.msg
 	gps_inject_data.msg
 	heater_status.msg
+	hfe_da35efi_status.msg
 	home_position.msg
 	hover_thrust_estimate.msg
 	internal_combustion_engine_status.msg
