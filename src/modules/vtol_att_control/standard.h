@@ -119,30 +119,10 @@ private:
 	struct debug_vect_s _dbg_vect_for_mav;
 	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &_dbg_vect_for_mav);
 	void parameters_update() override;
+
 	//cologo staff
 	void publishDebugForMavIfneeded();
 
-
-/*
-get the postion of pitch control from mc to fw trasition based on time past after reaching transition throttle
-*/
-	//float getColugoToFwPitchTransitionTimeBased2();
-
-/*
-get the postion of flaps control from mc to fw trasition based on time past after reaching transition throttle
-*/
-	//float getColugoToFwFlapsTransitionTimeBased2();
-
-	/*returns relative postion acording to _param_c_tr_fw_srv_slew parameter*/
-//	float getColugoSlewedPosition(float startPos, float endPos);
-
-/*
-get the postion of colugo actuator from mc to fw trasition based on time past after reaching transition throttle
-*/
-//	float getColugoActuatorToFwTransition2();
-
-//colugo go through the trasitions stages to fw
-	//void updateColugoFwTransitionStage();
 
 };
 #endif

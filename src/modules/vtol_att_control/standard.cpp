@@ -85,6 +85,13 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_dbg_vect_for_mav.y = 5.0;
 	_dbg_vect_for_mav.z = 6.0;
 
+	//test delete later
+	//param_t la = param_find("CA_SV_CS0_TRQ_R");
+	//param_t ra = param_find("CA_SV_CS1_TRQ_R");
+	//float rTorqe = 0.5;
+	//param_set(la, &rTorqe);
+	//param_set(ra, &rTorqe);
+
 }
 
 void Standard::parameters_update()
@@ -293,13 +300,6 @@ void Standard::update_vtol_state()
 	if(_cth.getColugoDebugVal() == 5){
 
 		_cth.updateColugoTransitionState(_airspeed_validated->calibrated_airspeed_m_s, _vtol_schedule.flight_mode, _vtol_schedule.transition_start);
-		//if(_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW){
-			//if(_cth.getInnerState() >= COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
-			//	_vtol_mode = mode::TRANSITION_TO_FW;
-		//	}
-
-		//}
-
 	}
 
 }
@@ -481,8 +481,8 @@ void Standard::fill_actuator_outputs()
 			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
 			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
 
-
-			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;//fw_in[actuator_controls_s::INDEX_ROLL];
+			//during trasition both ailerons work similar to pitch or flaps (same direction...)
+			fw_out[actuator_controls_s::INDEX_ROLL]     = _cth.getColugoTransToFwSlewedFlaps();0;//fw_in[actuator_controls_s::INDEX_ROLL];
 			fw_out[actuator_controls_s::INDEX_PITCH]    = _cth.getColugoTransToFwSlewedPitch();
 			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE] = _cth.getPusherThr(_pusher_throttle);
