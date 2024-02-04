@@ -77,6 +77,7 @@ private:
 		float _param_c_z_tr_spd_ms;
 		float _param_c_z_tr_time_s;
 		float _param_c_z_lck_tming;
+		int32_t _param_c_tr_srv_rev_no;
 
 	} _params_colugo;
 
@@ -96,12 +97,14 @@ private:
 		param_t _param_c_z_tr_spd_ms;
 		param_t _param_c_z_tr_time_s;
 		param_t _param_c_z_lck_tming;
+		param_t _param_c_tr_srv_rev_no;
 
 	} _params_handles_colugo;
 
-
-	param_t _param_ailron_l_r; //left aileron torque param
-	float _ailron_l_r; //left aileron torque
+	struct {
+		uint8_t _servo_to_reverse_during_tr; //usualy ailron servo - reverse during transition - back to normal during rest of time.
+		int32_t _originalVal;
+	} _servo_tr_to_reverse_colugo;
 
         //position of the wing lock actuator - range: -1.0 ~ 1.0
     float _wingLockActuatorPos = COLUGO_ACTUATOR_MC_POS;
@@ -115,5 +118,7 @@ private:
 	//methods
     void updateInnerStage();
     float getSlewedPosition(float startPos, float endPos);
-    void findAileronServosTorqParam();
+    void findServoNoToReverse();
+    void reverseServo();
+    void unReverseServo();
 };
