@@ -82,7 +82,10 @@ then
 			tune_control play error
 		fi
 
-	#	set OUTPUT_MODE io
+		if [ $OUTPUT_MODE = hil]
+		then
+			set OUTPUT_MODE io
+		fi
 	fi
 
 	if [ $OUTPUT_MODE = uavcan_esc ]
