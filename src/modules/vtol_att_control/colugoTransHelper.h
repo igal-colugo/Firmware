@@ -101,11 +101,19 @@ private:
 
 	} _params_handles_colugo;
 
+/*
 	struct {
 		uint8_t _servo_to_reverse_during_tr; //usualy ailron servo - reverse during transition - back to normal during rest of time.
 		int32_t _originalVal;
 	} _servo_tr_to_reverse_colugo;
 
+*/
+
+struct {
+		uint8_t _leftAileronCsTypeNo;
+		uint8_t _rightAileronCsTypeNo;
+		bool 	_reverseDuringTrans;
+	} _ailerons_tr_colugo;
         //position of the wing lock actuator - range: -1.0 ~ 1.0
     float _wingLockActuatorPos = COLUGO_ACTUATOR_MC_POS;
     uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
@@ -118,7 +126,7 @@ private:
 	//methods
     void updateInnerStage();
     float getSlewedPosition(float startPos, float endPos);
-    void findServoNoToReverse();
-    void reverseServo();
-    void unReverseServo();
+    void findAileronFuncs();
+    void setAsElevator();
+    void setAsAilerons();
 };

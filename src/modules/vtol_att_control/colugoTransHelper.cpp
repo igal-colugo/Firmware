@@ -28,7 +28,7 @@ colugoTransHelper::colugoTransHelper()
     _params_handles_colugo._param_c_debug = param_find("C_DEBUG");
 
     // find left and right aileron surface
-    findServoNoToReverse();
+    findAileronFuncs();
 }
 //@note colugoTransHelper
 void colugoTransHelper::setColugoActuatorPos()
@@ -69,7 +69,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
     case vtol_mode::FW_MODE:
 	//reset ailrons direction only once
         if (fm != _currentMode){
-            unReverseServo();
+            setAsAilerons();
         }
 
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
@@ -81,7 +81,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START;
 
 	    //make both aileorns go t same direction...
-	        reverseServo();
+	        setAsElevator();
             _startTime = tt;
             break;
         }
@@ -96,7 +96,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
     case vtol_mode::MC_MODE:
         //saftey measure make sure back to correct position when goes back to MC for safety reasons
         if (fm != _currentMode){
-         unReverseServo();
+         setAsAilerons();
         }
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;
@@ -217,7 +217,7 @@ void colugoTransHelper::parameters_update()
     param_get(_params_handles_colugo._param_airspeed_blend, &v);
     _params_colugo._param_airspeed_blend = math::constrain(v, 0.0f, 100.0f);
     /////////////////////////
-    findServoNoToReverse();
+    findAileronFuncs();
 }
 
 float colugoTransHelper::getColugoTransToFwSlewedPitch()
@@ -270,8 +270,22 @@ float colugoTransHelper::getSlewedPosition(float startPos, float endPos)
     return res;
 }
 
-void colugoTransHelper::findServoNoToReverse()
+void colugoTransHelper::findAileronFuncs()
 {
+    for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i) {
+		char buffer[17];
+        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", i);
+        int32_t type;
+        param_get(param_find(buffer), &type);
+        if(type == static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron)){
+            _ailerons_tr_colugo._leftAileronCsTypeNo = i;
+        }
+        if(type == static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron)){
+            _ailerons_tr_colugo._rightAileronCsTypeNo = i;
+        }
+
+    }
+    /*
     _servo_tr_to_reverse_colugo._servo_to_reverse_during_tr = 0;
     if(_params_colugo._param_c_tr_srv_rev_no > 0){
         _servo_tr_to_reverse_colugo._servo_to_reverse_during_tr = _params_colugo._param_c_tr_srv_rev_no;
@@ -288,10 +302,20 @@ void colugoTransHelper::findServoNoToReverse()
          //   _servo_tr_to_reverse_colugo._originalVal = (reverseMask  & bitNo);
         }
     }
+    */
 
 }
 
-void colugoTransHelper::reverseServo(){
+void colugoTransHelper::setAsElevator(){
+    char buffer[17];
+        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._leftAileronCsTypeNo);
+        uint8_t val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator);
+        param_set(param_find(buffer), &val);
+        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._rightAileronCsTypeNo);
+      //  val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator);
+        param_set(param_find(buffer), &val);
+
+   /*
     int32_t newVal;
     if(_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr > 8){
         newVal = _servo_tr_to_reverse_colugo._originalVal ^ (1 << (_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr - 9));
@@ -302,8 +326,17 @@ void colugoTransHelper::reverseServo(){
         newVal = _servo_tr_to_reverse_colugo._originalVal ^ (1 << (_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr - 1));
         param_set(param_find("PWM_MAIN_REV"), &newVal);
     }
+    */
 }
-void colugoTransHelper::unReverseServo(){
+void colugoTransHelper::setAsAilerons(){
+    char buffer[17];
+        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._leftAileronCsTypeNo);
+        uint8_t val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron);
+        param_set(param_find(buffer), &val);
+        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._rightAileronCsTypeNo);
+        val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron);
+        param_set(param_find(buffer), &val);
+    /*
     if(_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr > 8){
         param_set(param_find("PWM_AUX_REV"), &_servo_tr_to_reverse_colugo._originalVal);
     }
@@ -311,4 +344,5 @@ void colugoTransHelper::unReverseServo(){
         param_set(param_find("PWM_MAIN_REV"), &_servo_tr_to_reverse_colugo._originalVal);
 
     }
+    */
 }
