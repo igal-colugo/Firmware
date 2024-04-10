@@ -446,6 +446,15 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
     mavlink_hil_gps_t hil_gps;
     mavlink_msg_hil_gps_decode(msg, &hil_gps);
 
+    // otherwise use the parameter SIM_GPS_FIX
+    param_t sim_gps_fix_param = param_find("SIM_GPS_FIX");
+    int32_t sim_gps_fix = 0;
+    param_get(sim_gps_fix_param, &sim_gps_fix);
+
+    param_t sim_gps_used_param = param_find("SIM_GPS_USED");
+    int32_t sim_gps_used = 0;
+    param_get(sim_gps_used_param, &sim_gps_used);
+
     if (!_gps_blocked)
     {
         sensor_gps_s gps{};
@@ -462,8 +471,8 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
         gps.eph = (float) hil_gps.eph * 1e-2f; // cm -> m
         gps.epv = (float) hil_gps.epv * 1e-2f; // cm -> m
 
-        gps.hdop = 0;                          // TODO
-        gps.vdop = 0;                          // TODO
+        gps.hdop = 0; // TODO
+        gps.vdop = 0; // TODO
 
         gps.noise_per_ms = 0;
         gps.automatic_gain_control = 0;
@@ -481,6 +490,74 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
         gps.time_utc_usec = hil_gps.time_usec;
 
         gps.satellites_used = hil_gps.satellites_visible;
+
+        gps.heading = NAN;
+        gps.heading_offset = NAN;
+
+        gps.timestamp = hrt_absolute_time();
+
+        // New publishers will be created based on the HIL_GPS ID's being different or not
+        for (size_t i = 0; i < sizeof(_gps_ids) / sizeof(_gps_ids[0]); i++)
+        {
+            if (_sensor_gps_pubs[i] && _gps_ids[i] == hil_gps.id)
+            {
+                _sensor_gps_pubs[i]->publish(gps);
+                break;
+            }
+
+            if (_sensor_gps_pubs[i] == nullptr)
+            {
+                _sensor_gps_pubs[i] = new uORB::PublicationMulti<sensor_gps_s>{ORB_ID(sensor_gps)};
+                _gps_ids[i] = hil_gps.id;
+
+                device::Device::DeviceId device_id;
+                device_id.devid_s.bus_type = device::Device::DeviceBusType::DeviceBusType_SIMULATION;
+                device_id.devid_s.bus = 0;
+                device_id.devid_s.address = i;
+                device_id.devid_s.devtype = DRV_GPS_DEVTYPE_SIM;
+                gps.device_id = device_id.devid;
+
+                _sensor_gps_pubs[i]->publish(gps);
+                break;
+            }
+        }
+    }
+    else
+    {
+        sensor_gps_s gps{};
+
+        gps.lat = hil_gps.lat;
+        gps.lon = hil_gps.lon;
+        gps.alt = hil_gps.alt;
+        gps.alt_ellipsoid = hil_gps.alt;
+
+        gps.s_variance_m_s = 100.0f;
+        gps.c_variance_rad = 100.0f;
+
+        gps.fix_type = sim_gps_fix;
+
+        gps.eph = 100.0f;
+        gps.epv = 100.0f;
+
+        gps.hdop = 100.0f; // TODO
+        gps.vdop = 100.0f; // TODO
+
+        gps.noise_per_ms = 0;
+        gps.automatic_gain_control = 0;
+        gps.jamming_indicator = 0;
+        gps.jamming_state = 0;
+
+        gps.vel_m_s = (float) (hil_gps.vel) / 100.0f;                                                        // cm/s -> m/s
+        gps.vel_n_m_s = (float) (hil_gps.vn) / 100.0f;                                                       // cm/s -> m/s
+        gps.vel_e_m_s = (float) (hil_gps.ve) / 100.0f;                                                       // cm/s -> m/s
+        gps.vel_d_m_s = (float) (hil_gps.vd) / 100.0f;                                                       // cm/s -> m/s
+        gps.cog_rad = ((hil_gps.cog == 65535) ? NAN : matrix::wrap_2pi(math::radians(hil_gps.cog * 1e-2f))); // cdeg -> rad
+        gps.vel_ned_valid = true;
+
+        gps.timestamp_time_relative = 0;
+        gps.time_utc_usec = hil_gps.time_usec;
+
+        gps.satellites_used = sim_gps_used;
 
         gps.heading = NAN;
         gps.heading_offset = NAN;
