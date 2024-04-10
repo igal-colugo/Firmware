@@ -39,3 +39,12 @@
  * @group Simulator
  */
 PARAM_DEFINE_INT32(SIM_GPS_USED, 10);
+
+/**
+ * simulated GPS fix type
+ *
+ * @min 0
+ * @max  50
+ * @group Simulator
+ */
+PARAM_DEFINE_INT32(SIM_GPS_FIX, 4);
