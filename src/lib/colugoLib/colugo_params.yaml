@@ -163,12 +163,3 @@ parameters:
             min: 0.0
             max: 10.0
             default: 1.0
-
-        C_DUAL_FAIL:
-            description:
-                short: 'Dual fail options'
-                long: |
-                    'default - disabled is 0.'
-            type: int32
-            default: 0
-            min: 0

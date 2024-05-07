@@ -847,6 +847,19 @@ PARAM_DEFINE_INT32(COM_GPS_HDOP, 3);
 PARAM_DEFINE_INT32(COM_GPS_TKC, 0);
 
 /**
+ * Dual (GPS and COMM) failsafe take care.
+ * @value 0 Disabled
+ * @value 1 QHover
+ * @value 2 RTL
+ * @value 3 Land
+ *
+ * @min 0
+ * @max 3
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(COM_DUAL_TKC, 0);
+
+/**
  * Next flight UUID
  *
  * This number is incremented automatically after every flight on
