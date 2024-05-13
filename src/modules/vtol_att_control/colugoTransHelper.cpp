@@ -30,6 +30,13 @@ colugoTransHelper::colugoTransHelper()
     // find left and right aileron surface
     findAileronFuncs();
 }
+
+bool colugoTransHelper::delayAfterMcReached(){
+    if(_MCstarted == 0){
+        return false;
+    }
+    return ((hrt_absolute_time() - _MCstarted) * 1e-6f) < 1.0;
+}
 //@note colugoTransHelper
 void colugoTransHelper::setColugoActuatorPos()
 {
@@ -38,12 +45,13 @@ void colugoTransHelper::setColugoActuatorPos()
     {
         res = _params_colugo._param_c_wafp;
     }
-    if (_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_LOCK_SPEED)
+    if (_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_LOCK_SPEED || delayAfterMcReached())
     {
         res = _params_colugo._param_c_wasp;
     }
     _wingLockActuatorPos = res;
 }
+
 void colugoTransHelper::lockColugoActuator()
 {
     if (fabsf(_wingLockActuatorPos - _params_colugo._param_c_wasp) > FLT_EPSILON)
@@ -76,13 +84,14 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
         break;
     case vtol_mode::PRE_TRANSITION_TO_FW:
     case vtol_mode::TRANSITION_TO_FW:
+        _MCstarted = 0;//reset
         if (fm != _currentMode)
         { // we just entered tansition...
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START;
 
-	    //make both aileorns go t same direction...
+	    //make both aileorns go the same direction...
 	        setAsElevator();
-            _startTime = tt;
+            _toFwStartTime = tt;
             break;
         }
         else
@@ -96,6 +105,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
     case vtol_mode::MC_MODE:
         //saftey measure make sure back to correct position when goes back to MC for safety reasons
         if (fm != _currentMode){
+            _MCstarted = hrt_absolute_time();
          setAsAilerons();
         }
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
@@ -108,7 +118,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
 }
 void colugoTransHelper::updateInnerStage()
 {
-    uint64_t debugDiff = (hrt_absolute_time() - _startTime);
+    uint64_t debugDiff = (hrt_absolute_time() - _toFwStartTime);
     switch (_transStage)
     {
     case COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START:
@@ -277,10 +287,10 @@ void colugoTransHelper::findAileronFuncs()
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", i);
         int32_t type;
         param_get(param_find(buffer), &type);
-        if(type == static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron)){
+        if(type == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron)){
             _ailerons_tr_colugo._leftAileronCsTypeNo = i;
         }
-        if(type == static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron)){
+        if(type == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron)){
             _ailerons_tr_colugo._rightAileronCsTypeNo = i;
         }
 

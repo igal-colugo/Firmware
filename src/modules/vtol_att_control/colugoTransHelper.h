@@ -110,8 +110,8 @@ private:
 */
 
 struct {
-		uint8_t _leftAileronCsTypeNo;
-		uint8_t _rightAileronCsTypeNo;
+		int32_t _leftAileronCsTypeNo;
+		int32_t _rightAileronCsTypeNo;
 		bool 	_reverseDuringTrans;
 	} _ailerons_tr_colugo;
         //position of the wing lock actuator - range: -1.0 ~ 1.0
@@ -119,7 +119,7 @@ struct {
     uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
     uORB::Publication<colugo_transition_s> _colugo_transition_pub{ORB_ID(colugo_transition)};
     vtol_mode _currentMode;
-    hrt_abstime _startTime, _reachedLockSpeedTime, _FarwardStageStartTime;
+    hrt_abstime _toFwStartTime = 0, _reachedLockSpeedTime = 0, _FarwardStageStartTime = 0, _MCstarted = 0;
     COLUGO_FW_VTRANS_STAGE _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
     float _airspeed;
 
@@ -129,4 +129,6 @@ struct {
     void findAileronFuncs();
     void setAsElevator();
     void setAsAilerons();
+    //returns true when we are in MC mode fol less than 1 sec
+    bool delayAfterMcReached();
 };
