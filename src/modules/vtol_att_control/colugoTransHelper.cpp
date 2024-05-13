@@ -106,7 +106,8 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
         //saftey measure make sure back to correct position when goes back to MC for safety reasons
         if (fm != _currentMode){
             _MCstarted = hrt_absolute_time();
-         setAsAilerons();
+        // setAsAilerons();
+        setAsElevator();
         }
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;
