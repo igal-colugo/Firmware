@@ -851,9 +851,9 @@ bool check_dual_fail_nav_state(vehicle_status_s &status, bool old_failsafe, orb_
 
     int32_t dual_failsafe_take_care = 0;
 
-    if (PX4_OK != param_get(param_find("C_DUAL_FAIL"), &dual_failsafe_take_care))
+    if (PX4_OK != param_get(param_find("COM_DUAL_TKC"), &dual_failsafe_take_care))
     {
-        PX4_ERR("Could not get param C_DUAL_FAIL");
+        PX4_ERR("Could not get param COM_DUAL_TKC");
         return 1;
     }
 

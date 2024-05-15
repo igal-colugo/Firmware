@@ -163,22 +163,3 @@ parameters:
             min: 0.0
             max: 10.0
             default: 1.0
-
-        C_TR_SRV_REV_NO:
-            description:
-                short: Servo No. to reverse during transition to FW.
-                long: |
-                    (should be one of the ailerons servos) 1~8 are main servos, 9~14 are AUX, 0 is disabled.
-            type: int32
-            min: 0
-            max: 16
-            default: 0
-
-        C_DUAL_FAIL:
-            description:
-                short: 'Dual fail options'
-                long: |
-                    'default - disabled is 0.'
-            type: int32
-            default: 0
-            min: 0

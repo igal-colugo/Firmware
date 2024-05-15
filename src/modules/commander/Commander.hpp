@@ -193,6 +193,7 @@ class Commander : public ModuleBase<Commander>, public ModuleParams
         (ParamFloat<px4::params::COM_POS_FS_EPH>) _param_com_pos_fs_eph, (ParamFloat<px4::params::COM_POS_FS_EPV>) _param_com_pos_fs_epv, /*Not realy used for now*/
         (ParamFloat<px4::params::COM_VEL_FS_EVH>) _param_com_vel_fs_evh, (ParamInt<px4::params::COM_GPS_SAT>) _param_com_gps_sat_min_count,
         (ParamInt<px4::params::COM_GPS_HDOP>) _param_com_gps_hdop, (ParamInt<px4::params::COM_GPS_TKC>) _param_com_gps_take_care,
+        (ParamInt<px4::params::COM_DUAL_TKC>) _param_com_dual_take_care,
 
         (ParamInt<px4::params::COM_POSCTL_NAVL>) _param_com_posctl_navl, /* failsafe response to loss of navigation accuracy */
         (ParamInt<px4::params::COM_POS_FS_DELAY>) _param_com_pos_fs_delay, (ParamInt<px4::params::COM_LOW_BAT_ACT>) _param_com_low_bat_act,

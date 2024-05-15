@@ -31,17 +31,17 @@
 #
 ############################################################################
 
-set(REAL_PWM_PARAM_PREFIX PWM_MAIN)
+set(PARAM_PREFIX PWM_MAIN)
 
 if(CONFIG_BOARD_IO)
-	set(REAL_PWM_PARAM_PREFIX PWM_AUX)
+	set(PARAM_PREFIX PWM_AUX)
 endif()
 
 px4_add_module(
 	MODULE drivers__pwm_out
 	MAIN pwm_out
 	COMPILE_FLAGS
-		-DPARAM_PREFIX="${REAL_PWM_PARAM_PREFIX}"
+		-DPARAM_PREFIX="${PARAM_PREFIX}"
 	SRCS
 		PWMOut.cpp
 		PWMOut.hpp
