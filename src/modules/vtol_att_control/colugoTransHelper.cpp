@@ -320,7 +320,7 @@ void colugoTransHelper::findAileronFuncs()
 void colugoTransHelper::setAsElevator(){
     char buffer[17];
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._leftAileronCsTypeNo);
-        int32_t val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator);
+        int32_t val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator);
         param_set(param_find(buffer), &val);
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._rightAileronCsTypeNo);
       //  val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator);
@@ -342,10 +342,10 @@ void colugoTransHelper::setAsElevator(){
 void colugoTransHelper::setAsAilerons(){
     char buffer[17];
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._leftAileronCsTypeNo);
-        int32_t val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron);
+        int32_t val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron);
         param_set(param_find(buffer), &val);
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._rightAileronCsTypeNo);
-        val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron);
+        val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron);
         param_set(param_find(buffer), &val);
     /*
     if(_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr > 8){
