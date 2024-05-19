@@ -85,13 +85,6 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_dbg_vect_for_mav.y = 5.0;
 	_dbg_vect_for_mav.z = 6.0;
 
-	//test delete later
-	//param_t la = param_find("CA_SV_CS0_TRQ_R");
-	//param_t ra = param_find("CA_SV_CS1_TRQ_R");
-	//float rTorqe = 0.5;
-	//param_set(la, &rTorqe);
-	//param_set(ra, &rTorqe);
-
 }
 
 void Standard::parameters_update()
@@ -121,9 +114,6 @@ void Standard::parameters_update()
 	_params_standard.reverse_delay = math::constrain(v, 0.0f, 10.0f);
 
 	_cth.parameters_update();
-
-
-
 }
 
 
@@ -267,7 +257,6 @@ void Standard::update_vtol_state()
 		}
 
 	}
-
 
 
 	_dbg_vect_clg.y     = mc_weight;

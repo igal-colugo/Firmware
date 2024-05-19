@@ -5,6 +5,9 @@
 #include <uORB/topics/colugo_actuator.h>
 #include <uORB/topics/colugo_transition.h>
 #include <parameters/param.h>
+#include <uORB/Subscription.hpp>
+#include <uORB/topics/vehicle_land_detected.h>
+//#include <uORB/topics/vehicle_command.h>
 
 //static const float CST_TRANSITION_VS_M_S = -2.6;
 
@@ -101,19 +104,16 @@ private:
 
 	} _params_handles_colugo;
 
-/*
-	struct {
-		uint8_t _servo_to_reverse_during_tr; //usualy ailron servo - reverse during transition - back to normal during rest of time.
-		int32_t _originalVal;
-	} _servo_tr_to_reverse_colugo;
-
-*/
-
 struct {
 		int32_t _leftAileronCsTypeNo;
 		int32_t _rightAileronCsTypeNo;
 		bool 	_reverseDuringTrans;
 	} _ailerons_tr_colugo;
+
+	// Subscribers
+	//uORB::Subscription _command_sub{ORB_ID(vehicle_command)};
+	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
+
         //position of the wing lock actuator - range: -1.0 ~ 1.0
     float _wingLockActuatorPos = COLUGO_ACTUATOR_MC_POS;
     uORB::Publication<colugo_actuator_s> _colugo_actuator_pub{ORB_ID(colugo_actuator)};
@@ -122,13 +122,28 @@ struct {
     hrt_abstime _toFwStartTime = 0, _reachedLockSpeedTime = 0, _FarwardStageStartTime = 0, _MCstarted = 0;
     COLUGO_FW_VTRANS_STAGE _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
     float _airspeed;
+    vehicle_land_detected_s _vehicle_land_detected{};
 
 	//methods
     void updateInnerStage();
+
+    /**
+ * @brief
+ * need to set ailerons positions slowly.. and gently so the wing will gradualy will go up...when we are trasnitioning to FW
+ *
+ */
     float getSlewedPosition(float startPos, float endPos);
     void findAileronFuncs();
     void setAsElevator();
     void setAsAilerons();
-    //returns true when we are in MC mode fol less than 1 sec
+    //returns true when we are in MC mode for less than 1 sec
     bool delayAfterMcReached();
+
+    /**
+ * @brief
+ * need to go to "MC" postions and functions of servos on ARM, and go back to FW postions and functions when disarmed..
+ *
+ */
+    void updateOnLAndOrTakeoff();
+
 };

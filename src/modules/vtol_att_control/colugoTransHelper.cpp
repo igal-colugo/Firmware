@@ -116,7 +116,33 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
         break;
     }
     _currentMode = fm;
+    updateOnLAndOrTakeoff();
 }
+/**
+ * @brief
+ * need to go to "MC" postions and functions of servos on ARM, and go back to FW postions and functions when disarmed..
+ *
+ */
+void colugoTransHelper::updateOnLAndOrTakeoff(){
+     /* Update land detector */
+        if (_vehicle_land_detected_sub.updated())
+        {
+            const bool was_landed = _vehicle_land_detected.landed;
+
+             _vehicle_land_detected_sub.copy(&_vehicle_land_detected);
+             //landed
+             if(!was_landed && _vehicle_land_detected.landed){
+                //we just landed - revert to FW functions
+                setAsAilerons();
+             }
+             //we are airborne read fucntions.. and - put all servos to MC state
+             else if (was_landed && !_vehicle_land_detected.landed){
+               // findAileronFuncs();
+               setAsElevator();
+             }
+        }
+}
+
 void colugoTransHelper::updateInnerStage()
 {
     uint64_t debugDiff = (hrt_absolute_time() - _toFwStartTime);
@@ -260,6 +286,11 @@ float colugoTransHelper::getColugoTransToFwSlewedFlaps()
     return res;
 }
 
+/**
+ * @brief
+ * need to set ailerons positions slowly.. and gently so the wing will gradualy will go up...when we are trasnitioning to FW
+ *
+ */
 float colugoTransHelper::getSlewedPosition(float startPos, float endPos)
 {
     float res = endPos;
@@ -283,7 +314,9 @@ float colugoTransHelper::getSlewedPosition(float startPos, float endPos)
 
 void colugoTransHelper::findAileronFuncs()
 {
-    for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i) {
+    //call only when we are on land...
+    if(_vehicle_land_detected.landed){
+        for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i) {
 		char buffer[17];
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", i);
         int32_t type;
@@ -296,6 +329,9 @@ void colugoTransHelper::findAileronFuncs()
         }
 
     }
+
+    }
+
     /*
     _servo_tr_to_reverse_colugo._servo_to_reverse_during_tr = 0;
     if(_params_colugo._param_c_tr_srv_rev_no > 0){
