@@ -314,8 +314,8 @@ float colugoTransHelper::getSlewedPosition(float startPos, float endPos)
 
 void colugoTransHelper::findAileronFuncs()
 {
-    //call only when we are on land...
-    if(_vehicle_land_detected.landed){
+    //call only when we are on land... and NOT during transition
+    if(_vehicle_land_detected.landed  && (COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE == _transStage)){
         for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i) {
 		char buffer[17];
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", i);
