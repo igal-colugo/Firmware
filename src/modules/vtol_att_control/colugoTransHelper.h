@@ -124,6 +124,10 @@ struct {
     float _airspeed;
     vehicle_land_detected_s _vehicle_land_detected{};
 
+	//this flag to mark that registered the fictions at list once
+    bool _registeredFuncs = false;
+
+
 	//methods
     void updateInnerStage();
 

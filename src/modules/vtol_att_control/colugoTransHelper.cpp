@@ -26,9 +26,6 @@ colugoTransHelper::colugoTransHelper()
     _params_handles_colugo._param_c_tr_srv_rev_no = param_find("C_TR_SRV_REV_NO");
 
     _params_handles_colugo._param_c_debug = param_find("C_DEBUG");
-
-    // find left and right aileron surface
-    findAileronFuncs();
 }
 
 bool colugoTransHelper::delayAfterMcReached(){
@@ -315,21 +312,21 @@ float colugoTransHelper::getSlewedPosition(float startPos, float endPos)
 void colugoTransHelper::findAileronFuncs()
 {
     //call only when we are on land... and NOT during transition
-    if(_vehicle_land_detected.landed  && (COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE == _transStage)){
-        for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i) {
-		char buffer[17];
-        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", i);
-        int32_t type;
-        param_get(param_find(buffer), &type);
-        if(type == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron)){
-            _ailerons_tr_colugo._leftAileronCsTypeNo = i;
-        }
-        if(type == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron)){
-            _ailerons_tr_colugo._rightAileronCsTypeNo = i;
-        }
+    if(!_registeredFuncs){
+            for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i) {
+                char buffer[17];
+                snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", i);
+                int32_t type;
+                param_get(param_find(buffer), &type);
+                if(type == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron)){
+                    _ailerons_tr_colugo._leftAileronCsTypeNo = i;
+                }
+                if(type == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron)){
+                    _ailerons_tr_colugo._rightAileronCsTypeNo = i;
+                }
 
-    }
-
+            }
+            _registeredFuncs = true;
     }
 
     /*
@@ -354,13 +351,16 @@ void colugoTransHelper::findAileronFuncs()
 }
 
 void colugoTransHelper::setAsElevator(){
-    char buffer[17];
+    if(_registeredFuncs){
+        char buffer[17];
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._leftAileronCsTypeNo);
         int32_t val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator);
         param_set(param_find(buffer), &val);
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._rightAileronCsTypeNo);
-      //  val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator);
+      //  val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::Eleהכלי אצלך?
         param_set(param_find(buffer), &val);
+    }
+
 
    /*
     int32_t newVal;
@@ -376,13 +376,17 @@ void colugoTransHelper::setAsElevator(){
     */
 }
 void colugoTransHelper::setAsAilerons(){
-    char buffer[17];
+    if(_registeredFuncs){
+        char buffer[17];
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._leftAileronCsTypeNo);
         int32_t val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron);
         param_set(param_find(buffer), &val);
         snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._rightAileronCsTypeNo);
         val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron);
         param_set(param_find(buffer), &val);
+
+    }
+
     /*
     if(_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr > 8){
         param_set(param_find("PWM_AUX_REV"), &_servo_tr_to_reverse_colugo._originalVal);
