@@ -150,6 +150,16 @@ parameters:
             min: 0.1
             max: 100.0
             default: 60.0
+            
+        C_SRV_TO_REV:
+            description:
+                short: 'servo No. to reverse during MC state'
+                long: |
+                    '0 is no servo,1 ~ 8 MAIN, 9 ~ 14 (1 ~6) AUX'
+            type: int32
+            default: 0
+            min: 0
+            max: 14
 
         C_TR_FW_SRV_SLEW:
             description:

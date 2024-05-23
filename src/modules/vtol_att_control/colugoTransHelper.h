@@ -62,8 +62,6 @@ public:
     float getColugoTransToFwSlewedPitch();
     float getColugoTransToFwSlewedFlaps();
 
-
-
 private:
 
 	struct {
@@ -81,7 +79,7 @@ private:
 		float _param_c_z_tr_spd_ms;
 		float _param_c_z_tr_time_s;
 		float _param_c_z_lck_tming;
-		int32_t _param_c_tr_srv_rev_no;
+		int32_t _param_c_srv_to_rev;
 
 	} _params_colugo;
 
@@ -101,7 +99,7 @@ private:
 		param_t _param_c_z_tr_spd_ms;
 		param_t _param_c_z_tr_time_s;
 		param_t _param_c_z_lck_tming;
-		param_t _param_c_tr_srv_rev_no;
+		param_t _param_c_srv_to_rev;
 
 	} _params_handles_colugo;
 
@@ -127,10 +125,16 @@ struct {
 
 	//this flag to mark that registered the fictions at list once
     bool _registeredFuncs = false;
+    uint16_t _bitMaskForReverseSrvInMC = 0;
+    param_t _pwmrev_param;
+    int32_t _originpwmRevVal;
 
 
 	//methods
     void updateInnerStage();
+    void updateServoToReverseDuringMC();
+    void getReverseServoBitmask();
+    void setReverseServoBitmask(int32_t val);
 
     /**
  * @brief
