@@ -534,7 +534,7 @@ void Standard::fill_actuator_outputs()
 
 		if(_cth.getColugoDebugVal() == 5){
 			//now flaps act as "reverse pitch"
-			//mc_out[actuator_controls_s::INDEX_FLAPS] = -fw_in[actuator_controls_s::INDEX_PITCH];
+			mc_out[actuator_controls_s::INDEX_FLAPS] = -fw_in[actuator_controls_s::INDEX_PITCH];
 		}
 
 		//in fw mode -we are ALWAYS LOCKED!

@@ -103,8 +103,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
         //saftey measure make sure back to correct position when goes back to MC for safety reasons
         if (fm != _currentMode){
             _MCstarted = hrt_absolute_time();
-        // setAsAilerons();
-        setAsElevator();
+            setAsElevator();
         }
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;
@@ -311,7 +310,7 @@ float colugoTransHelper::getSlewedPosition(float startPos, float endPos)
 
 void colugoTransHelper::findAileronFuncs()
 {
-    //call only when we are on land... and NOT during transition
+    //call once, before changes are made programatically
     if(!_registeredFuncs){
             for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i) {
                 char buffer[17];
