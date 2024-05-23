@@ -7,6 +7,7 @@
 #include <parameters/param.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/vehicle_land_detected.h>
+#include "control_allocator/ActuatorEffectiveness/ActuatorEffectivenessControlSurfaces.hpp"
 //#include <uORB/topics/vehicle_command.h>
 
 //static const float CST_TRANSITION_VS_M_S = -2.6;
@@ -105,10 +106,10 @@ private:
 	} _params_handles_colugo;
 
 struct {
-		int32_t _leftAileronCsTypeNo;
-		int32_t _rightAileronCsTypeNo;
-		bool 	_reverseDuringTrans;
-	} _ailerons_tr_colugo;
+		int32_t _leftAileronCsTypeNo  = -1;
+		int32_t _rightAileronCsTypeNo = -1;
+		int32_t _elevatorCsTypeNo     = -1;
+	} _flightsurfaces_tr_colugo;
 
 	// Subscribers
 	//uORB::Subscription _command_sub{ORB_ID(vehicle_command)};
@@ -137,11 +138,12 @@ struct {
  *
  */
     float getSlewedPosition(float startPos, float endPos);
-    void findAileronFuncs();
-    void setAsElevator();
-    void setAsAilerons();
+    void findAileronAndElevFuncs();
+    void setAsLeftFlap();
+    void setAsAileronsAndElevator();
     //returns true when we are in MC mode for less than 1 sec
     bool delayAfterMcReached();
+    void setSurfaceType(ActuatorEffectivenessControlSurfaces::Type srface, int32_t srvNo, char torqType[], float torqVal);
 
     /**
  * @brief

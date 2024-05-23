@@ -1,6 +1,4 @@
 #include "colugoTransHelper.h"
-
-#include "control_allocator/ActuatorEffectiveness/ActuatorEffectivenessControlSurfaces.hpp"
 #include <mathlib/math/Limits.hpp>
 
 colugoTransHelper::colugoTransHelper()
@@ -28,8 +26,10 @@ colugoTransHelper::colugoTransHelper()
     _params_handles_colugo._param_c_debug = param_find("C_DEBUG");
 }
 
-bool colugoTransHelper::delayAfterMcReached(){
-    if(_MCstarted == 0){
+bool colugoTransHelper::delayAfterMcReached()
+{
+    if (_MCstarted == 0)
+    {
         return false;
     }
     return ((hrt_absolute_time() - _MCstarted) * 1e-6f) < 1.0;
@@ -72,22 +72,23 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
     switch (fm)
     {
     case vtol_mode::FW_MODE:
-	//reset ailrons direction only once
-        if (fm != _currentMode){
-            setAsAilerons();
+        // reset ailrons direction only once
+        if (fm != _currentMode)
+        {
+            setAsAileronsAndElevator();
         }
 
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;
     case vtol_mode::PRE_TRANSITION_TO_FW:
     case vtol_mode::TRANSITION_TO_FW:
-        _MCstarted = 0;//reset
+        _MCstarted = 0; // reset
         if (fm != _currentMode)
         { // we just entered tansition...
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START;
 
-	    //make both aileorns go the same direction...
-	        setAsElevator();
+            // make both aileorns go the same direction...
+            setAsLeftFlap();
             _toFwStartTime = tt;
             break;
         }
@@ -100,10 +101,11 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;
     case vtol_mode::MC_MODE:
-        //saftey measure make sure back to correct position when goes back to MC for safety reasons
-        if (fm != _currentMode){
+        // saftey measure make sure back to correct position when goes back to MC for safety reasons
+        if (fm != _currentMode)
+        {
             _MCstarted = hrt_absolute_time();
-            setAsElevator();
+            setAsLeftFlap();
         }
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;
@@ -119,24 +121,27 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
  * need to go to "MC" postions and functions of servos on ARM, and go back to FW postions and functions when disarmed..
  *
  */
-void colugoTransHelper::updateOnLAndOrTakeoff(){
-     /* Update land detector */
-        if (_vehicle_land_detected_sub.updated())
-        {
-            const bool was_landed = _vehicle_land_detected.landed;
+void colugoTransHelper::updateOnLAndOrTakeoff()
+{
+    /* Update land detector */
+    if (_vehicle_land_detected_sub.updated())
+    {
+        const bool was_landed = _vehicle_land_detected.landed;
 
-             _vehicle_land_detected_sub.copy(&_vehicle_land_detected);
-             //landed
-             if(!was_landed && _vehicle_land_detected.landed){
-                //we just landed - revert to FW functions
-                setAsAilerons();
-             }
-             //we are airborne read fucntions.. and - put all servos to MC state
-             else if (was_landed && !_vehicle_land_detected.landed){
-               // findAileronFuncs();
-               setAsElevator();
-             }
+        _vehicle_land_detected_sub.copy(&_vehicle_land_detected);
+        // landed
+        if (!was_landed && _vehicle_land_detected.landed)
+        {
+            // we just landed - revert to FW functions
+            setAsAileronsAndElevator();
         }
+        // we are airborne read fucntions.. and - put all servos to MC state
+        else if (was_landed && !_vehicle_land_detected.landed)
+        {
+            // findAileronFuncs();
+            setAsLeftFlap();
+        }
+    }
 }
 
 void colugoTransHelper::updateInnerStage()
@@ -207,8 +212,8 @@ void colugoTransHelper::parameters_update()
 
     /*params for transition from mc to fw*/
     param_get(_params_handles_colugo._param_c_tr_srv_rev_no, &d);
-    //make sure its in correct
-    _params_colugo._param_c_tr_srv_rev_no = 0 <= d <= 16 ? d : 0;//math::constrain(d, 0, 16);
+    // make sure its in correct
+    _params_colugo._param_c_tr_srv_rev_no = 0 <= d <= 16 ? d : 0; // math::constrain(d, 0, 16);
 
     float v;
     param_get(_params_handles_colugo._param_c_wafp, &v);
@@ -250,7 +255,7 @@ void colugoTransHelper::parameters_update()
     param_get(_params_handles_colugo._param_airspeed_blend, &v);
     _params_colugo._param_airspeed_blend = math::constrain(v, 0.0f, 100.0f);
     /////////////////////////
-    findAileronFuncs();
+    findAileronAndElevFuncs();
 }
 
 float colugoTransHelper::getColugoTransToFwSlewedPitch()
@@ -308,91 +313,89 @@ float colugoTransHelper::getSlewedPosition(float startPos, float endPos)
     return res;
 }
 
-void colugoTransHelper::findAileronFuncs()
+void colugoTransHelper::findAileronAndElevFuncs()
 {
-    //call once, before changes are made programatically
-    if(!_registeredFuncs){
-            for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i) {
-                char buffer[17];
-                snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", i);
-                int32_t type;
-                param_get(param_find(buffer), &type);
-                if(type == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron)){
-                    _ailerons_tr_colugo._leftAileronCsTypeNo = i;
+    // call once, before changes are made programatically
+    if (!_registeredFuncs)
+    {
+        char buffer[17];
+        int32_t ctrlType;
+        for (int i = 0; i < ActuatorEffectivenessControlSurfaces::MAX_COUNT; ++i)
+        {
+            snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", i);
+            param_get(param_find(buffer), &ctrlType);
+
+            if (ctrlType == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron))
+            {
+                // take only the first one...
+                if (_flightsurfaces_tr_colugo._leftAileronCsTypeNo < 0)
+                {
+                    _flightsurfaces_tr_colugo._leftAileronCsTypeNo = i;
                 }
-                if(type == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron)){
-                    _ailerons_tr_colugo._rightAileronCsTypeNo = i;
+            }
+            if (ctrlType == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron))
+            {
+                if (_flightsurfaces_tr_colugo._rightAileronCsTypeNo)
+                {
+                    _flightsurfaces_tr_colugo._rightAileronCsTypeNo = i;
                 }
+            }
+            if (ctrlType == static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator))
+            {
+                if (_flightsurfaces_tr_colugo._elevatorCsTypeNo)
+                {
+                    _flightsurfaces_tr_colugo._elevatorCsTypeNo = i;
+                }
+            }
+        }
+        _registeredFuncs = true;
+    }
+}
+
+void colugoTransHelper::setAsLeftFlap()
+{
+    if (_registeredFuncs)
+    {
+        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftFlaps, _flightsurfaces_tr_colugo._leftAileronCsTypeNo, "R", 0.0f);
+        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftFlaps, _flightsurfaces_tr_colugo._rightAileronCsTypeNo, "R", 0.0f);
+        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftFlaps, _flightsurfaces_tr_colugo._elevatorCsTypeNo, "P", 0.0f);
+        //int32_t lFlapFuncNo = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftFlaps);
+       // char buffer[17];
+       // snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _flightsurfaces_tr_colugo._leftAileronCsTypeNo);
+       // param_set(param_find(buffer), &lFlapFuncNo);
+
+      //  snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _flightsurfaces_tr_colugo._rightAileronCsTypeNo);
+      //  param_set(param_find(buffer), &lFlapFuncNo);
+
+      //  snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _flightsurfaces_tr_colugo._elevatorCsTypeNo);
+      //  param_set(param_find(buffer), &lFlapFuncNo);
+    }
+}
+void colugoTransHelper::setAsAileronsAndElevator()
+{
+    if (_registeredFuncs)
+    {
+        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftAileron, _flightsurfaces_tr_colugo._leftAileronCsTypeNo, "R", -0.5f);
+        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::RightAileron, _flightsurfaces_tr_colugo._rightAileronCsTypeNo, "R", 0.5f);
+        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::Elevator, _flightsurfaces_tr_colugo._elevatorCsTypeNo, "P", 1.0f);
+    }
+}
+
+ void colugoTransHelper::setSurfaceType(ActuatorEffectivenessControlSurfaces::Type srface, int32_t srvNo, char torqType[], float torqVal){
+        int32_t iSurface = static_cast<int32_t>(srface);
+        if (srvNo >= 0){
+            char buffer[22];
+            snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", srvNo);
+
+            int32_t iCurrVal;
+            param_get(param_find(buffer), &iCurrVal);
+
+            //update only if needed...
+            if(iCurrVal != iSurface){
+                param_set(param_find(buffer), &iSurface);
+                snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TRQ_%s", srvNo, torqType);
+                param_set(param_find(buffer), &torqVal);
 
             }
-            _registeredFuncs = true;
-    }
-
-    /*
-    _servo_tr_to_reverse_colugo._servo_to_reverse_during_tr = 0;
-    if(_params_colugo._param_c_tr_srv_rev_no > 0){
-        _servo_tr_to_reverse_colugo._servo_to_reverse_during_tr = _params_colugo._param_c_tr_srv_rev_no;
-        //this mneans its an AUX servo... 9~14 (16 in cube+)
-        if(_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr > 8){
-            param_get(param_find("PWM_AUX_REV"), &_servo_tr_to_reverse_colugo._originalVal);
-          //  _servo_tr_to_reverse_colugo._originalVal = reverseMask;
-
-        }
-        //this means its main servo 1~8
-        else{
-          //  bitNo = bitNo << (_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr - 1);
-            param_get(param_find("PWM_MAIN_REV"), &_servo_tr_to_reverse_colugo._originalVal);
-         //   _servo_tr_to_reverse_colugo._originalVal = (reverseMask  & bitNo);
         }
     }
-    */
-
-}
-
-void colugoTransHelper::setAsElevator(){
-    if(_registeredFuncs){
-        char buffer[17];
-        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._leftAileronCsTypeNo);
-        int32_t val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::Elevator);
-        param_set(param_find(buffer), &val);
-        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._rightAileronCsTypeNo);
-      //  val = static_cast<uint8_t>(ActuatorEffectivenessControlSurfaces::Type::Eleהכלי אצלך?
-        param_set(param_find(buffer), &val);
-    }
-
-
-   /*
-    int32_t newVal;
-    if(_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr > 8){
-        newVal = _servo_tr_to_reverse_colugo._originalVal ^ (1 << (_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr - 9));
-        param_set(param_find("PWM_AUX_REV"), &newVal);
-
-    }
-    else{
-        newVal = _servo_tr_to_reverse_colugo._originalVal ^ (1 << (_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr - 1));
-        param_set(param_find("PWM_MAIN_REV"), &newVal);
-    }
-    */
-}
-void colugoTransHelper::setAsAilerons(){
-    if(_registeredFuncs){
-        char buffer[17];
-        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._leftAileronCsTypeNo);
-        int32_t val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::LeftAileron);
-        param_set(param_find(buffer), &val);
-        snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", _ailerons_tr_colugo._rightAileronCsTypeNo);
-        val = static_cast<int32_t>(ActuatorEffectivenessControlSurfaces::Type::RightAileron);
-        param_set(param_find(buffer), &val);
-
-    }
-
-    /*
-    if(_servo_tr_to_reverse_colugo._servo_to_reverse_during_tr > 8){
-        param_set(param_find("PWM_AUX_REV"), &_servo_tr_to_reverse_colugo._originalVal);
-    }
-    else{
-        param_set(param_find("PWM_MAIN_REV"), &_servo_tr_to_reverse_colugo._originalVal);
-
-    }
-    */
-}
