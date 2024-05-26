@@ -21,7 +21,7 @@ colugoTransHelper::colugoTransHelper()
     _params_handles_colugo._param_c_z_tr_time_s = param_find("C_Z_TR_TIME_S");
     _params_handles_colugo._param_c_z_lck_tming = param_find("C_Z_LCK_TMING");
 
-    _params_handles_colugo._param_c_srv_to_rev = param_find("C_SRV_TO_REV");
+    _params_handles_colugo._param_c_srv_rev_bm = param_find("C_SRV_REV_BM");
 
     _params_handles_colugo._param_c_debug = param_find("C_DEBUG");
 }
@@ -88,7 +88,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode fm, 
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START;
 
             // make both aileorns go the same direction...
-           // setAsLeftFlap();
+            // setAsLeftFlap();
             _toFwStartTime = tt;
             break;
         }
@@ -211,10 +211,10 @@ void colugoTransHelper::parameters_update()
     _params_colugo._param_c_debug = d;
 
     /*params for transition from mc to fw*/
-    param_get(_params_handles_colugo._param_c_srv_to_rev, &d);
+    param_get(_params_handles_colugo._param_c_srv_rev_bm, &d);
     // make sure its in correct
-    _params_colugo._param_c_srv_to_rev = 0 <= d <= 14 ? d : 0; // math::constrain(d, 0, 16);
-    updateServoToReverseDuringMC();
+    _params_colugo._param_c_srv_rev_bm = 0 <= d <= 16383 ? d : 0; // math::constrain(d, 0, 16);
+
     float v;
     param_get(_params_handles_colugo._param_c_wafp, &v);
     _params_colugo._param_c_wafp = math::constrain(v, -1.0f, 1.0f);
@@ -258,10 +258,10 @@ void colugoTransHelper::parameters_update()
     findAileronAndElevFuncs();
 }
 
-void colugoTransHelper::updateServoToReverseDuringMC(){
-     uint16_t itoShL = _params_colugo._param_c_srv_to_rev <= 8 ? _params_colugo._param_c_srv_to_rev : _params_colugo._param_c_srv_to_rev - 8;
-
-    _bitMaskForReverseSrvInMC = _params_colugo._param_c_srv_to_rev == 0 ? 0 : 1 << (itoShL - 1);
+void colugoTransHelper::registerServoToReverseDuringMC()
+{
+    _bitMaskForReverseMainSrvInMC = _params_colugo._param_c_srv_rev_bm & 0xFF;       // take 8 LSB
+    _bitMaskForReverseAuxSrvInMC = (_params_colugo._param_c_srv_rev_bm >> 8) & 0xFF; // take 6 MSB
 }
 
 float colugoTransHelper::getColugoTransToFwSlewedPitch()
@@ -355,8 +355,8 @@ void colugoTransHelper::findAileronAndElevFuncs()
             }
         }
 
-        //get servo reverse bit mask
-        getReverseServoBitmask();
+        registerServoToReverseDuringMC();
+        getOriginalRevServoBitmasks();
 
         _registeredFuncs = true;
     }
@@ -369,68 +369,105 @@ void colugoTransHelper::setAsLeftFlap()
         setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftFlaps, _flightsurfaces_tr_colugo._leftAileronCsTypeNo, "R", 0.0f);
         setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftFlaps, _flightsurfaces_tr_colugo._rightAileronCsTypeNo, "R", 0.0f);
         setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftFlaps, _flightsurfaces_tr_colugo._elevatorCsTypeNo, "P", 0.0f);
-        uint32_t val = _originpwmRevVal ^ _bitMaskForReverseSrvInMC;
-        setReverseServoBitmask(val);
+        setServoBitmaskToMC();
     }
 }
 
-void colugoTransHelper::setReverseServoBitmask(int32_t val){
-    if(_params_colugo._param_c_srv_to_rev > 0){
-        if(_pwmrev_param != PARAM_INVALID){
-            int32_t curval;
-            param_get(_pwmrev_param, &curval);
-            if(curval != val){
-                param_set(_pwmrev_param, &val);
+void colugoTransHelper::setServoBitmaskToMC()
+{
+    if (_params_colugo._param_c_srv_rev_bm > 0)
+    {
+        setParamValue(_param_pwm_main_rev, _bitMaskForReverseMainSrvInMC);
+        setParamValue(_param_pwm_aux_rev, _bitMaskForReverseAuxSrvInMC);
+    }
+    /*
+    if(_params_colugo._param_c_srv_rev_bm > 0){
+        int32_t curval;
+        if(_param_pwm_main_rev != PARAM_INVALID){
+            param_get(_param_pwm_main_rev, &curval);
+            if(curval != _bitMaskForReverseMainSrvInMC){
+                param_set(_param_pwm_main_rev, &_bitMaskForReverseMainSrvInMC);
+            }
+        }
+        if(_param_pwm_aux_rev != PARAM_INVALID){
+            param_get(_param_pwm_aux_rev, &curval);
+            if(curval != _bitMaskForReverseAuxSrvInMC){
+                param_set(_param_pwm_aux_rev, &_bitMaskForReverseAuxSrvInMC);
+            }
+        }
+
+    }*/
+}
+
+void colugoTransHelper::resetServoBitmasks(){
+    if (_params_colugo._param_c_srv_rev_bm > 0)
+    {
+        setParamValue(_param_pwm_main_rev, _originpwmMainRevVal);
+        setParamValue(_param_pwm_aux_rev, _originpwmAuxRevVal);
+    }
+}
+
+void colugoTransHelper::setParamValue(param_t prm, int32_t val)
+{
+    int32_t curval;
+    if (prm != PARAM_INVALID)
+    {
+        param_get(prm, &curval);
+        if (curval != val)
+        {
+            param_set(prm, &val);
+        }
+    }
+}
+
+    void colugoTransHelper::getOriginalRevServoBitmasks()
+    {
+        if (_params_colugo._param_c_srv_rev_bm > 0)
+        {
+            char sPrm[14];
+            snprintf(sPrm, sizeof(sPrm), "PWM_MAIN_REV");
+            _param_pwm_main_rev = param_find(sPrm);
+            if (_param_pwm_main_rev != PARAM_INVALID)
+            {
+                param_get(_param_pwm_main_rev, &_originpwmMainRevVal);
+            }
+            snprintf(sPrm, sizeof(sPrm), "PWM_AUX_REV");
+            _param_pwm_aux_rev = param_find(sPrm);
+            if (_param_pwm_aux_rev != PARAM_INVALID)
+            {
+                param_get(_param_pwm_aux_rev, &_originpwmAuxRevVal);
             }
         }
     }
-}
 
-void colugoTransHelper::getReverseServoBitmask(){
-    if(_params_colugo._param_c_srv_to_rev > 0){
-        char sPrm[14];
-        snprintf(sPrm, sizeof(sPrm), "PWM_MAIN_REV");
-        if(_params_colugo._param_c_srv_to_rev > 8)
-            snprintf(sPrm, sizeof(sPrm), "PWM_AUX_REV");
-
-        _pwmrev_param = param_find(sPrm);
-        if(_pwmrev_param != PARAM_INVALID){
-            param_get(_pwmrev_param, &_originpwmRevVal);
-            //pwmRev = pwmRev ^ _bitMaskForReverseSrvInMC;
-            //param_set(prm, &pwmRev);
+    void colugoTransHelper::setAsAileronsAndElevator()
+    {
+        if (_registeredFuncs)
+        {
+            setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftAileron, _flightsurfaces_tr_colugo._leftAileronCsTypeNo, "R", -0.5f);
+            setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::RightAileron, _flightsurfaces_tr_colugo._rightAileronCsTypeNo, "R", 0.5f);
+            setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::Elevator, _flightsurfaces_tr_colugo._elevatorCsTypeNo, "P", 1.0f);
+            resetServoBitmasks();
         }
     }
-}
 
-
-void colugoTransHelper::setAsAileronsAndElevator()
-{
-    if (_registeredFuncs)
+    void colugoTransHelper::setSurfaceType(ActuatorEffectivenessControlSurfaces::Type srface, int32_t srvNo, char torqType[], float torqVal)
     {
-        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::LeftAileron, _flightsurfaces_tr_colugo._leftAileronCsTypeNo, "R", -0.5f);
-        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::RightAileron, _flightsurfaces_tr_colugo._rightAileronCsTypeNo, "R", 0.5f);
-        setSurfaceType(ActuatorEffectivenessControlSurfaces::Type::Elevator, _flightsurfaces_tr_colugo._elevatorCsTypeNo, "P", 1.0f);
-        setReverseServoBitmask(_originpwmRevVal);
-    }
-}
-
-
-
- void colugoTransHelper::setSurfaceType(ActuatorEffectivenessControlSurfaces::Type srface, int32_t srvNo, char torqType[], float torqVal){
         int32_t iSurface = static_cast<int32_t>(srface);
-        if (srvNo >= 0){
+        if (srvNo >= 0)
+        {
             char buffer[22];
             snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TYPE", srvNo);
 
             int32_t iCurrVal;
             param_get(param_find(buffer), &iCurrVal);
 
-            //update only if needed...
-            if(iCurrVal != iSurface){
+            // update only if needed...
+            if (iCurrVal != iSurface)
+            {
                 param_set(param_find(buffer), &iSurface);
                 snprintf(buffer, sizeof(buffer), "CA_SV_CS%u_TRQ_%s", srvNo, torqType);
                 param_set(param_find(buffer), &torqVal);
-
             }
         }
     }

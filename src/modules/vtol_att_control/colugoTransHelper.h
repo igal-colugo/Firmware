@@ -79,7 +79,7 @@ private:
 		float _param_c_z_tr_spd_ms;
 		float _param_c_z_tr_time_s;
 		float _param_c_z_lck_tming;
-		int32_t _param_c_srv_to_rev;
+		int32_t _param_c_srv_rev_bm;
 
 	} _params_colugo;
 
@@ -99,7 +99,7 @@ private:
 		param_t _param_c_z_tr_spd_ms;
 		param_t _param_c_z_tr_time_s;
 		param_t _param_c_z_lck_tming;
-		param_t _param_c_srv_to_rev;
+		param_t _param_c_srv_rev_bm;
 
 	} _params_handles_colugo;
 
@@ -123,18 +123,25 @@ struct {
     float _airspeed;
     vehicle_land_detected_s _vehicle_land_detected{};
 
-	//this flag to mark that registered the fictions at list once
+	//this flag to mark that registered the fuctions at list once
     bool _registeredFuncs = false;
-    uint16_t _bitMaskForReverseSrvInMC = 0;
-    param_t _pwmrev_param;
-    int32_t _originpwmRevVal;
+    int32_t _bitMaskForReverseMainSrvInMC = 0;
+    int32_t _bitMaskForReverseAuxSrvInMC  = 0;
+
+    param_t _param_pwm_main_rev;
+    int32_t _originpwmMainRevVal;
+
+    param_t _param_pwm_aux_rev;
+    int32_t _originpwmAuxRevVal;
 
 
 	//methods
     void updateInnerStage();
-    void updateServoToReverseDuringMC();
-    void getReverseServoBitmask();
-    void setReverseServoBitmask(int32_t val);
+    void registerServoToReverseDuringMC();
+    void getOriginalRevServoBitmasks();
+    void setServoBitmaskToMC();
+    void resetServoBitmasks();
+    void setParamValue(param_t prm, int32_t val);
 
     /**
  * @brief
