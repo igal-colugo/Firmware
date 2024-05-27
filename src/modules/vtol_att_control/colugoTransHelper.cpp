@@ -261,7 +261,7 @@ void colugoTransHelper::parameters_update()
 void colugoTransHelper::registerServoToReverseDuringMC()
 {
     _bitMaskForReverseMainSrvInMC = _params_colugo._param_c_srv_rev_bm & 0xFF;       // take 8 LSB
-    _bitMaskForReverseAuxSrvInMC = (_params_colugo._param_c_srv_rev_bm >> 8) & 0xFF; // take 6 MSB
+    _bitMaskForReverseAuxSrvInMC  = (_params_colugo._param_c_srv_rev_bm >> 8) & 0xFF; // take 6 MSB
 }
 
 float colugoTransHelper::getColugoTransToFwSlewedPitch()
@@ -380,23 +380,6 @@ void colugoTransHelper::setServoBitmaskToMC()
         setParamValue(_param_pwm_main_rev, _bitMaskForReverseMainSrvInMC);
         setParamValue(_param_pwm_aux_rev, _bitMaskForReverseAuxSrvInMC);
     }
-    /*
-    if(_params_colugo._param_c_srv_rev_bm > 0){
-        int32_t curval;
-        if(_param_pwm_main_rev != PARAM_INVALID){
-            param_get(_param_pwm_main_rev, &curval);
-            if(curval != _bitMaskForReverseMainSrvInMC){
-                param_set(_param_pwm_main_rev, &_bitMaskForReverseMainSrvInMC);
-            }
-        }
-        if(_param_pwm_aux_rev != PARAM_INVALID){
-            param_get(_param_pwm_aux_rev, &curval);
-            if(curval != _bitMaskForReverseAuxSrvInMC){
-                param_set(_param_pwm_aux_rev, &_bitMaskForReverseAuxSrvInMC);
-            }
-        }
-
-    }*/
 }
 
 void colugoTransHelper::resetServoBitmasks(){
