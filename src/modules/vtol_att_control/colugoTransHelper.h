@@ -80,6 +80,9 @@ private:
 		float _param_c_z_tr_time_s;
 		float _param_c_z_lck_tming;
 		int32_t _param_c_srv_rev_bm;
+		int32_t _param_c_ailr_srv_fw;
+		int32_t _param_c_aill_srv_fw;
+		int32_t _param_c_elv_srv_fw;
 
 	} _params_colugo;
 
@@ -100,15 +103,19 @@ private:
 		param_t _param_c_z_tr_time_s;
 		param_t _param_c_z_lck_tming;
 		param_t _param_c_srv_rev_bm;
+		param_t _param_c_ailr_srv_fw;
+		param_t _param_c_aill_srv_fw;
+		param_t _param_c_elv_srv_fw;
 
 	} _params_handles_colugo;
 
+/*
 struct {
 		int32_t _leftAileronCsTypeNo  = -1;
 		int32_t _rightAileronCsTypeNo = -1;
 		int32_t _elevatorCsTypeNo     = -1;
 	} _flightsurfaces_tr_colugo;
-
+*/
 	// Subscribers
 	//uORB::Subscription _command_sub{ORB_ID(vehicle_command)};
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
@@ -138,7 +145,7 @@ struct {
 	//methods
     void updateInnerStage();
     void registerServoToReverseDuringMC();
-    void getOriginalRevServoBitmasks();
+    void registerOriginalRevServoBitmasks();
     void setServoBitmaskToMC();
     void resetServoBitmasks();
     void setParamValue(param_t prm, int32_t val);
@@ -149,7 +156,7 @@ struct {
  *
  */
     float getSlewedPosition(float startPos, float endPos);
-    void findAileronAndElevFuncs();
+    void registerAileronAndElevFuncs();
     void setAsLeftFlap();
     void setAsAileronsAndElevator();
     //returns true when we are in MC mode for less than 1 sec
@@ -161,6 +168,6 @@ struct {
  * need to go to "MC" postions and functions of servos on ARM, and go back to FW postions and functions when disarmed..
  *
  */
-    void updateOnLAndOrTakeoff();
+    void updateOnTakeoff();
 
 };

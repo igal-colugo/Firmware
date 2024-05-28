@@ -88,8 +88,8 @@ param set-default VT_F_TRANS_DUR 12.0
 param set-default C_DEBUG 5
 param set-default C_PI_FP 0.1
 param set-default C_PI_SP 0.2
-param set-default C_FL_FP 0.8
-param set-default C_FL_SP -0.8
+param set-default C_FL_FP 0.01
+param set-default C_FL_SP -0.01
 param set-default C_WAFP -0.8
 param set-default C_WASP 0.8
 param set-default FW_FLAPS_TO_SCL 0.5
