@@ -3,6 +3,6 @@ pkill gz
 pkill gzclient
 pkill gzserver
 pkill gazebo
-pkill Colugo px4
+pkill px4
 echo "Exit script"
 exit 0
