@@ -454,6 +454,7 @@ void Standard::fill_actuator_outputs()
 		if(_cth.getColugoDebugVal() == 5){
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
 			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
+			fw_out[actuator_controls_s::INDEX_ROLL]  = _cth.getColugoPiMcPos();
 		}
 
 		_cth.setColugoActuatorPos();//unlocked in MC mode ONLY!
@@ -469,7 +470,7 @@ void Standard::fill_actuator_outputs()
 			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
 
 			//during trasition both ailerons work similar to pitch or flaps (same direction...)
-			fw_out[actuator_controls_s::INDEX_ROLL]     = _cth.getColugoTransToFwSlewedFlaps();0;//fw_in[actuator_controls_s::INDEX_ROLL];
+			fw_out[actuator_controls_s::INDEX_ROLL]     = _cth.getColugoTransToFwSlewedPitch();0;//fw_in[actuator_controls_s::INDEX_ROLL];
 			fw_out[actuator_controls_s::INDEX_PITCH]    = _cth.getColugoTransToFwSlewedPitch();
 			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE] = _cth.getPusherThr(_pusher_throttle);
@@ -477,12 +478,8 @@ void Standard::fill_actuator_outputs()
 			mc_out[actuator_controls_s::INDEX_FLAPS]    = _cth.getColugoTransToFwSlewedFlaps();
 			_cth.setColugoActuatorPos();
 			break;
-
 		}
-
-
 		else{}// - just fallthrough
-
 	}
 
 	// FALLTHROUGH
@@ -505,6 +502,7 @@ void Standard::fill_actuator_outputs()
 		if(_cth.getColugoDebugVal() == 5){
 			mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
 			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
+			fw_out[actuator_controls_s::INDEX_ROLL] = _cth.getColugoPiMcPos();
 			//in fw mode -we are ALWAYS LOCKED!
 			_cth.lockColugoActuator();//locked - until fully mc mode...
 		}

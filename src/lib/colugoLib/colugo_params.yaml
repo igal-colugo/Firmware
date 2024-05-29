@@ -160,36 +160,6 @@ parameters:
             default: 0
             min: 0
             max: 16383
-       
-        C_AILR_SRV_FW:
-            description:
-                short: 'Aileron Right Servo No. for FW'
-                long: |
-                    '-1 is no servo,1 ~ 8 MAIN, 9(1) ~ 14(6)AUX'
-            type: int32
-            default: -1
-            min: -1
-            max: 14
-        
-        C_AILL_SRV_FW:
-            description:
-                short: 'Aileron Left Servo No. for FW'
-                long: |
-                    '-1 is no servo,1 ~ 8 MAIN, 9(1) ~ 14(6)AUX'
-            type: int32
-            default: -1
-            min: -1
-            max: 14
-        
-        C_ELV_SRV_FW:
-            description:
-                short: 'Elevator Servo No. for FW'
-                long: |
-                    '-1 is no servo,1 ~ 8 MAIN, 9(1) ~ 14(6)AUX'
-            type: int32
-            default: -1
-            min: -1
-            max: 14
             
         C_TR_FW_SRV_SLEW:
             description:

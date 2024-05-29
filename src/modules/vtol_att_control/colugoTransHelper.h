@@ -36,7 +36,7 @@ public:
 		TRANSITION_TO_FW,
 		TRANSITION_TO_MC,
 		FW_MODE,
-		PRE_TRANSITION_TO_FW
+		PRE_TRANSITION_TO_FW //lift before starting farward movmenat
 
 	};
 
@@ -80,10 +80,6 @@ private:
 		float _param_c_z_tr_time_s;
 		float _param_c_z_lck_tming;
 		int32_t _param_c_srv_rev_bm;
-		int32_t _param_c_ailr_srv_fw;
-		int32_t _param_c_aill_srv_fw;
-		int32_t _param_c_elv_srv_fw;
-
 	} _params_colugo;
 
 
@@ -103,10 +99,6 @@ private:
 		param_t _param_c_z_tr_time_s;
 		param_t _param_c_z_lck_tming;
 		param_t _param_c_srv_rev_bm;
-		param_t _param_c_ailr_srv_fw;
-		param_t _param_c_aill_srv_fw;
-		param_t _param_c_elv_srv_fw;
-
 	} _params_handles_colugo;
 
 /*
@@ -143,12 +135,6 @@ struct {
 
 
 	//methods
-    void updateInnerStage();
-    void registerServoToReverseDuringMC();
-    void registerOriginalRevServoBitmasks();
-    void setServoBitmaskToMC();
-    void resetServoBitmasks();
-    void setParamValue(param_t prm, int32_t val);
 
     /**
  * @brief
@@ -156,18 +142,26 @@ struct {
  *
  */
     float getSlewedPosition(float startPos, float endPos);
-    void registerAileronAndElevFuncs();
-    void setAsLeftFlap();
-    void setAsAileronsAndElevator();
+    void updateInnerStage();
+    void registerServoToReverseDuringMC();
+    void registerOriginalRevServoBitmasks();
+    void setAileronsServoBitmaskToMC();
+    void resetAileronServoBitmasks();
+    void setParamValue(param_t prm, int32_t val);
+
+
+ //   void registerAileronAndElevFuncs();
+  //  void setAsElevator();
+//    void setAsAileronsAndElevator();
     //returns true when we are in MC mode for less than 1 sec
     bool delayAfterMcReached();
-    void setSurfaceType(ActuatorEffectivenessControlSurfaces::Type srface, int32_t srvNo, char torqType[], float torqVal);
+  //  void setSurfaceType(ActuatorEffectivenessControlSurfaces::Type srface, int32_t srvNo, char torqType[], float torqVal);
 
     /**
  * @brief
  * need to go to "MC" postions and functions of servos on ARM, and go back to FW postions and functions when disarmed..
  *
  */
-    void updateOnTakeoff();
+    void updateOnTakeoffAndLand();
 
 };
