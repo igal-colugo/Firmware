@@ -122,6 +122,7 @@ public:
 
 	bool is_fixed_wing_requested() { return _transition_command == vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW; };
 	void quadchute(QuadchuteReason reason);
+	void acknowledgeCommand(uint32_t cmd, uint8_t rslt, uint8_t src_sys, uint8_t src_cmpnnt);
 	int get_transition_command() {return _transition_command;}
 	bool get_immediate_transition() {return _immediate_transition;}
 	void reset_immediate_transition() {_immediate_transition = false;}

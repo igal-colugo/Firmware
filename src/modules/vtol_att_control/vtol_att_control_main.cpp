@@ -214,18 +214,49 @@ void VtolAttitudeControl::vehicle_cmd_poll()
 
             if (vehicle_command.from_external)
             {
-                vehicle_command_ack_s command_ack{};
-                command_ack.timestamp = hrt_absolute_time();
-                command_ack.command = vehicle_command.command;
-                command_ack.result = result;
-                command_ack.target_system = vehicle_command.source_system;
-                command_ack.target_component = vehicle_command.source_component;
+                acknowledgeCommand(vehicle_command.command, result, vehicle_command.source_system, vehicle_command.source_component);
+            }
+        }
 
-                uORB::Publication<vehicle_command_ack_s> command_ack_pub{ORB_ID(vehicle_command_ack)};
-                command_ack_pub.publish(command_ack);
+        else if (vehicle_command.command == vehicle_command_s::VEHICLE_CMD_INJECT_FAILURE)
+        {
+            const int failure_unit = static_cast<int>(vehicle_command.param1 + 0.5f);
+            const int failure_type = static_cast<int>(vehicle_command.param2 + 0.5f);
+            if (failure_unit == vehicle_command_s::FAILURE_UNIT_SYSTEM_VTOL)
+            {
+                bool supported = false;
+
+                if (failure_type == vehicle_command_s::FAILURE_TYPE_WRONG)
+                {
+                    PX4_WARN("CMD_INJECT_FAILURE, VTOL fail");
+                    quadchute(QuadchuteReason::ExternalCommand);
+                    supported = true;
+
+                }
+                else if (failure_type == vehicle_command_s::FAILURE_TYPE_OK)
+                {
+                    PX4_INFO("CMD_INJECT_FAILURE, VTOL ok");
+                    _vtol_vehicle_status.vtol_transition_failsafe = false;
+                    supported = true;
+
+                }
+
+                acknowledgeCommand(vehicle_command.command, supported, vehicle_command.source_system, vehicle_command.source_component);
             }
         }
     }
+}
+void VtolAttitudeControl::acknowledgeCommand(uint32_t cmd, uint8_t rslt, uint8_t src_sys, uint8_t src_cmpnnt)
+{
+    vehicle_command_ack_s command_ack{};
+    command_ack.timestamp = hrt_absolute_time();
+    command_ack.command = cmd;
+    command_ack.result = rslt;
+    command_ack.target_system = src_sys;
+    command_ack.target_component = src_cmpnnt;
+
+    uORB::Publication<vehicle_command_ack_s> command_ack_pub{ORB_ID(vehicle_command_ack)};
+    command_ack_pub.publish(command_ack);
 }
 
 void VtolAttitudeControl::quadchute(QuadchuteReason reason)
@@ -434,7 +465,6 @@ void VtolAttitudeControl::Run()
 
     // run on actuator publications corresponding to VTOL mode
     bool should_run = false;
-
 
     switch (_vtol_type->get_mode())
     {
