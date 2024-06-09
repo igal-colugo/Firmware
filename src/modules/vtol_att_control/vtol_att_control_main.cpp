@@ -224,20 +224,20 @@ void VtolAttitudeControl::vehicle_cmd_poll()
             const int failure_type = static_cast<int>(vehicle_command.param2 + 0.5f);
             if (failure_unit == vehicle_command_s::FAILURE_UNIT_SYSTEM_VTOL)
             {
-                bool supported = false;
+                uint8_t supported = vehicle_command_ack_s::VEHICLE_RESULT_UNSUPPORTED;
 
                 if (failure_type == vehicle_command_s::FAILURE_TYPE_WRONG)
                 {
                     PX4_WARN("CMD_INJECT_FAILURE, VTOL fail");
                     quadchute(QuadchuteReason::ExternalCommand);
-                    supported = true;
+                    supported = vehicle_command_ack_s::VEHICLE_RESULT_ACCEPTED;
 
                 }
                 else if (failure_type == vehicle_command_s::FAILURE_TYPE_OK)
                 {
                     PX4_INFO("CMD_INJECT_FAILURE, VTOL ok");
                     _vtol_vehicle_status.vtol_transition_failsafe = false;
-                    supported = true;
+                    supported = vehicle_command_ack_s::VEHICLE_RESULT_ACCEPTED;
 
                 }
 
