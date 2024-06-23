@@ -37,6 +37,8 @@ functions:
     # Add your own here:
     #MyCustomFunction: 10000
     Colugo_Actuator: 11000
+    Lights: 11001
+    Strobe: 11002
 
   pwm_fmu: # These only exist on FMU PWM pins
     Camera_Trigger:
