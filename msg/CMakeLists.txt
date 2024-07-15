@@ -108,6 +108,7 @@ set(msg_files
 	landing_target_innovations.msg
 	landing_target_pose.msg
 	led_control.msg
+	lights.msg
 	log_message.msg
 	logger_status.msg
 	mag_worker_data.msg
@@ -161,6 +162,7 @@ set(msg_files
 	sensor_selection.msg
 	sensors_status_imu.msg
 	sensors_status.msg
+	strobe.msg
 	system_power.msg
 	takeoff_status.msg
 	task_stack_info.msg

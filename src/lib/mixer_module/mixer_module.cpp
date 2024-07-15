@@ -54,17 +54,19 @@ struct FunctionProvider {
 };
 
 static const FunctionProvider all_function_providers[] = {
-	// Providers higher up take precedence for subscription callback in case there are multiple
-	{OutputFunction::Constant_Min, &FunctionConstantMin::allocate},
-	{OutputFunction::Constant_Max, &FunctionConstantMax::allocate},
-	{OutputFunction::Motor1, OutputFunction::MotorMax, &FunctionMotors::allocate},
-	{OutputFunction::Servo1, OutputFunction::ServoMax, &FunctionServos::allocate},
-	{OutputFunction::Offboard_Actuator_Set1, OutputFunction::Offboard_Actuator_Set6, &FunctionActuatorSet::allocate},
-	{OutputFunction::Landing_Gear, &FunctionLandingGear::allocate},
-    	{OutputFunction::Colugo_Actuator, &FunctionColugoActuator::allocate},
-	{OutputFunction::Parachute, &FunctionParachute::allocate},
-	{OutputFunction::RC_Roll, OutputFunction::RC_AUXMax, &FunctionManualRC::allocate},
-	{OutputFunction::Gimbal_Roll, OutputFunction::Gimbal_Yaw, &FunctionGimbal::allocate},
+    // Providers higher up take precedence for subscription callback in case there are multiple
+    {OutputFunction::Constant_Min, &FunctionConstantMin::allocate},
+    {OutputFunction::Constant_Max, &FunctionConstantMax::allocate},
+    {OutputFunction::Motor1, OutputFunction::MotorMax, &FunctionMotors::allocate},
+    {OutputFunction::Servo1, OutputFunction::ServoMax, &FunctionServos::allocate},
+    {OutputFunction::Offboard_Actuator_Set1, OutputFunction::Offboard_Actuator_Set6, &FunctionActuatorSet::allocate},
+    {OutputFunction::Landing_Gear, &FunctionLandingGear::allocate},
+    {OutputFunction::Colugo_Actuator, &FunctionColugoActuator::allocate},
+    {OutputFunction::Parachute, &FunctionParachute::allocate},
+    {OutputFunction::RC_Roll, OutputFunction::RC_AUXMax, &FunctionManualRC::allocate},
+    {OutputFunction::Gimbal_Roll, OutputFunction::Gimbal_Yaw, &FunctionGimbal::allocate},
+    {OutputFunction::Lights,&FunctionLights::allocate},
+    {OutputFunction::Strobe,&FunctionStrobe::allocate},
 };
 
 MixingOutput::MixingOutput(const char *param_prefix, uint8_t max_num_outputs, OutputModuleInterface &interface,

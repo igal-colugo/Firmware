@@ -33,117 +33,170 @@
 
 #include "functions.hpp"
 
-FunctionMotors::FunctionMotors(const Context &context)
-	: _topic(&context.work_item, ORB_ID(actuator_motors)),
-	  _thrust_factor(context.thrust_factor)
+FunctionMotors::FunctionMotors(const Context &context) : _topic(&context.work_item, ORB_ID(actuator_motors)), _thrust_factor(context.thrust_factor)
 {
-	for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; ++i) {
-		_data.control[i] = NAN;
-	}
-}
-void FunctionMotors::update()
-{
-	if (_topic.update(&_data)) {
-		updateValues(_data.reversible_flags, _thrust_factor, _data.control, actuator_motors_s::NUM_CONTROLS);
-	}
+    for (int i = 0; i < actuator_motors_s::NUM_CONTROLS; ++i)
+    {
+        _data.control[i] = NAN;
+    }
 }
 
-FunctionServos::FunctionServos(const Context &context)
-	: _topic(&context.work_item, ORB_ID(actuator_servos))
+void FunctionMotors::update()
 {
-	for (int i = 0; i < actuator_servos_s::NUM_CONTROLS; ++i) {
-		_data.control[i] = NAN;
-	}
+    if (_topic.update(&_data))
+    {
+        updateValues(_data.reversible_flags, _thrust_factor, _data.control, actuator_motors_s::NUM_CONTROLS);
+    }
+}
+
+FunctionServos::FunctionServos(const Context &context) : _topic(&context.work_item, ORB_ID(actuator_servos))
+{
+    for (int i = 0; i < actuator_servos_s::NUM_CONTROLS; ++i)
+    {
+        _data.control[i] = NAN;
+    }
 }
 
 FunctionActuatorSet::FunctionActuatorSet()
 {
-	for (int i = 0; i < max_num_actuators; ++i) {
-		_data[i] = NAN;
-	}
+    for (int i = 0; i < max_num_actuators; ++i)
+    {
+        _data[i] = NAN;
+    }
 }
 
 void FunctionActuatorSet::update()
 {
-	vehicle_command_s vehicle_command;
+    vehicle_command_s vehicle_command;
 
-	while (_topic.update(&vehicle_command)) {
-		if (vehicle_command.command == vehicle_command_s::VEHICLE_CMD_DO_SET_ACTUATOR) {
-			int index = (int)(vehicle_command.param7 + 0.5f);
+    while (_topic.update(&vehicle_command))
+    {
+        if (vehicle_command.command == vehicle_command_s::VEHICLE_CMD_DO_SET_ACTUATOR)
+        {
+            int index = (int) (vehicle_command.param7 + 0.5f);
 
-			if (index == 0) {
-				_data[0] = vehicle_command.param1;
-				_data[1] = vehicle_command.param2;
-				_data[2] = vehicle_command.param3;
-				_data[3] = vehicle_command.param4;
-				_data[4] = vehicle_command.param5;
-				_data[5] = vehicle_command.param6;
-			}
-		}
-	}
+            if (index == 0)
+            {
+                _data[0] = vehicle_command.param1;
+                _data[1] = vehicle_command.param2;
+                _data[2] = vehicle_command.param3;
+                _data[3] = vehicle_command.param4;
+                _data[4] = vehicle_command.param5;
+                _data[5] = vehicle_command.param6;
+            }
+        }
+    }
 }
 
 void FunctionLandingGear::update()
 {
-	landing_gear_s landing_gear;
+    landing_gear_s landing_gear;
 
-	if (_topic.update(&landing_gear)) {
-		if (landing_gear.landing_gear == landing_gear_s::GEAR_DOWN) {
-			_data = -1.f;
-
-		} else if (landing_gear.landing_gear == landing_gear_s::GEAR_UP) {
-			_data = 1.f;
-		}
-	}
+    if (_topic.update(&landing_gear))
+    {
+        if (landing_gear.landing_gear == landing_gear_s::GEAR_DOWN)
+        {
+            _data = -1.f;
+        }
+        else if (landing_gear.landing_gear == landing_gear_s::GEAR_UP)
+        {
+            _data = 1.f;
+        }
+    }
 }
 
 void FunctionColugoActuator::update()
 {
-    //test...
+    // test...
     colugo_actuator_s colugo_act;
 
-    if (_topic.update(&colugo_act)) {
+    if (_topic.update(&colugo_act))
+    {
 
-            _data = colugo_act.actuator_state;
-
-
+        _data = colugo_act.actuator_state;
     }
 }
 
-
 FunctionManualRC::FunctionManualRC()
 {
-	for (int i = 0; i < num_data_points; ++i) {
-		_data[i] = NAN;
-	}
+    for (int i = 0; i < num_data_points; ++i)
+    {
+        _data[i] = NAN;
+    }
 }
 
 void FunctionManualRC::update()
 {
-	manual_control_setpoint_s manual_control_setpoint;
+    manual_control_setpoint_s manual_control_setpoint;
 
-	if (_topic.update(&manual_control_setpoint)) {
-		_data[0] = manual_control_setpoint.y; // roll
-		_data[1] = manual_control_setpoint.x; // pitch
-		_data[2] = manual_control_setpoint.z * 2.f - 1.f; // throttle
-		_data[3] = manual_control_setpoint.r; // yaw
-		_data[4] = manual_control_setpoint.flaps;
-		_data[5] = manual_control_setpoint.aux1;
-		_data[6] = manual_control_setpoint.aux2;
-		_data[7] = manual_control_setpoint.aux3;
-		_data[8] = manual_control_setpoint.aux4;
-		_data[9] = manual_control_setpoint.aux5;
-		_data[10] = manual_control_setpoint.aux6;
-	}
+    if (_topic.update(&manual_control_setpoint))
+    {
+        _data[0] = manual_control_setpoint.y;             // roll
+        _data[1] = manual_control_setpoint.x;             // pitch
+        _data[2] = manual_control_setpoint.z * 2.f - 1.f; // throttle
+        _data[3] = manual_control_setpoint.r;             // yaw
+        _data[4] = manual_control_setpoint.flaps;
+        _data[5] = manual_control_setpoint.aux1;
+        _data[6] = manual_control_setpoint.aux2;
+        _data[7] = manual_control_setpoint.aux3;
+        _data[8] = manual_control_setpoint.aux4;
+        _data[9] = manual_control_setpoint.aux5;
+        _data[10] = manual_control_setpoint.aux6;
+    }
 }
 
 void FunctionGimbal::update()
 {
-	actuator_controls_s actuator_controls;
+    actuator_controls_s actuator_controls;
 
-	if (_topic.update(&actuator_controls)) {
-		_data[0] = actuator_controls.control[0];
-		_data[1] = actuator_controls.control[1];
-		_data[2] = actuator_controls.control[2];
-	}
+    if (_topic.update(&actuator_controls))
+    {
+        _data[0] = actuator_controls.control[0];
+        _data[1] = actuator_controls.control[1];
+        _data[2] = actuator_controls.control[2];
+    }
+}
+
+void FunctionLights::update()
+{
+    vehicle_command_s vehicle_command;
+    lights_s lights;
+
+    if (_vehicle_command_sub.update(&vehicle_command))
+    {
+        if (vehicle_command.command == MAV_CMD_LIGHTS)
+        {
+            int mode = (int) (vehicle_command.param1);
+            if (mode == lights.COMMAND_ON)
+            {
+                _data = 1.0f;
+            }
+            if (mode == lights.COMMAND_OFF)
+            {
+                _data = -1.0f;
+            }
+        }
+    }
+}
+
+void FunctionStrobe::update()
+{
+    vehicle_command_s vehicle_command;
+    strobe_s strobe;
+
+    if (_vehicle_command_sub.update(&vehicle_command))
+    {
+        if (vehicle_command.command == MAV_CMD_STROBE)
+        {
+            int mode = (int) (vehicle_command.param1);
+            if (mode == strobe.COMMAND_ON)
+            {
+                _data = 1.0f;
+            }
+            if (mode == strobe.COMMAND_OFF)
+            {
+                _data = -1.0f;
+            }
+        }
+    }
 }
