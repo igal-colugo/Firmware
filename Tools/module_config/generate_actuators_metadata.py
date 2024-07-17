@@ -195,7 +195,7 @@ def get_actuator_output(yaml_config, output_functions, timer_config_file, verbos
             else:
                 raise Exception('unknown generator {:}'.format(group['generator']))
             continue
-        
+
         subgroup = {}
 
         # supported actions
@@ -263,6 +263,22 @@ def get_actuator_output(yaml_config, output_functions, timer_config_file, verbos
                 'show-as': 'bitset',
             }
         per_channel_params.append(param)
+
+        paramColugoMc = {
+                'label': 'Rev bit MC\n(for Servos)',
+                'name': 'C_'+param_prefix+'_MC',
+                'index-offset': -1,
+                'show-as': 'bitset',
+            }
+        per_channel_params.append(paramColugoMc)
+
+        paramColugoFw = {
+                'label': 'Rev bit FW\n(for Servos)',
+                'name': 'C_'+param_prefix+'_FW',
+                'index-offset': -1,
+                'show-as': 'bitset',
+            }
+        per_channel_params.append(paramColugoFw)
 
         # TODO: support non-standard per-channel parameters
 
@@ -442,7 +458,7 @@ def get_mixers(yaml_config, output_functions, verbose):
 
     if verbose:
         print('Mixer rules: {}'.format(rules))
-    
+
     mixers = {
             'actuator-types': actuator_types,
             'config': config,

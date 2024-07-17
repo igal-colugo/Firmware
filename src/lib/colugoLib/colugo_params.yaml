@@ -150,17 +150,7 @@ parameters:
             min: 0.1
             max: 100.0
             default: 60.0
-            
-        C_SRV_REV_BM:
-            description:
-                short: 'servos to reverse during MC state'
-                long: |
-                    '0 is no servo,1 ~ 8 MAIN(mask: 1 ~ 255), 9(1) ~ 14(6)AUX (mask: 256 ~ 16128)'
-            type: int32
-            default: 0
-            min: 0
-            max: 16383
-            
+
         C_TR_FW_SRV_SLEW:
             description:
                 short: 'Servo slew rate to position #1'
@@ -173,3 +163,69 @@ parameters:
             min: 0.0
             max: 10.0
             default: 1.0
+
+
+
+        C_PWM_MAIN_MC:
+            description:
+                short: 'servos to reverse during MC state'
+                long: |
+                    main reversed servos in MC state 0 ~ 255'
+            type: bitmask
+            bit:
+                0: MAIN 1
+                1: MAIN 2
+                2: MAIN 3
+                3: MAIN 4
+                4: MAIN 5
+                5: MAIN 6
+                6: MAIN 7
+                7: MAIN 8
+            default: 0
+
+        C_PWM_AUX_MC:
+            description:
+                short: 'servos to reverse during MC state aux'
+                long: |
+                    aux reversed servos in MC state 0 ~ 63'
+            type: bitmask
+            bit:
+                0: AUX 1
+                1: AUX 2
+                2: AUX 3
+                3: AUX 4
+                4: AUX 5
+                5: AUX 6
+            default: 0
+
+        C_PWM_MAIN_FW:
+            description:
+                short: 'servos to reverse during FW state'
+                long: |
+                    main reversed servos in FW state 0 ~ 255'
+            type: bitmask
+            bit:
+                0: MAIN 1
+                1: MAIN 2
+                2: MAIN 3
+                3: MAIN 4
+                4: MAIN 5
+                5: MAIN 6
+                6: MAIN 7
+                7: MAIN 8
+            default: 0
+
+        C_PWM_AUX_FW:
+            description:
+                short: 'servos to reverse during FW state'
+                long: |
+                    aux reversed servos in FW state 0 ~ 63'
+            type: bitmask
+            bit:
+                0: AUX 1
+                1: AUX 2
+                2: AUX 3
+                3: AUX 4
+                4: AUX 5
+                5: AUX 6
+            default: 0

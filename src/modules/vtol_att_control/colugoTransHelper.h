@@ -15,7 +15,10 @@
 //static const float CST_VERTICAL_TRANS_S = 10.0;//VERTICAL TRASITION TIME IN SECONDS
 //static const float CST_LOCK_AIRSPEED = 9.0;//horizontal airspeed for final lock of the wing
 static const float CST_LOCKING_TIME_S = 1.2;//allowed time in seconds for the lock pin to reach final postion
-
+static const int32_t C_MAX_AUX_BITMASK  = 63;
+static const int32_t C_MAX_MAIN_BITMASK = 255;
+static const float C_MIN_SURFACE_RANGE  = -1;
+static const float C_MAX_SURFACE_RANGE  = 1;
 static const float COLUGO_ACTUATOR_MC_POS{-1.0f};
 
 enum class COLUGO_FW_VTRANS_STAGE{ //fixed wing vertical algorithm stages ....
@@ -79,9 +82,11 @@ private:
 		float _param_c_z_tr_spd_ms;
 		float _param_c_z_tr_time_s;
 		float _param_c_z_lck_tming;
-		int32_t _param_c_srv_rev_bm;
+		int32_t _param_c_pwm_main_mc;
+		int32_t _param_c_pwm_aux_mc;
+		int32_t _param_c_pwm_main_fw;
+		int32_t _param_c_pwm_aux_fw;
 	} _params_colugo;
-
 
 	struct {
 		param_t _param_c_debug;
@@ -98,19 +103,14 @@ private:
 		param_t _param_c_z_tr_spd_ms;
 		param_t _param_c_z_tr_time_s;
 		param_t _param_c_z_lck_tming;
-		param_t _param_c_srv_rev_bm;
+		param_t _param_c_pwm_main_mc;
+		param_t _param_c_pwm_aux_mc;
+		param_t _param_c_pwm_main_fw;
+		param_t _param_c_pwm_aux_fw;
 	} _params_handles_colugo;
 
-/*
-struct {
-		int32_t _leftAileronCsTypeNo  = -1;
-		int32_t _rightAileronCsTypeNo = -1;
-		int32_t _elevatorCsTypeNo     = -1;
-	} _flightsurfaces_tr_colugo;
-*/
-	// Subscribers
-	//uORB::Subscription _command_sub{ORB_ID(vehicle_command)};
-	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
+	param_t _pwmMainRev;
+	param_t _pwmAuxRev;
 
         //position of the wing lock actuator - range: -1.0 ~ 1.0
     float _wingLockActuatorPos = COLUGO_ACTUATOR_MC_POS;
@@ -122,46 +122,21 @@ struct {
     float _airspeed;
     vehicle_land_detected_s _vehicle_land_detected{};
 
-	//this flag to mark that registered the fuctions at list once
-    bool _registeredFuncs = false;
-    int32_t _bitMaskForReverseMainSrvInMC = 0;
-    int32_t _bitMaskForReverseAuxSrvInMC  = 0;
-
-    param_t _param_pwm_main_rev;
-    int32_t _originpwmMainRevVal;
-
-    param_t _param_pwm_aux_rev;
-    int32_t _originpwmAuxRevVal;
-
-
-	//methods
+ //methods
 
     /**
  * @brief
- * need to set ailerons positions slowly.. and gently so the wing will gradualy will go up...when we are trasnitioning to FW
+ * need to set ailerons positions slowly.. and gently so the wing will gradually will go up...when we are transitioning to FW
  *
  */
     float getSlewedPosition(float startPos, float endPos);
     void updateInnerStage();
-    void registerServoToReverseDuringMC();
-    void registerOriginalRevServoBitmasks();
-    void setAileronsServoBitmaskToMC();
-    void resetAileronServoBitmasks();
+
+    void setServosBitmaskToMC();
+    void setServosBitmaskToFW();
     void setParamValue(param_t prm, int32_t val);
 
-
- //   void registerAileronAndElevFuncs();
-  //  void setAsElevator();
-//    void setAsAileronsAndElevator();
     //returns true when we are in MC mode for less than 1 sec
     bool delayAfterMcReached();
-  //  void setSurfaceType(ActuatorEffectivenessControlSurfaces::Type srface, int32_t srvNo, char torqType[], float torqVal);
-
-    /**
- * @brief
- * need to go to "MC" postions and functions of servos on ARM, and go back to FW postions and functions when disarmed..
- *
- */
-    void updateOnTakeoffAndLand();
 
 };
