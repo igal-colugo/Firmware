@@ -104,6 +104,11 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode vtol
     case vtol_mode::TRANSITION_TO_MC:
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         //maube change surfaces position only after reducing - speed - ask amit...
+        // saftey measure make sure back to correct position when goes back to MC for safety reasons
+        if (vtolFlightMode != _currentMode)
+        {
+            setServosBitmaskToMC();
+        }
 
         break;
 
@@ -112,7 +117,6 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode vtol
         if (vtolFlightMode != _currentMode)
         {
             _MCstarted = hrt_absolute_time();
-            setServosBitmaskToMC();
         }
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;

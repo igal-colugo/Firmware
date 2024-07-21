@@ -505,24 +505,6 @@ void MulticopterPositionControl::Run()
 			_control.getLocalPositionSetpoint(local_pos_sp);
 			local_pos_sp.timestamp = hrt_absolute_time();
 
-			colugo_transition_s colugo_trans;
-			if (_colugo_transition_sub.update(&colugo_trans)) {
-				/*
-				COLUGO_FW_VTRANS_STAGE transState = static_cast<COLUGO_FW_VTRANS_STAGE>(colugo_trans.transition_state);
-
-	    			if(transState >= COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START
-	    				&& transState < COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START){
-					local_pos_sp.vx = 0.0;
-					local_pos_sp.vy = 0.0;
-					local_pos_sp.x = 0.0;
-					local_pos_sp.y = 0.0;
-					local_pos_sp.acceleration[0] = local_pos_sp.acceleration[1] = 0;
-					local_pos_sp.thrust[0] = local_pos_sp.thrust[1] = 0;
-					_control.resetIntegral();
-	    			}
-				*/
-			}
-
 			_local_pos_sp_pub.publish(local_pos_sp);
 
 			// Publish attitude setpoint output
