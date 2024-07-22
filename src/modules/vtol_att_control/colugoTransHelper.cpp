@@ -28,6 +28,9 @@ colugoTransHelper::colugoTransHelper()
     _params_handles_colugo._param_c_pwm_aux_fw  = param_find("C_PWM_AUX_FW");
     _pwmMainRev = param_find("PWM_MAIN_REV");
     _pwmAuxRev  = param_find("PWM_AUX_REV");
+    _dbg_vect_clg.x = -1;
+    _dbg_vect_clg.y = -2;
+    _dbg_vect_clg.z = -3;
 }
 
 
@@ -320,7 +323,9 @@ void colugoTransHelper::setParamValue(param_t prm, int32_t val)
         param_get(prm, &curval);
         if (curval != val)
         {
-            param_set(prm, &val);
+            _dbg_vect_clg.x = param_set(prm, &val);
+            _dbg_vect_clg.timestamp = hrt_absolute_time();
+	        orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &_dbg_vect_clg);
         }
     }
 }

@@ -9,6 +9,7 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include "control_allocator/ActuatorEffectiveness/ActuatorEffectivenessControlSurfaces.hpp"
 //#include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/debug_vect_clg.h>
 
 //static const float CST_TRANSITION_VS_M_S = -2.6;
 
@@ -42,7 +43,9 @@ public:
 		PRE_TRANSITION_TO_FW //lift before starting farward movmenat
 
 	};
-
+	//my debug logs...
+	struct debug_vect_clg_s _dbg_vect_clg;
+	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &_dbg_vect_clg);
     colugoTransHelper();
 
     void setColugoActuatorPos();

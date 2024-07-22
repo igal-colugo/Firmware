@@ -53,7 +53,7 @@
 #include <uORB/Publication.hpp>
 
 #include "colugoTransHelper.h"
-#include <uORB/topics/debug_vect_clg.h>
+//#include <uORB/topics/debug_vect_clg.h>
 #include <uORB/topics/debug_vect.h>
 
 
@@ -113,8 +113,8 @@ private:
 	float _reverse_output{0.0f};
 	float _airspeed_trans_blend_margin{0.0f};
 	//my debug logs...
-	struct debug_vect_clg_s _dbg_vect_clg;
-	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &_dbg_vect_clg);
+	//struct debug_vect_clg_s _dbg_vect_clg;
+	//orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &_dbg_vect_clg);
 	//debug for mavlink...
 	struct debug_vect_s _dbg_vect_for_mav;
 	orb_advert_t pub_dbg_vect_for_mav = orb_advertise(ORB_ID(debug_vect), &_dbg_vect_for_mav);

@@ -75,9 +75,9 @@ Standard::Standard(VtolAttitudeControl *attc) :
 
 	//debug
 	/* advertise colugo debug vect */
-	_dbg_vect_clg.x = 1.0f;
-	_dbg_vect_clg.y = 2.0f;
-	_dbg_vect_clg.z = 3.0f;
+	//_dbg_vect_clg.x = 1.0f;
+	//_dbg_vect_clg.y = 2.0f;
+	//_dbg_vect_clg.z = 3.0f;
 
 	//for mav purpuses...
 	strncpy(_dbg_vect_for_mav.name, "Clg dbg", 10);
@@ -259,7 +259,7 @@ void Standard::update_vtol_state()
 	}
 
 
-	_dbg_vect_clg.y     = mc_weight;
+	//_dbg_vect_clg.y     = mc_weight;
 
 	_mc_roll_weight     = mc_weight;
 	_mc_pitch_weight    = mc_weight;
@@ -560,7 +560,7 @@ void Standard::fill_actuator_outputs()
 	_thrust_setpoint_0->xyz[2] = -mc_out[actuator_controls_s::INDEX_THROTTLE];
 	//colugo  _thrust_setpoint_0->xyz[2] = _cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START ? -1 : -mc_out[actuator_controls_s::INDEX_THROTTLE];
 
-	_dbg_vect_clg.x	    = _thrust_setpoint_0->xyz[2];
+	//_dbg_vect_clg.x	    = _thrust_setpoint_0->xyz[2];
 
 	_thrust_setpoint_1->timestamp = hrt_absolute_time();
 	_thrust_setpoint_1->timestamp_sample = _actuators_fw_in->timestamp_sample;
@@ -582,8 +582,8 @@ void Standard::fill_actuator_outputs()
 	_dbg_vect_for_mav.y 	= float(_cth.getInnerState());
 	_dbg_vect_for_mav.z 	= float(_local_pos_sp->acceleration[0]);
 
-	_dbg_vect_clg.timestamp = hrt_absolute_time();
-	orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &_dbg_vect_clg);
+	//_dbg_vect_clg.timestamp = hrt_absolute_time();
+	//orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &_dbg_vect_clg);
 	publishDebugForMavIfneeded();
 }
 
