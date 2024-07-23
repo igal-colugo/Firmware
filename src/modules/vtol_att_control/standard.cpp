@@ -205,8 +205,7 @@ void Standard::update_vtol_state()
 			&& _vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW){
 
 			_vtol_schedule.flight_mode = _cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START ?
-			 	_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::TRANSITION_TO_FW
-				: _vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
+			 	colugoTransHelper::vtol_mode::TRANSITION_TO_FW : colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
 			}
 
 
@@ -236,14 +235,14 @@ void Standard::update_vtol_state()
 				}
 			}
 
-			transition_to_fw |= can_transition_on_ground();
+		//	transition_to_fw |= can_transition_on_ground();
 
 			if(_cth.getColugoDebugVal() == 5){
 				//if we are NOT on ground check colugo conditioning for transition to FW
-				if(!can_transition_on_ground()){
+		//		if(!can_transition_on_ground()){
 					transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
 
-				}
+		//		}
 
 			}
 

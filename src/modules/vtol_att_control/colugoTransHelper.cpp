@@ -83,7 +83,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode vtol
         // reset ailrons direction only once
         if (vtolFlightMode != _currentMode)
         {
-           setServosBitmaskToFW();
+           //setServosBitmaskToFW();
         }
 
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
@@ -174,6 +174,7 @@ void colugoTransHelper::updateInnerStage()
         if (hrt_absolute_time() - _reachedLockSpeedTime > (CST_LOCKING_TIME_S * 1000000))
         {
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW;
+            setServosBitmaskToFW();
         }
         break;
     case COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW:
@@ -324,6 +325,11 @@ void colugoTransHelper::setParamValue(param_t prm, int32_t val)
         if (curval != val)
         {
             _dbg_vect_clg.x = param_set(prm, &val);
+            _dbg_vect_clg.y = val;
+
+            int32_t idbg;
+            param_get(prm, &idbg);
+            _dbg_vect_clg.z = idbg;
             _dbg_vect_clg.timestamp = hrt_absolute_time();
 	        orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &_dbg_vect_clg);
         }
