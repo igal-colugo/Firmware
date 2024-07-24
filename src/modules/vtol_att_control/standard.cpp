@@ -131,6 +131,7 @@ void Standard::update_vtol_state()
 	if (_vtol_vehicle_status->vtol_transition_failsafe) {
 		// Failsafe event, engage mc motors immediately
 		_vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::MC_MODE;
+		//@todo make sure wing releas after some period
 		_pusher_throttle = 0.0f;
 		_reverse_output = 0.0f;
 
@@ -235,14 +236,14 @@ void Standard::update_vtol_state()
 				}
 			}
 
-		//	transition_to_fw |= can_transition_on_ground();
+			transition_to_fw |= can_transition_on_ground();
 
 			if(_cth.getColugoDebugVal() == 5){
 				//if we are NOT on ground check colugo conditioning for transition to FW
-		//		if(!can_transition_on_ground()){
+				if(!can_transition_on_ground()){
 					transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
 
-		//		}
+				}
 
 			}
 
@@ -304,7 +305,7 @@ void Standard::update_transition_state()
 	// in any other case the fixed wing attitude controller publishes attitude setpoint from manual stick input.
 	if (_v_control_mode->flag_control_climb_rate_enabled) {
 		memcpy(_v_att_sp, _mc_virtual_att_sp, sizeof(vehicle_attitude_setpoint_s));
-		_v_att_sp->roll_body = _fw_virtual_att_sp->roll_body;
+		_v_att_sp->roll_body = 0;//_fw_virtual_att_sp->roll_body;
 
 	} else {
 		memcpy(_v_att_sp, _fw_virtual_att_sp, sizeof(vehicle_attitude_setpoint_s));
@@ -456,7 +457,7 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_ROLL]  = _cth.getColugoPiMcPos();
 		}
 
-		_cth.setColugoActuatorPos();//unlocked in MC mode ONLY!
+		_cth.setColugoActuatorPos(*_local_pos, *_v_att);//unlocked in MC mode ONLY!
 		break;
 //@note TRANSITION_TO_FW
 	case colugoTransHelper::vtol_mode::TRANSITION_TO_FW:{
@@ -475,7 +476,7 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_THROTTLE] = _cth.getPusherThr(_pusher_throttle);
 			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
 			mc_out[actuator_controls_s::INDEX_FLAPS]    = _cth.getColugoTransToFwSlewedFlaps();
-			_cth.setColugoActuatorPos();
+			_cth.setColugoActuatorPos(*_local_pos, *_v_att);
 			break;
 		}
 		else{}// - just fallthrough

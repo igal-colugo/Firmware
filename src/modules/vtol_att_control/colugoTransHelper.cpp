@@ -34,26 +34,40 @@ colugoTransHelper::colugoTransHelper()
 }
 
 
-bool colugoTransHelper::delayAfterMcReached()
+bool colugoTransHelper::delayAfterMcReached(vehicle_local_position_s& lpos, vehicle_attitude_s& att)
 {
     if (_MCstarted == 0)
     {
         return false;
     }
-    return ((hrt_absolute_time() - _MCstarted) * 1e-6f) < 1.0;
+    float timeDiff = ((hrt_absolute_time() - _MCstarted) * 1e-6f);
+    if (timeDiff > 5.0){
+        return false;
+    }
+    matrix::Eulerf euler = matrix::Quatf(att.q);
+    float absrollRad = fabsf(euler.phi());
+
+                //1.5 seconds past since we in MC state
+    bool res = ((timeDiff < 1.5)
+    //&& delay if roll above 30~
+        || (absrollRad > cst_MAX_ROLL_FOR_MC_RELEASE)
+    //delay if ground speed above 5m/s
+        || (sqrtf(lpos.vx * lpos.vx + lpos.vy * lpos.vy) > cst_ALLOWED_GROUND_SPD_MS));
+
+    return res;
 }
 //@note colugoTransHelper
-void colugoTransHelper::setColugoActuatorPos()
+void colugoTransHelper::setColugoActuatorPos(vehicle_local_position_s& lpos, vehicle_attitude_s& att)
 {
     float res = COLUGO_ACTUATOR_MC_POS;
     if (_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_SEMI_LOCK_POS)
     {
         res = _params_colugo._param_c_wafp;
     }
-    if (_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_LOCK_SPEED || delayAfterMcReached())
+    if (_transStage >= COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_LOCK_SPEED || delayAfterMcReached(lpos, att))
     {
         res = _params_colugo._param_c_wasp;
-    }
+     }
     _wingLockActuatorPos = res;
 }
 
@@ -108,10 +122,6 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode vtol
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         //maube change surfaces position only after reducing - speed - ask amit...
         // saftey measure make sure back to correct position when goes back to MC for safety reasons
-        if (vtolFlightMode != _currentMode)
-        {
-            setServosBitmaskToMC();
-        }
 
         break;
 
@@ -120,6 +130,7 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode vtol
         if (vtolFlightMode != _currentMode)
         {
             _MCstarted = hrt_absolute_time();
+            setServosBitmaskToMC();
         }
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;
@@ -182,7 +193,7 @@ void colugoTransHelper::updateInnerStage()
         break;
     }
 
-    // publish only if not idel...
+    // publish only if not idle...
     if (COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE != _transStage)
     {
         colugo_transition_s colugo_trans{};

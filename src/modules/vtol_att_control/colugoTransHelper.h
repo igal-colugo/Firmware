@@ -6,9 +6,9 @@
 #include <uORB/topics/colugo_transition.h>
 #include <parameters/param.h>
 #include <uORB/Subscription.hpp>
-#include <uORB/topics/vehicle_land_detected.h>
 #include "control_allocator/ActuatorEffectiveness/ActuatorEffectivenessControlSurfaces.hpp"
-//#include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/debug_vect_clg.h>
 
 //static const float CST_TRANSITION_VS_M_S = -2.6;
@@ -21,6 +21,8 @@ static const int32_t C_MAX_MAIN_BITMASK = 255;
 static const float C_MIN_SURFACE_RANGE  = -1;
 static const float C_MAX_SURFACE_RANGE  = 1;
 static const float COLUGO_ACTUATOR_MC_POS{-1.0f};
+static const float cst_ALLOWED_GROUND_SPD_MS = 5.0;
+static float cst_MAX_ROLL_FOR_MC_RELEASE = math::radians(30.f);
 
 enum class COLUGO_FW_VTRANS_STAGE{ //fixed wing vertical algorithm stages ....
 		VTRANS_IDLE = 0,
@@ -48,7 +50,7 @@ public:
 	orb_advert_t pub_dbg_vect_clg = orb_advertise(ORB_ID(debug_vect_clg), &_dbg_vect_clg);
     colugoTransHelper();
 
-    void setColugoActuatorPos();
+    void setColugoActuatorPos(vehicle_local_position_s& lpos, vehicle_attitude_s& att);
     void publishColugoActuator();
     void updateColugoTransitionState(float airSpd, vtol_mode fm, hrt_abstime tt);
     float getPusherThr(float thr);
@@ -123,7 +125,6 @@ private:
     hrt_abstime _toFwStartTime = 0, _reachedLockSpeedTime = 0, _FarwardStageStartTime = 0, _MCstarted = 0;
     COLUGO_FW_VTRANS_STAGE _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
     float _airspeed;
-    vehicle_land_detected_s _vehicle_land_detected{};
 
  //methods
 
@@ -140,6 +141,6 @@ private:
     void setParamValue(param_t prm, int32_t val);
 
     //returns true when we are in MC mode for less than 1 sec
-    bool delayAfterMcReached();
+    bool delayAfterMcReached(vehicle_local_position_s& lpos, vehicle_attitude_s& att);
 
 };
