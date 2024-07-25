@@ -236,7 +236,7 @@ void colugoTransHelper::parameters_update()
     _params_colugo._param_c_wasp = math::constrain(fPrm, C_MIN_SURFACE_RANGE, C_MAX_SURFACE_RANGE);
 
     param_get(_params_handles_colugo._param_c_pi_fp, &fPrm);
-    _params_colugo._param_c_pi_fp = math::constrain(fPrm, -C_MIN_SURFACE_RANGE, C_MAX_SURFACE_RANGE);
+    _params_colugo._param_c_pi_fp = math::constrain(fPrm, C_MIN_SURFACE_RANGE, C_MAX_SURFACE_RANGE);
 
     param_get(_params_handles_colugo._param_c_pi_sp, &fPrm);
     _params_colugo._param_c_pi_sp = math::constrain(fPrm, C_MIN_SURFACE_RANGE, C_MAX_SURFACE_RANGE);
