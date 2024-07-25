@@ -154,17 +154,17 @@ void colugoTransHelper::setServosBitmaskToFW(){
 
 void colugoTransHelper::updateInnerStage()
 {
-    uint64_t debugDiff = (hrt_absolute_time() - _toFwStartTime);
+   // uint64_t debugDiff = (hrt_absolute_time() - _toFwStartTime);
     switch (_transStage)
     {
     case COLUGO_FW_VTRANS_STAGE::VTRANS_VERTICAL_START:
-        if (debugDiff > ((_params_colugo._param_c_z_tr_time_s * _params_colugo._param_c_z_lck_tming * 0.01f) * 1000000))
+        if ((hrt_absolute_time() - _toFwStartTime) > ((_params_colugo._param_c_z_tr_time_s * _params_colugo._param_c_z_lck_tming * 0.01f) * 1000000))
         {
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_SEMI_LOCK_POS;
         }
         break;
     case COLUGO_FW_VTRANS_STAGE::VTRANS_REACHED_SEMI_LOCK_POS:
-        if (debugDiff > (_params_colugo._param_c_z_tr_time_s * 1000000))
+        if ((hrt_absolute_time() - _toFwStartTime) > (_params_colugo._param_c_z_tr_time_s * 1000000))
         {
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START;
             _FarwardStageStartTime = hrt_absolute_time();

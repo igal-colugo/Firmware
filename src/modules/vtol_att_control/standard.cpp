@@ -240,10 +240,10 @@ void Standard::update_vtol_state()
 
 			if(_cth.getColugoDebugVal() == 5){
 				//if we are NOT on ground check colugo conditioning for transition to FW
-				if(!can_transition_on_ground()){
+				//if(!can_transition_on_ground()){
 					transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
 
-				}
+				//}
 
 			}
 
@@ -580,7 +580,7 @@ void Standard::fill_actuator_outputs()
 	//@note debug
 	_dbg_vect_for_mav.x 	= float(_local_pos_sp->vx);
 	_dbg_vect_for_mav.y 	= float(_cth.getInnerState());
-	_dbg_vect_for_mav.z 	= float(_local_pos_sp->acceleration[0]);
+	_dbg_vect_for_mav.z 	= float(_vtol_schedule.flight_mode);
 
 	//_dbg_vect_clg.timestamp = hrt_absolute_time();
 	//orb_publish(ORB_ID(debug_vect_clg), pub_dbg_vect_clg, &_dbg_vect_clg);
