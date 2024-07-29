@@ -189,7 +189,7 @@ void Standard::update_vtol_state()
 	else {
 		// the transition to fw mode switch is on
 		if (_vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::MC_MODE || _vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::TRANSITION_TO_MC) {
-			if(_cth.getColugoDebugVal() == 5){
+			if((_cth.getColugoDebugVal() == 5) || (_cth.getColugoDebugVal() == 6)){
 				 _vtol_schedule.flight_mode = colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW;
 			}
 			else{//normal behavior - without colugo...
@@ -202,7 +202,7 @@ void Standard::update_vtol_state()
 			_vtol_schedule.transition_start = hrt_absolute_time();
 		}
 
-		if (_cth.getColugoDebugVal() == 5
+		if (((_cth.getColugoDebugVal() == 5) ||(_cth.getColugoDebugVal() == 6))
 			&& _vtol_schedule.flight_mode == colugoTransHelper::vtol_mode::PRE_TRANSITION_TO_FW){
 
 			_vtol_schedule.flight_mode = _cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_FARWARD_START ?
@@ -238,7 +238,7 @@ void Standard::update_vtol_state()
 
 			transition_to_fw |= can_transition_on_ground();
 
-			if(_cth.getColugoDebugVal() == 5){
+			if((_cth.getColugoDebugVal() == 5) || (_cth.getColugoDebugVal() == 6)){
 				//if we are NOT on ground check colugo conditioning for transition to FW
 				//if(!can_transition_on_ground()){
 					transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
@@ -286,7 +286,7 @@ void Standard::update_vtol_state()
 		break;
 	}
 
-	if(_cth.getColugoDebugVal() == 5){
+	if((_cth.getColugoDebugVal() == 5) ||(_cth.getColugoDebugVal() == 6)){
 
 		_cth.updateColugoTransitionState(_airspeed_validated->calibrated_airspeed_m_s, _vtol_schedule.flight_mode, _vtol_schedule.transition_start);
 	}
@@ -354,7 +354,7 @@ void Standard::update_transition_state()
 			}
 		}
 
-		if(_cth.getColugoDebugVal() == 5){
+		if((_cth.getColugoDebugVal() == 5) || (_cth.getColugoDebugVal() == 6)){
 		//if we are still not in full lock stage- dont reduce mc weight....
 			mc_weight = (_cth.getInnerState() >= COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW) ?
 			mc_weight : 1.0f;
@@ -456,6 +456,11 @@ void Standard::fill_actuator_outputs()
 			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
 			fw_out[actuator_controls_s::INDEX_ROLL]  = _cth.getColugoPiMcPos();
 		}
+		if(_cth.getColugoDebugVal() == 6){
+			mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
+			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
+			fw_out[actuator_controls_s::INDEX_ROLL]  = 0;
+		}
 
 		_cth.setColugoActuatorPos(*_local_pos, *_v_att);//unlocked in MC mode ONLY!
 		break;
@@ -471,6 +476,22 @@ void Standard::fill_actuator_outputs()
 
 			//during trasition both ailerons work similar to pitch or flaps (same direction...)
 			fw_out[actuator_controls_s::INDEX_ROLL]     = _cth.getColugoTransToFwSlewedPitch();//fw_in[actuator_controls_s::INDEX_ROLL];
+			fw_out[actuator_controls_s::INDEX_PITCH]    = _cth.getColugoTransToFwSlewedPitch();
+			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
+			fw_out[actuator_controls_s::INDEX_THROTTLE] = _cth.getPusherThr(_pusher_throttle);
+			//we change mc_out[actuator_controls_s::INDEX_FLAPS] instead of fw_out[actuator_controls_s::INDEX_FLAPS] becouse of a bug in the system
+			mc_out[actuator_controls_s::INDEX_FLAPS]    = _cth.getColugoTransToFwSlewedFlaps();
+			_cth.setColugoActuatorPos(*_local_pos, *_v_att);
+			break;
+		}
+		if(_cth.getColugoDebugVal() == 6){
+
+			mc_out[actuator_controls_s::INDEX_ROLL]         = mc_in[actuator_controls_s::INDEX_ROLL]     * _mc_roll_weight;
+			mc_out[actuator_controls_s::INDEX_PITCH]        = mc_in[actuator_controls_s::INDEX_PITCH]    * _mc_pitch_weight;
+			mc_out[actuator_controls_s::INDEX_YAW]          = mc_in[actuator_controls_s::INDEX_YAW]      * _mc_yaw_weight;
+			mc_out[actuator_controls_s::INDEX_THROTTLE]     = mc_in[actuator_controls_s::INDEX_THROTTLE] * _mc_throttle_weight;
+
+			fw_out[actuator_controls_s::INDEX_ROLL]     = 0;
 			fw_out[actuator_controls_s::INDEX_PITCH]    = _cth.getColugoTransToFwSlewedPitch();
 			fw_out[actuator_controls_s::INDEX_YAW]      = fw_in[actuator_controls_s::INDEX_YAW];
 			fw_out[actuator_controls_s::INDEX_THROTTLE] = _cth.getPusherThr(_pusher_throttle);
@@ -506,6 +527,13 @@ void Standard::fill_actuator_outputs()
 			//in fw mode -we are ALWAYS LOCKED!
 			_cth.lockColugoActuator();//locked - until fully mc mode...
 		}
+		if(_cth.getColugoDebugVal() == 6){
+			mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
+			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
+			fw_out[actuator_controls_s::INDEX_ROLL]  = 0;
+			//in fw mode -we are ALWAYS LOCKED!
+			_cth.lockColugoActuator();//locked - until fully mc mode...
+		}
 
 
 
@@ -528,7 +556,7 @@ void Standard::fill_actuator_outputs()
 		//fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = 0;
 
-		if(_cth.getColugoDebugVal() == 5){
+		if((_cth.getColugoDebugVal() == 5) || (_cth.getColugoDebugVal() == 6)){
 			//now flaps act as "reverse pitch"
 			mc_out[actuator_controls_s::INDEX_FLAPS] = -fw_in[actuator_controls_s::INDEX_PITCH];
 		}

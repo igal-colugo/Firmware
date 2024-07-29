@@ -130,7 +130,10 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode vtol
         if (vtolFlightMode != _currentMode)
         {
             _MCstarted = hrt_absolute_time();
-            setServosBitmaskToMC();
+            if(getColugoDebugVal() == 5){
+                setServosBitmaskToMC();
+            }
+
         }
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
         break;
@@ -185,7 +188,10 @@ void colugoTransHelper::updateInnerStage()
         if (hrt_absolute_time() - _reachedLockSpeedTime > (CST_LOCKING_TIME_S * 1000000))
         {
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW;
-            setServosBitmaskToFW();
+            if(getColugoDebugVal() == 5){
+                setServosBitmaskToFW();
+            }
+
         }
         break;
     case COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW:
