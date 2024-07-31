@@ -722,7 +722,11 @@ void PX4IO::update_params()
 	}
 
 	// skip update when armed or PWM disabled
-	if (_mixing_output.armed().armed || _class_instance == -1 || _mixing_output.useDynamicMixing()) {
+	if (
+		//_mixing_output.armed().armed ||
+		_class_instance == -1
+		//|| _mixing_output.useDynamicMixing()
+		) {
 		return;
 	}
 
