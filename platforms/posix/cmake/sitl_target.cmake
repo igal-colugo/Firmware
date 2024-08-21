@@ -184,6 +184,7 @@ set(worlds
 	baylands
 	empty
 	ksql_airport
+	cksql_airport
 	mcmillan_airfield
 	sonoma_raceway
 	warehouse
