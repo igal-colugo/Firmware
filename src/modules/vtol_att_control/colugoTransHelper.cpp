@@ -98,7 +98,9 @@ void colugoTransHelper::updateColugoTransitionState(float airSpd, vtol_mode vtol
         // reset ailrons direction only once
         if (vtolFlightMode != _currentMode)
         {
-           //setServosBitmaskToFW();
+             if(getColugoDebugVal() == 5){
+                setServosBitmaskToFW();
+            }
         }
 
         _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_IDLE;
@@ -189,9 +191,9 @@ void colugoTransHelper::updateInnerStage()
         if (hrt_absolute_time() - _reachedLockSpeedTime > (CST_LOCKING_TIME_S * 1000000))
         {
             _transStage = COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW;
-            if(getColugoDebugVal() == 5){
-                setServosBitmaskToFW();
-            }
+          //  if(getColugoDebugVal() == 5){
+          //      setServosBitmaskToFW();
+          //  }
 
         }
         break;

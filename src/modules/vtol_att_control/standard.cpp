@@ -240,10 +240,10 @@ void Standard::update_vtol_state()
 
 			if((_cth.getColugoDebugVal() == 5) || (_cth.getColugoDebugVal() == 6)){
 				//if we are NOT on ground check colugo conditioning for transition to FW
-				//if(!can_transition_on_ground()){
+				if(!can_transition_on_ground()){
 					transition_to_fw &= (_cth.getInnerState() == COLUGO_FW_VTRANS_STAGE::VTRANS_ALLOW_FW);
 
-				//}
+				}
 
 			}
 
@@ -520,17 +520,20 @@ void Standard::fill_actuator_outputs()
 		fw_out[actuator_controls_s::INDEX_FLAPS]        = fw_in[actuator_controls_s::INDEX_FLAPS];
 		fw_out[actuator_controls_s::INDEX_AIRBRAKES]    = _reverse_output;
 
+
 		if(_cth.getColugoDebugVal() == 5){
-			mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
-			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
-			fw_out[actuator_controls_s::INDEX_ROLL]  = _cth.getColugoPiMcPos();
+			//mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
+			//fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
+			//fw_out[actuator_controls_s::INDEX_ROLL]  = _cth.getColugoPiMcPos();
+			//now flaps act as "reverse pitch"
+			mc_out[actuator_controls_s::INDEX_FLAPS] = -fw_in[actuator_controls_s::INDEX_PITCH];
 			//in fw mode -we are ALWAYS LOCKED!
 			_cth.lockColugoActuator();//locked - until fully mc mode...
 		}
 		if(_cth.getColugoDebugVal() == 6){
-			mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
-			fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
-			fw_out[actuator_controls_s::INDEX_ROLL]  = 0;
+			//mc_out[actuator_controls_s::INDEX_FLAPS] = _cth.getColugoFlapsMcPos();
+			//fw_out[actuator_controls_s::INDEX_PITCH] = _cth.getColugoPiMcPos();
+			//fw_out[actuator_controls_s::INDEX_ROLL]  = 0;
 			//in fw mode -we are ALWAYS LOCKED!
 			_cth.lockColugoActuator();//locked - until fully mc mode...
 		}
