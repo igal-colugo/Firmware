@@ -120,8 +120,11 @@ void LoggedTopics::add_default_topics()
 	add_optional_topic("debug_vect_clg", 250);
 	add_optional_topic("colugo_actuator", 250);
 	add_topic("wind", 1000);
+        add_optional_topic("arial_obox_status", 500);
+        add_optional_topic("currawong_ce367ecu_status", 200);
+        add_optional_topic("hfe_da35efi_status", 200);
 
-	// multi topics
+    // multi topics
 	add_optional_topic_multi("actuator_outputs", 100, 3);
 	add_optional_topic_multi("airspeed_wind", 1000, 4);
 	add_optional_topic_multi("control_allocator_status", 200, 2);
