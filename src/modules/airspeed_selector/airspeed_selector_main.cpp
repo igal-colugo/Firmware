@@ -562,7 +562,7 @@ void AirspeedModule::select_airspeed_and_publish()
 
     //@bug Vlad _number_of_airspeed_sensors > 1 if there is 1 sensor so no sense to switch between sensors
     //@note Vlad do not allow if number of airspeed sensors < 2
-    const bool airspeed_sensor_switching_allowed = _number_of_airspeed_sensors > 1 &&
+    const bool airspeed_sensor_switching_allowed = _number_of_airspeed_sensors > 0 &&
 			_param_airspeed_primary_index.get() > airspeed_index::GROUND_MINUS_WIND_INDEX && _param_airspeed_checks_on.get();
 
 	const bool airspeed_sensor_added = _prev_number_of_airspeed_sensors < _number_of_airspeed_sensors;
