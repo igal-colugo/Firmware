@@ -58,14 +58,6 @@ ControlAllocator::ControlAllocator() : ModuleParams(nullptr), ScheduledWorkItem(
     _actuator_servos_pub.advertise();
     _actuator_servos_trim_pub.advertise();
 
-/*
-    for (int i = 0; i < MAX_NUM_MOTORS; ++i)
-    {
-        char buffer[17];
-        snprintf(buffer, sizeof(buffer), "CA_R%u_SLEW", i);
-        _param_handles.slew_rate_motors[i] = param_find(buffer);
-    }
-*/
     for (int i = 0; i < MAX_NUM_SERVOS; ++i)
     {
         char buffer[17];
@@ -113,11 +105,9 @@ void ControlAllocator::parameters_updated()
 
     for (int i = 0; i < MAX_NUM_MOTORS; ++i)
     {
-       // param_get(_param_handles.slew_rate_motors[i], &_params.slew_rate_motors[i]);
-       // _has_slew_rate |= _params.slew_rate_motors[i] > FLT_EPSILON;
         _params.slew_rate_motors[i] = cst_COLUGO_MOTOR_SLEW;
     }
-    _params.slew_rate_motors[4] = 2;
+    _params.slew_rate_motors[4] = 2.0f;
     _has_slew_rate = true;
 
     for (int i = 0; i < MAX_NUM_SERVOS; ++i)
