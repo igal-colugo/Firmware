@@ -112,6 +112,4 @@ platforms/nuttx/src/px4/common/cdc_acm_check copy.cpp
 platforms/nuttx/src/px4/common/cdc_acm_check_modyfied.cpp
 .gitignore
 platforms/nuttx/src/px4/common/cdc_acm_check_not_modyfied.cpp
-.vscode/tasks.json
-.vscode/tasks.json
 platforms/posix/cmake/sitl_target.cmake
