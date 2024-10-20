@@ -106,9 +106,8 @@ public:
 	bool init();
 
 private:
-	const float cst_COLUGO_MOTOR_SLEW = 0.8;
+	const float cst_COLUGO_MOTOR_SLEW = 0.8f;
 	struct ParamHandles {
-	//	param_t slew_rate_motors[MAX_NUM_MOTORS];
 		param_t slew_rate_servos[MAX_NUM_SERVOS];
 	};
 
