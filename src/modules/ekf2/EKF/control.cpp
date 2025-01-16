@@ -99,6 +99,8 @@ void Ekf::controlFusionModes()
         const uint64_t baro_time_prev = _baro_sample_delayed.time_us;
         _baro_data_ready = _baro_buffer->pop_first_older_than(_imu_sample_delayed.time_us, &_baro_sample_delayed);
 
+        _baro_hgt_faulty = _baro_hgt_intermittent || !isFinite(_baro_sample_delayed.hgt);
+
         // if we have a new baro sample save the delta time between this sample and the last sample which is
         // used below for baro offset calculations
         if (_baro_data_ready && baro_time_prev != 0)
@@ -743,9 +745,6 @@ void Ekf::controlHeightSensorTimeouts()
 
             if (reset_to_gps)
             {
-                // set height sensor health
-                _baro_hgt_faulty = true;
-
                 startGpsHgtFusion();
 
                 failing_height_source = "baro";
