@@ -318,7 +318,10 @@ bool Ekf::shouldInhibitMag() const
 
 void Ekf::checkMagFieldStrength(const Vector3f &mag_sample)
 {
-	if (_params.check_mag_strength
+        _control_status.flags.mag_fault = false;
+        _warning_events.flags.emergency_yaw_reset_mag_stopped = false;
+
+        if (_params.check_mag_strength
 	    && ((_params.mag_fusion_type <= MAG_FUSE_TYPE_3D) || (_params.mag_fusion_type == MAG_FUSE_TYPE_INDOOR && _control_status.flags.gps))) {
 
 		if (PX4_ISFINITE(_mag_strength_gps)) {
@@ -334,6 +337,8 @@ void Ekf::checkMagFieldStrength(const Vector3f &mag_sample)
 	} else {
 		_control_status.flags.mag_field_disturbed = false;
 	}
+
+        _control_status.flags.mag_fault = _warning_events.flags.emergency_yaw_reset_mag_stopped = _control_status.flags.mag_field_disturbed;
 }
 
 bool Ekf::isMeasuredMatchingExpected(const float measured, const float expected, const float gate)
