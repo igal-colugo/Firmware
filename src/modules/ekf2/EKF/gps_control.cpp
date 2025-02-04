@@ -201,6 +201,12 @@ bool Ekf::shouldResetGpsFusion() const
 
 bool Ekf::isYawFailure() const
 {
+    //@note Vlad:to prevent yaw reset to gps yaw if magnetometer is good
+    if (!_control_status.flags.mag_fault)
+    {
+        return false;
+    }
+
     if (!isYawEmergencyEstimateAvailable())
     {
         return false;
