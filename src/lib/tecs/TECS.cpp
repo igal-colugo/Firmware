@@ -639,6 +639,6 @@ void TECS::_update_speed_height_weights()
 
 	// don't allow any weight to be larger than one, as it has the same effect as reducing the control
 	// loop time constant and therefore can lead to a destabilization of that control loop
-	_SPE_weighting = constrain(2.0f - _SKE_weighting, 0.f, 1.f);
-	_SKE_weighting = constrain(_SKE_weighting, 0.f, 1.f);
+	_SPE_weighting = constrain(2.0f - _SKE_weighting, 0.f, 2.f);
+	_SKE_weighting = constrain(_SKE_weighting, 0.f, 2.f);
 }
