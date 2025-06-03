@@ -97,7 +97,7 @@
                     "PX4_SIM_SPEED_FACTOR": "1"
                 }
             },
-            "command": "gzserver --verbose ${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/worlds/empty.world",
+            "command": "gzserver --verbose ${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/worlds/${input:gazeboWorld}.world",
             "isBackground": true,
             "presentation": {
                 "echo": true,
@@ -139,7 +139,7 @@
                     "PX4_SIM_SPEED_FACTOR": "1"
                 }
             },
-            "command": "gz model --verbose --spawn-file=${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/iris/iris.sdf --model-name=iris -x 1.01 -y 0.98 -z 0.83",
+            "command": "gz model --verbose --spawn-file=${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/${input:vehicleModel}/${input:vehicleModel}.sdf --model-name=${input:vehicleModel} -x 1.01 -y 0.98 -z 0.83",
             "isBackground": false,
             "presentation": {
                 "echo": true,
@@ -227,7 +227,6 @@
             "problemMatcher": [],
             "dependsOn":["px4_sitl_cleanup"]
         },
-
         {
             "label": "px4_sitl_cleanup",
             "type": "shell",
@@ -294,6 +293,303 @@
                 "clear": false
             },
             "problemMatcher": []
+        },
+        {
+            "label": "make cubeorange and upload",
+            "type": "shell",
+            "command": "make cubepilot_cubeorange upload"
+        },
+        {
+            "label": "make cubeorangeplus and upload",
+            "type": "shell",
+            "command": "make cubepilot_cubeorangeplus upload"
+        },
+        {
+            "label": "make px4_fmu_v6x and upload",
+            "type": "shell",
+            "command": "make px4_fmu-v6x upload"
+        },
+        {
+            "label": "gazebo build",
+            "type": "shell",
+            "command": "make px4_sitl_default sitl_gazebo-classic",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            }
+        },
+        {
+            "label": "gazebo gui start",
+            "type": "shell",
+            "dependsOn": "gazebo-classic build",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo-classic",
+                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models",
+                    "PX4_SIM_SPEED_FACTOR": "1"
+                }
+            },
+            "command": "gazebo --verbose ${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/worlds/${input:gazeboWorld}.world",
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
+        {
+            "label": "gazebo start",
+            "type": "shell",
+            "dependsOn": "gazebo build",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo-classic",
+                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models",
+                    "PX4_SIM_SPEED_FACTOR": "1"
+                }
+            },
+            "command": "gzserver --verbose ${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/worlds/${input:gazeboWorld}.world",
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
+        {
+            "label": "gazebo gui",
+            "type": "shell",
+            "dependsOn": "gazebo gui start",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo-classic",
+                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models",
+                    "PX4_SIM_SPEED_FACTOR": "1"
+                }
+            },
+            "command": "gz model --verbose --spawn-file=${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/${input:vehicleModel}/${input:vehicleModel}.sdf --model-name=${input:vehicleModel} -x 1.01 -y 0.98 -z 0.83",
+            "isBackground": false,
+            "presentation": {
+                "echo": true,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
+        {
+            "label": "gazebo",
+            "type": "shell",
+            "dependsOn": "gazebo-classic start",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo-classic",
+                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models",
+                    "PX4_SIM_SPEED_FACTOR": "1"
+                }
+            },
+            "command": "gz model --verbose --spawn-file=${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/${input:vehicleModel}/${input:vehicleModel}.sdf --model-name=${input:vehicleModel} -x 1.01 -y 0.98 -z 0.83",
+            "isBackground": false,
+            "presentation": {
+                "echo": true,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
+        {
+            "label": "gazebo client",
+            "type": "shell",
+            "dependsOn": "gazebo-classic build",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo-classic",
+                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models",
+                    "PX4_SIM_SPEED_FACTOR": "1"
+                }
+            },
+            "command": "gzclient --verbose",
+            "isBackground": true,
+            "presentation": {
+                "echo": true,
+                "reveal": "never",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
+        {
+            "label": "gazebo kill",
+            "type": "shell",
+            "command": "killall gzserver",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "dependsOn": [
+                "px4_sitl_cleanup"
+            ]
+        },
+        {
+            "label": "px4_sitl_cleanup",
+            "type": "shell",
+            "command": "rm -rfv /tmp/px4*",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": [],
+            "dependsOn": [
+                "px4_kill"
+            ]
+        },
+        {
+            "label": "px4_kill",
+            "type": "shell",
+            "command": "killall px4 || true",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "run HITL",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "GAZEBO_PLUGIN_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo-classic",
+                    "GAZEBO_MODEL_PATH": "${workspaceFolder}/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models",
+                    "LD_LIBRARY_PATH": "${workspaceFolder}/build/px4_sitl_default/build_gazebo-classic",
+                    "PX4_HOME_LAT":"31.916728",//Ayanot
+                    "PX4_HOME_LON":"34.760605",
+                    "PX4_HOME_ALT":"20",
+                    "PX4_SIM_SPEED_FACTOR": "1"
+                }
+            },
+            "command": "DONT_RUN=1 make px4_sitl_default gazebo;gazebo --verbose Tools/simulation/gazebo-classic/sitl_gazebo-classic/worlds/${input:gazeboWorld}.world"
         }
     ],
     "inputs": [
@@ -305,6 +601,44 @@
                 "default"
             ],
             "default": "default"
+        },
+        {
+            "type": "pickString",
+            "id": "vehicleModel",
+            "description": "gazebo model",
+            "options": [
+                "iris",
+                "typhoon_h480",
+                "plane",
+                "catapult",
+                "lidar",
+                "standard_vtol",
+                "colugo_vtol",
+                "tailsitter",
+                "tiltrotor",
+                "r1_rover",
+                "boat"
+            ],
+            "default": "iris"
+        },
+        {
+            "type": "pickString",
+            "id": "gazeboWorld",
+            "description": "gazebo world",
+            "options": [
+                "baylands",
+                "empty",
+                "ksql_airport",
+                "mcmillan_airfield",
+                "sonoma_raceway",
+                "warehouse",
+                "windy",
+                "yosemite",
+                "hitl_standard_vtol",
+                "hitl_colugo_vtol",
+                "hitl_iris"
+            ],
+            "default": "empty"
         }
     ]
 }

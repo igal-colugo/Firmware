@@ -237,15 +237,40 @@ CONFIG:
       settings:
         CONFIG: cuav_x7pro_default
     cubepilot_cubeorange_test:
-      short: cubepilot_cubeorange
+      short: cubepilot_cubeorange_test
       buildType: MinSizeRel
       settings:
         CONFIG: cubepilot_cubeorange_test
-    cubepilot_cubeorangeplus_test:
-      short: cubepilot_cubeorangeplus
+    cubepilot_cubeorange_default:
+      short: cubepilot_cubeorange_default
       buildType: MinSizeRel
       settings:
-        CONFIG: cubepilot_cubeorangeplus_test
+        CONFIG: cubepilot_cubeorange
+    cubepilot_cubeorange_release:
+      short: cubepilot_cubeorange_release
+      buildType: MinSizeRel
+      settings:
+        CONFIG: cubepilot_cubeorange
+    cubepilot_cubeorange_debug:
+      short: cubepilot_cubeorange_debug
+      buildType: Debug
+      settings:
+        CONFIG: cubepilot_cubeorange
+    cubepilot_cubeorangeplus_default:
+      short: cubepilot_cubeorangeplus_default
+      buildType: MinSizeRel
+      settings:
+        CONFIG: cubepilot_cubeorangeplus
+    cubepilot_cubeorangeplus_release:
+      short: cubepilot_cubeorangeplus_release
+      buildType: MinSizeRel
+      settings:
+        CONFIG: cubepilot_cubeorangeplus
+    cubepilot_cubeorangeplus_debug:
+      short: cubepilot_cubeorangeplus_debug
+      buildType: Debug
+      settings:
+        CONFIG: cubepilot_cubeorangeplus
     emlid_navio2_default:
       short: emlid_navio2
       buildType: MinSizeRel
