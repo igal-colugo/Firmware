@@ -47,6 +47,9 @@
 
 #include "EKFGSF_yaw.h"
 #include "baro_bias_estimator.hpp"
+//for colugo debug
+#include <uORB/uORB.h>
+#include <uORB/topics/debug_vect.h>
 
 class Ekf final : public EstimatorInterface
 {
@@ -565,6 +568,10 @@ private:
 	bool _is_range_aid_suitable{false};	///< true when range finder can be used in flight as the height reference instead of the primary height sensor
 
 	float _height_rate_lpf{0.0f};
+
+	//colugo debug
+	struct debug_vect_s dbg_arspd_vect;
+	orb_advert_t pub_dbg_arspd_vect;
 
 	// update the real time complementary filter states. This includes the prediction
 	// and the correction step

@@ -145,7 +145,15 @@ void Ekf::fuseAirspeed()
 
 	// Calculate measurement innovation
 	_airspeed_innov = v_tas_pred - _airspeed_sample_delayed.true_airspeed;
+	//ig show v_tas_pred _airspeed_innov_var
 
+
+		/* send one vector */
+		dbg_arspd_vect.x = v_tas_pred;
+		dbg_arspd_vect.y = _airspeed_innov_var;
+		dbg_arspd_vect.z = _airspeed_sample_delayed.true_airspeed;
+		dbg_arspd_vect.timestamp = hrt_absolute_time();
+		orb_publish(ORB_ID(debug_vect), pub_dbg_arspd_vect, &dbg_arspd_vect);
 	// Compute the ratio of innovation to gate size
 	_tas_test_ratio = sq(_airspeed_innov) / (sq(fmaxf(_params.tas_innov_gate, 1.0f)) * _airspeed_innov_var);
 
