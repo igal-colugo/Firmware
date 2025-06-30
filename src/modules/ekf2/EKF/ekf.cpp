@@ -43,10 +43,18 @@
 
 #include <mathlib/mathlib.h>
 
+
 bool Ekf::init(uint64_t timestamp)
 {
 	bool ret = initialise_interface(timestamp);
 	reset();
+
+
+	strncpy(dbg_arspd_vect.name, "airspd", 10);
+	dbg_arspd_vect.x = 1.0f;
+	dbg_arspd_vect.y = 2.0f;
+	dbg_arspd_vect.z = 3.0f;
+	pub_dbg_arspd_vect = orb_advertise(ORB_ID(debug_vect), &dbg_arspd_vect);
 	return ret;
 }
 
