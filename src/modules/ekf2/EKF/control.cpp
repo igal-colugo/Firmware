@@ -952,6 +952,7 @@ void Ekf::controlHeightFusion()
                 {
                     startBaroHgtFusion();
                 }
+                //dont do nothing - dont use gps in any case ig
             //    else if (!_control_status.flags.gps_hgt && !_gps_intermittent && _gps_checks_passed)
           //      {
                     // Use GPS as a fallback
