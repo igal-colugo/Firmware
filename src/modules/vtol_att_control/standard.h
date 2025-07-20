@@ -73,6 +73,7 @@ public:
 	void waiting_on_tecs() override;
 	void blendThrottleAfterFrontTransition(float scale) override;
 
+
 private:
 
 
@@ -121,28 +122,5 @@ private:
 	void parameters_update() override;
 	//cologo staff
 	void publishDebugForMavIfneeded();
-
-
-/*
-get the postion of pitch control from mc to fw trasition based on time past after reaching transition throttle
-*/
-	//float getColugoToFwPitchTransitionTimeBased2();
-
-/*
-get the postion of flaps control from mc to fw trasition based on time past after reaching transition throttle
-*/
-	//float getColugoToFwFlapsTransitionTimeBased2();
-
-	/*returns relative postion acording to _param_c_tr_fw_srv_slew parameter*/
-//	float getColugoSlewedPosition(float startPos, float endPos);
-
-/*
-get the postion of colugo actuator from mc to fw trasition based on time past after reaching transition throttle
-*/
-//	float getColugoActuatorToFwTransition2();
-
-//colugo go through the trasitions stages to fw
-	//void updateColugoFwTransitionStage();
-
 };
 #endif

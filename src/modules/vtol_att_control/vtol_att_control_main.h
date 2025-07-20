@@ -124,7 +124,9 @@ public:
 	void quadchute(QuadchuteReason reason);
 	int get_transition_command() {return _transition_command;}
 	bool get_immediate_transition() {return _immediate_transition;}
-	void reset_immediate_transition() {_immediate_transition = false;}
+	void reset_immediate_transition() {
+		_transition_command   = vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC;//reset request also
+		_immediate_transition = false;}
 
 	float getAirDensity() const { return _air_density; }
 
