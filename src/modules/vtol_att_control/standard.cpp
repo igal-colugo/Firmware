@@ -70,9 +70,6 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_params_handles_standard.reverse_output = param_find("VT_B_REV_OUT");
 	_params_handles_standard.reverse_delay = param_find("VT_B_REV_DEL");
 
-	//colugo
-	//_colugo_fw_trans_stage = COLUGO_FW_TRANS_STAGE::TRANS_IDLE;
-
 	//debug
 	/* advertise colugo debug vect */
 	//_dbg_vect_clg.x = 1.0f;
@@ -136,8 +133,8 @@ void Standard::update_vtol_state()
 		_reverse_output = 0.0f;
 
 		//reset failsafe when FW is no longer requested
-		if (!_attc->is_fixed_wing_requested()) {
-			_vtol_vehicle_status->vtol_transition_failsafe = false;
+		if (_vtol_mode == mode::ROTARY_WING && time_since_trans_start > 5.0) {
+			_attc->reset_immediate_transition();
 		}
 
 	}

@@ -157,7 +157,7 @@ void TECS::_update_speed_setpoint()
 	// Set the TAS demand to the minimum value if an underspeed or
 	// or a uncontrolled descent condition exists to maximise climb rate
 	if ((_uncommanded_descent_recovery) || (_underspeed_detected)) {
-		_TAS_setpoint = _TAS_min;
+		_TAS_setpoint = _equivalent_airspeed_cruise; //_TAS_min;//ig  is it right solution?
 	}
 
 	_TAS_setpoint = constrain(_TAS_setpoint, _TAS_min, _TAS_max);
@@ -205,7 +205,7 @@ void TECS::_detect_underspeed()
 		return;
 	}
 
-	if ((_tas_state < _TAS_min * 0.95f)
+	if ((_tas_state < _TAS_min * 0.88f)
 	|| ((_vert_pos_state < _hgt_setpoint) && _underspeed_detected)) {
 
 		_underspeed_detected = true;

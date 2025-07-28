@@ -200,15 +200,21 @@ void VtolAttitudeControl::vehicle_cmd_poll()
 
             // deny transition from MC to FW in Takeoff, Land, RTL and Orbit
             if (transition_command_param1 == vtol_vehicle_status_s::VEHICLE_VTOL_STATE_FW &&
-                (vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF || vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_LAND ||
-                 vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL || vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_ORBIT))
+                (vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF || vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_LAND
+                  // || vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL || vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_ORBIT
+                ))
             {
 
                 result = vehicle_command_ack_s::VEHICLE_RESULT_TEMPORARILY_REJECTED;
             }
             else
             {
+                if(!_immediate_transition){//if we are not in emerency mode...
+                    _vtol_vehicle_status.vtol_transition_failsafe = false;//reset if user issued command
+                }
                 _transition_command = transition_command_param1;
+
+
                 _immediate_transition = (PX4_ISFINITE(vehicle_command.param2)) ? int(vehicle_command.param2 + 0.5f) : false;
             }
 
