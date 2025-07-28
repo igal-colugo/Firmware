@@ -455,10 +455,10 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
     int32_t sim_gps_used = 0;
     param_get(sim_gps_used_param, &sim_gps_used);
 
-    if (!_gps_blocked)
-    {
-        sensor_gps_s gps{};
+    sensor_gps_s gps{};
 
+    if (!_gps_blocked && !_gps_wrong && !_gps_stuck) //@note gps ok
+    {
         gps.lat = hil_gps.lat;
         gps.lon = hil_gps.lon;
         gps.alt = hil_gps.alt;
@@ -466,13 +466,13 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
 
         gps.s_variance_m_s = 0.25f;
         gps.c_variance_rad = 0.5f;
-        gps.fix_type = sim_gps_fix;//hil_gps.fix_type;
+        gps.fix_type = sim_gps_fix; // hil_gps.fix_type;
 
         gps.eph = (float) hil_gps.eph * 1e-2f; // cm -> m
         gps.epv = (float) hil_gps.epv * 1e-2f; // cm -> m
 
-        gps.hdop = 0; // TODO
-        gps.vdop = 0; // TODO
+        gps.hdop = gps.eph;
+        gps.vdop = gps.epv;
 
         gps.noise_per_ms = 0;
         gps.automatic_gain_control = 0;
@@ -493,6 +493,15 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
 
         gps.heading = NAN;
         gps.heading_offset = NAN;
+
+        if (hil_gps.id == 0)
+        {
+            _last_gps_0 = gps;
+        }
+        if (hil_gps.id == 1)
+        {
+            _last_gps_1 = gps;
+        }
 
         gps.timestamp = hrt_absolute_time();
 
@@ -524,69 +533,173 @@ void Simulator::handle_message_hil_gps(const mavlink_message_t *msg)
     }
     else
     {
-        sensor_gps_s gps{};
-
-        gps.lat = hil_gps.lat;
-        gps.lon = hil_gps.lon;
-        gps.alt = hil_gps.alt;
-        gps.alt_ellipsoid = hil_gps.alt;
-
-        gps.s_variance_m_s = 100.0f;
-        gps.c_variance_rad = 100.0f;
-
-        gps.fix_type = sim_gps_fix;
-
-        gps.eph = 100.0f;
-        gps.epv = 100.0f;
-
-        gps.hdop = 100.0f; // TODO
-        gps.vdop = 100.0f; // TODO
-
-        gps.noise_per_ms = 0;
-        gps.automatic_gain_control = 0;
-        gps.jamming_indicator = 0;
-        gps.jamming_state = 0;
-
-        gps.vel_m_s = (float) (hil_gps.vel) / 100.0f;                                                        // cm/s -> m/s
-        gps.vel_n_m_s = (float) (hil_gps.vn) / 100.0f;                                                       // cm/s -> m/s
-        gps.vel_e_m_s = (float) (hil_gps.ve) / 100.0f;                                                       // cm/s -> m/s
-        gps.vel_d_m_s = (float) (hil_gps.vd) / 100.0f;                                                       // cm/s -> m/s
-        gps.cog_rad = ((hil_gps.cog == 65535) ? NAN : matrix::wrap_2pi(math::radians(hil_gps.cog * 1e-2f))); // cdeg -> rad
-        gps.vel_ned_valid = true;
-
-        gps.timestamp_time_relative = 0;
-        gps.time_utc_usec = hil_gps.time_usec;
-
-        gps.satellites_used = sim_gps_used;
-
-        gps.heading = NAN;
-        gps.heading_offset = NAN;
-
-        gps.timestamp = hrt_absolute_time();
-
-        // New publishers will be created based on the HIL_GPS ID's being different or not
-        for (size_t i = 0; i < sizeof(_gps_ids) / sizeof(_gps_ids[0]); i++)
+        if (_gps_blocked)
         {
-            if (_sensor_gps_pubs[i] && _gps_ids[i] == hil_gps.id)
+            // do nothing
+        }
+        else if (_gps_wrong)
+        {
+            if (hil_gps.id == 0)
             {
-                _sensor_gps_pubs[i]->publish(gps);
-                break;
+                gps.lat = hil_gps.lat;
+                gps.lon = hil_gps.lon;
+                gps.alt = hil_gps.alt;
+
+                gps.s_variance_m_s = 0.0;
+                gps.c_variance_rad = 0.0;
+
+                gps.fix_type = 0;
+
+                gps.eph = hil_gps.eph;
+                gps.epv = hil_gps.epv;
+
+                gps.hdop = gps.eph;
+                gps.vdop = gps.epv;
+
+                gps.noise_per_ms = 0;
+                gps.automatic_gain_control = 0;
+                gps.jamming_indicator = 0;
+                gps.jamming_state = 0;
+
+                gps.vel_m_s = (float) (hil_gps.vel) / 100.0f;  // cm/s -> m/s
+                gps.vel_n_m_s = (float) (hil_gps.vn) / 100.0f; // cm/s -> m/s
+                gps.vel_e_m_s = (float) (hil_gps.ve) / 100.0f; // cm/s -> m/s
+                gps.vel_d_m_s = (float) (hil_gps.vd) / 100.0f; // cm/s -> m/s
+                gps.cog_rad = 0;                               //((hil_gps.cog == 65535) ? NAN : matrix::wrap_2pi(math::radians(hil_gps.cog * 1e-2f))); // cdeg -> rad
+                gps.vel_ned_valid = true;
+
+                gps.timestamp_time_relative = 0;
+                gps.time_utc_usec = hil_gps.time_usec;
+
+                gps.satellites_used = 0;
+
+                gps.heading = NAN;
+                gps.heading_offset = NAN;
+
+                gps.timestamp = hrt_absolute_time();
+            }
+            else if (hil_gps.id == 1)
+            {
+                // if (_lpos_sub.updated())
+                // {
+                //     if (_lpos_sub.copy(&lpos))
+                //     {
+                //         if (lpos.z_valid && lpos.z_global)
+                //         {
+                //             gps.alt = (-lpos.z + lpos.ref_alt) * 1000.0f;
+                //         }
+                //         else
+                //         {
+                //             // fall back to baro altitude
+                //             _air_data_sub.copy(&air_data);
+                //             if (air_data.timestamp > 0)
+                //             {
+                //                 gps.alt = air_data.baro_alt_meter * 1000.0f;
+                //             }
+                //         }
+                //     }
+                // }
+
+                // if (_lpos_sub.updated())
+                // {
+                //     if (_lpos_sub.copy(&lpos))
+                //     {
+                //         if (lpos.z_valid && lpos.z_global)
+                //         {
+                //             gps.alt = (-lpos.z + lpos.ref_alt) * 1000.0f;
+                //         }
+                //     }
+                // }
+
+                if (_air_data_sub.updated())
+                {
+                    // fall back to baro altitude
+                    _air_data_sub.copy(&air_data);
+                    if (air_data.timestamp > 0)
+                    {
+                        gps.alt = air_data.baro_alt_meter * 1000.0f;
+                    }
+                }
+
+                gps.lat = hil_gps.lat;
+                gps.lon = hil_gps.lon;
+                gps.alt_ellipsoid = gps.alt;
+
+                gps.s_variance_m_s = 0.25;
+                gps.c_variance_rad = 0.5;
+
+                gps.fix_type = 4;
+
+                gps.eph = 1.03;
+                gps.epv = 1.0;
+
+                gps.hdop = gps.eph;
+                gps.vdop = gps.epv;
+
+                gps.noise_per_ms = 0;
+                gps.automatic_gain_control = 0;
+                gps.jamming_indicator = 0;
+                gps.jamming_state = 0;
+
+                gps.vel_m_s = (float) (hil_gps.vel) / 100.0f;  // cm/s -> m/s
+                gps.vel_n_m_s = (float) (hil_gps.vn) / 100.0f; // cm/s -> m/s
+                gps.vel_e_m_s = (float) (hil_gps.ve) / 100.0f; // cm/s -> m/s
+                gps.vel_d_m_s = (float) (hil_gps.vd) / 100.0f; // cm/s -> m/s
+                gps.cog_rad = 0;                               //((hil_gps.cog == 65535) ? NAN : matrix::wrap_2pi(math::radians(hil_gps.cog * 1e-2f))); // cdeg -> rad
+                gps.vel_ned_valid = true;
+
+                gps.timestamp_time_relative = 0;
+                gps.time_utc_usec = hil_gps.time_usec;
+
+                gps.satellites_used = 32;
+
+                gps.heading = NAN;
+                gps.heading_offset = NAN;
+
+                gps.timestamp = hrt_absolute_time();
             }
 
-            if (_sensor_gps_pubs[i] == nullptr)
+            // New publishers will be created based on the HIL_GPS ID's being different or not
+            for (size_t i = 0; i < sizeof(_gps_ids) / sizeof(_gps_ids[0]); i++)
             {
-                _sensor_gps_pubs[i] = new uORB::PublicationMulti<sensor_gps_s>{ORB_ID(sensor_gps)};
-                _gps_ids[i] = hil_gps.id;
+                if (_sensor_gps_pubs[i] && _gps_ids[i] == hil_gps.id)
+                {
+                    _sensor_gps_pubs[i]->publish(gps);
+                    break;
+                }
 
-                device::Device::DeviceId device_id;
-                device_id.devid_s.bus_type = device::Device::DeviceBusType::DeviceBusType_SIMULATION;
-                device_id.devid_s.bus = 0;
-                device_id.devid_s.address = i;
-                device_id.devid_s.devtype = DRV_GPS_DEVTYPE_SIM;
-                gps.device_id = device_id.devid;
+                if (_sensor_gps_pubs[i] == nullptr)
+                {
+                    _sensor_gps_pubs[i] = new uORB::PublicationMulti<sensor_gps_s>{ORB_ID(sensor_gps)};
+                    _gps_ids[i] = hil_gps.id;
 
-                _sensor_gps_pubs[i]->publish(gps);
-                break;
+                    device::Device::DeviceId device_id;
+                    device_id.devid_s.bus_type = device::Device::DeviceBusType::DeviceBusType_SIMULATION;
+                    device_id.devid_s.bus = 0;
+                    device_id.devid_s.address = i;
+                    device_id.devid_s.devtype = DRV_GPS_DEVTYPE_SIM;
+                    gps.device_id = device_id.devid;
+
+                    _sensor_gps_pubs[i]->publish(gps);
+                    break;
+                }
+            }
+        }
+        else if (_gps_stuck)
+        {
+            if (hil_gps.id == 0)
+            {
+                if (_sensor_gps_pubs[0] != nullptr)
+                {
+                    _sensor_gps_pubs[0]->publish(_last_gps_0);
+                }
+            }
+            if (hil_gps.id == 1)
+            {
+                if (_sensor_gps_pubs[1] != nullptr)
+                {
+                    _sensor_gps_pubs[1]->publish(_last_gps_1);
+                }
             }
         }
     }
@@ -1301,12 +1414,32 @@ void Simulator::check_failure_injections()
                 PX4_WARN("CMD_INJECT_FAILURE, GPS off");
                 supported = true;
                 _gps_blocked = true;
+                _gps_wrong = false;
+                _gps_stuck = false;
+            }
+            else if (failure_type == vehicle_command_s::FAILURE_TYPE_WRONG)
+            {
+                PX4_WARN("CMD_INJECT_FAILURE, GPS wrong");
+                supported = true;
+                _gps_blocked = false;
+                _gps_wrong = true;
+                _gps_stuck = false;
+            }
+            else if (failure_type == vehicle_command_s::FAILURE_TYPE_STUCK)
+            {
+                PX4_WARN("CMD_INJECT_FAILURE, GPS stuck");
+                supported = true;
+                _gps_blocked = false;
+                _gps_wrong = false;
+                _gps_stuck = true;
             }
             else if (failure_type == vehicle_command_s::FAILURE_TYPE_OK)
             {
                 PX4_INFO("CMD_INJECT_FAILURE, GPS ok");
                 supported = true;
                 _gps_blocked = false;
+                _gps_wrong = false;
+                _gps_stuck = false;
             }
         }
         else if (failure_unit == vehicle_command_s::FAILURE_UNIT_SENSOR_ACCEL)
