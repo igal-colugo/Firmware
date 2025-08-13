@@ -1391,3 +1391,14 @@ PARAM_DEFINE_INT32(EKF2_SYNT_MAG_Z, 0);
  * @decimal 1
  */
 PARAM_DEFINE_FLOAT(EKF2_GSF_TAS, 15.0f);
+
+/**
+ * Maximum lapsed time for reset height to baro.
+ *
+ * @group EKF2
+ * @group EKF2
+ * @min 0
+ * @max 3600
+ * @unit s
+ */
+PARAM_DEFINE_INT32(EKF2_RST_HGT_T, 0);

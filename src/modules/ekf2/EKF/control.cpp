@@ -927,6 +927,10 @@ void Ekf::checkVerticalAccelerationHealth()
 
 void Ekf::controlHeightFusion()
 {
+    hrt_abstime actual_height_fusion_time = hrt_absolute_time();
+    static hrt_abstime previous_height_fusion_time = actual_height_fusion_time;
+    static hrt_abstime reset_baro_fusion_time = 0;
+
     checkRangeAidSuitability();
     const bool do_range_aid = (_params.range_aid == 1) && _is_range_aid_suitable;
 
@@ -958,6 +962,27 @@ void Ekf::controlHeightFusion()
                     // Use GPS as a fallback
             //        startGpsHgtFusion();
             //    }
+            }
+            else
+            {
+                if (!_baro_hgt_faulty && !_baro_hgt_intermittent)
+                {
+                    reset_baro_fusion_time = (_params.reset_height_time > 0) ? reset_baro_fusion_time + math::abs_t(actual_height_fusion_time - previous_height_fusion_time) : 0;
+                    if (reset_baro_fusion_time > 0 && reset_baro_fusion_time > _params.reset_height_time * 1e6)
+                    {
+                        reset_baro_fusion_time = 0;
+                        if (!_control_status.flags.rng_hgt)
+                        {
+                            //@note update offset of barometer
+                            // if (!_control_status.flags.in_air && _control_status.flags.vehicle_at_rest)
+                            // {
+                            //  _baro_hgt_offset = _baro_sample_delayed.hgt;
+                            // }
+
+                            resetHeightToBaro();
+                        }
+                    }
+                }
             }
         }
 
@@ -1063,6 +1088,8 @@ void Ekf::controlHeightFusion()
             fuseEvHgt();
         }
     }
+
+    previous_height_fusion_time = actual_height_fusion_time;
 }
 
 void Ekf::checkRangeAidSuitability()
