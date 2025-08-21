@@ -974,10 +974,10 @@ void Ekf::controlHeightFusion()
                         if (!_control_status.flags.rng_hgt)
                         {
                             //@note update offset of barometer
-                            // if (!_control_status.flags.in_air && _control_status.flags.vehicle_at_rest)
-                            // {
-                            //  _baro_hgt_offset = _baro_sample_delayed.hgt;
-                            // }
+                             if (!_control_status.flags.in_air && _control_status.flags.vehicle_at_rest)
+                             {
+                              _baro_hgt_offset = _baro_sample_delayed.hgt;
+                             }
 
                             resetHeightToBaro();
                         }

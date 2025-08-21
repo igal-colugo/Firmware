@@ -250,10 +250,25 @@ void Ekf::resetVerticalPositionTo(const float new_vert_pos)
 
 void Ekf::resetHeightToBaro()
 {
+
     resetVerticalPositionTo(-_baro_sample_delayed.hgt + _baro_hgt_offset);
+
+    publishDebugAltReset(1, _baro_hgt_offset);
 
     // the state variance is the same as the observation
     P.uncorrelateCovarianceSetVariance<1>(9, sq(_params.baro_noise));
+
+
+}
+
+void Ekf::publishDebugAltReset(int resetType, float newVal){
+
+    /* send one indexed value */
+		_dbg_clg_alt.value = newVal;
+        _dbg_clg_alt.ind   = resetType;
+		_dbg_clg_alt.timestamp = hrt_absolute_time();
+		orb_publish(ORB_ID(debug_value), _pub_dbg_clg_alt, &_dbg_clg_alt);
+
 }
 
 void Ekf::resetHeightToGps()
@@ -266,6 +281,8 @@ void Ekf::resetHeightToGps()
 
     // adjust the baro offset
     _baro_hgt_offset += _state.pos(2) - z_pos_before_reset;
+
+    publishDebugAltReset(2, _baro_hgt_offset);
 }
 
 void Ekf::resetHeightToRng()
@@ -291,6 +308,8 @@ void Ekf::resetHeightToRng()
 
     // adjust the baro offset
     _baro_hgt_offset += _state.pos(2) - z_pos_before_reset;
+
+    publishDebugAltReset(3, _baro_hgt_offset);
 }
 
 void Ekf::resetHeightToEv()
@@ -303,6 +322,8 @@ void Ekf::resetHeightToEv()
 
     // adjust the baro offset
     _baro_hgt_offset += _state.pos(2) - z_pos_before_reset;
+
+    publishDebugAltReset(4, _baro_hgt_offset);
 }
 
 void Ekf::resetVerticalVelocityToGps(const gpsSample &gps_sample_delayed)

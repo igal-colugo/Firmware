@@ -50,11 +50,15 @@ bool Ekf::init(uint64_t timestamp)
 	reset();
 
 
-	strncpy(dbg_arspd_vect.name, "airspd", 10);
-	dbg_arspd_vect.x = 1.0f;
-	dbg_arspd_vect.y = 2.0f;
-	dbg_arspd_vect.z = 3.0f;
-	pub_dbg_arspd_vect = orb_advertise(ORB_ID(debug_vect), &dbg_arspd_vect);
+	strncpy(_dbg_arspd_vect.name, "airspd", 10);
+	_dbg_arspd_vect.x = 1.0f;
+	_dbg_arspd_vect.y = 2.0f;
+	_dbg_arspd_vect.z = 3.0f;
+	_pub_dbg_arspd_vect = orb_advertise(ORB_ID(debug_vect), &_dbg_arspd_vect);
+
+	_dbg_clg_alt.ind   = -1;
+	_dbg_clg_alt.value = 0;
+	_pub_dbg_clg_alt    = orb_advertise(ORB_ID(debug_value), &_dbg_clg_alt);
 	return ret;
 }
 

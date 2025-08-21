@@ -50,6 +50,7 @@
 //for colugo debug
 #include <uORB/uORB.h>
 #include <uORB/topics/debug_vect.h>
+#include <uORB/topics/debug_value.h>
 
 class Ekf final : public EstimatorInterface
 {
@@ -570,8 +571,8 @@ private:
 	float _height_rate_lpf{0.0f};
 
 	//colugo debug
-	struct debug_vect_s dbg_arspd_vect;
-	orb_advert_t pub_dbg_arspd_vect;
+	struct debug_vect_s _dbg_arspd_vect;
+	orb_advert_t _pub_dbg_arspd_vect;
 
 	// update the real time complementary filter states. This includes the prediction
 	// and the correction step
@@ -669,6 +670,11 @@ private:
 	void resetHeightToGps();
 	void resetHeightToRng();
 	void resetHeightToEv();
+
+	//colugo alt debug...
+	struct debug_value_s _dbg_clg_alt;
+	orb_advert_t _pub_dbg_clg_alt;
+	void publishDebugAltReset(int resetType, float newVal);
 
 	void resetVerticalVelocityToGps(const gpsSample &gps_sample_delayed);
 	void resetVerticalVelocityToZero();
