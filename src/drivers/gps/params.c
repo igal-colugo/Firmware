@@ -286,3 +286,17 @@ PARAM_DEFINE_INT32(GPS_HIST_T_I, 3);
  * @group GPS
  */
 PARAM_DEFINE_INT32(GPS_HIST_T_O, 3);
+
+/**
+ * enable/disable mavlink GPS baro altitude override
+ *
+ * @boolean
+ * @min 0
+ * @max 1
+ * @value 0 Disabled
+ * @value 1 Enabled
+ *
+ * @reboot_required true
+ * @group GPS
+ */
+PARAM_DEFINE_INT32(GPS_MAV_USE_BARO, 0);
