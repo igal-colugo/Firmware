@@ -1668,13 +1668,13 @@ int Mavlink::configure_streams_to_default(const char *configure_single_stream)
     switch (_mode)
     {
     case MAVLINK_MODE_NORMAL:
-        configure_stream_local("ADSB_VEHICLE", unlimited_rate);
+    configure_stream_local("BATTERY_STATUS", 15.0f);
+
         configure_stream_local("ALTITUDE", 1.0f);
         configure_stream_local("ATTITUDE", 15.0f);
         configure_stream_local("ATTITUDE_TARGET", 2.0f);
-        configure_stream_local("BATTERY_STATUS", 2.0f);
-        configure_stream_local("CAMERA_IMAGE_CAPTURED", unlimited_rate);
-        configure_stream_local("COLLISION", unlimited_rate);
+       configure_stream_local("CAMERA_IMAGE_CAPTURED", 2.0f);
+        configure_stream_local("COLLISION", 1.0f);
         configure_stream_local("DISTANCE_SENSOR", 0.5f);
         configure_stream_local("EFI_STATUS", 2.0f);
         configure_stream_local("ESC_INFO", 1.0f);
@@ -1700,15 +1700,16 @@ int Mavlink::configure_streams_to_default(const char *configure_single_stream)
         configure_stream_local("POSITION_TARGET_LOCAL_NED", 1.5f);
         configure_stream_local("RAW_RPM", 2.0f);
         configure_stream_local("RC_CHANNELS", 5.0f);
-        configure_stream_local("SERVO_OUTPUT_RAW_0", 1.0f);
+        configure_stream_local("SERVO_OUTPUT_RAW_0", 4.0f);
         configure_stream_local("SYS_STATUS", 1.0f);
         configure_stream_local("UTM_GLOBAL_POSITION", 0.5f);
         configure_stream_local("VFR_HUD", 4.0f);
         configure_stream_local("VIBRATION", 0.1f);
         configure_stream_local("WIND_COV", 0.5f);
         configure_stream_local("ASIO_STATUS", 10.0f);
-        configure_stream_local("CE367_STATUS", 15.0f);
-        configure_stream_local("HFE_STATUS", 10.0f);
+        configure_stream_local("CE367_STATUS", 2.0f);
+        configure_stream_local("HFE_STATUS", 2.0f);
+        configure_stream_local("ADSB_VEHICLE", 1.0f);
 
 #if !defined(CONSTRAINED_FLASH)
         configure_stream_local("DEBUG", 1.0f);
@@ -1872,21 +1873,21 @@ int Mavlink::configure_streams_to_default(const char *configure_single_stream)
     case MAVLINK_MODE_CONFIG: // USB
         // Note: streams requiring low latency come first
         configure_stream_local("TIMESYNC", 10.0f);
-        configure_stream_local("CAMERA_TRIGGER", unlimited_rate);
+        configure_stream_local("CAMERA_TRIGGER", 1.0f);
         configure_stream_local("LOCAL_POSITION_NED", 30.0f);
         configure_stream_local("DISTANCE_SENSOR", 10.0f);
-        configure_stream_local("MOUNT_ORIENTATION", 10.0f);
+        configure_stream_local("MOUNT_ORIENTATION", 1.0f);
         configure_stream_local("ODOMETRY", 30.0f);
 
         configure_stream_local("ACTUATOR_CONTROL_TARGET0", 30.0f);
-        configure_stream_local("ADSB_VEHICLE", unlimited_rate);
+
         configure_stream_local("ALTITUDE", 10.0f);
-        configure_stream_local("ATTITUDE", 50.0f);
-        configure_stream_local("ATTITUDE_QUATERNION", 50.0f);
+        configure_stream_local("ATTITUDE", 30.0f);
+        configure_stream_local("ATTITUDE_QUATERNION", 30.0f);
         configure_stream_local("ATTITUDE_TARGET", 8.0f);
-        configure_stream_local("BATTERY_STATUS", 2.0f);
-        configure_stream_local("CAMERA_IMAGE_CAPTURED", unlimited_rate);
-        configure_stream_local("COLLISION", unlimited_rate);
+        configure_stream_local("BATTERY_STATUS", 12.0f);
+        configure_stream_local("CAMERA_IMAGE_CAPTURED", 1.0);
+        configure_stream_local("COLLISION", 1.0);
         configure_stream_local("EFI_STATUS", 10.0f);
         configure_stream_local("ESC_INFO", 10.0f);
         configure_stream_local("ESC_STATUS", 10.0f);
@@ -1897,7 +1898,7 @@ int Mavlink::configure_streams_to_default(const char *configure_single_stream)
         configure_stream_local("GPS_GLOBAL_ORIGIN", 1.0f);
         configure_stream_local("GPS_RAW_INT", unlimited_rate);
         configure_stream_local("GPS_STATUS", 1.0f);
-        configure_stream_local("HIGHRES_IMU", 50.0f);
+        configure_stream_local("HIGHRES_IMU", 20.0f);
         configure_stream_local("HOME_POSITION", 0.5f);
         configure_stream_local("HYGROMETER_SENSOR", 1.0f);
         configure_stream_local("MAG_CAL_REPORT", 1.0f);
@@ -1920,6 +1921,7 @@ int Mavlink::configure_streams_to_default(const char *configure_single_stream)
         configure_stream_local("VFR_HUD", 20.0f);
         configure_stream_local("VIBRATION", 2.5f);
         configure_stream_local("WIND_COV", 10.0f);
+        configure_stream_local("ADSB_VEHICLE", 1.0f);
 
 #if !defined(CONSTRAINED_FLASH)
         configure_stream_local("DEBUG", 50.0f);
