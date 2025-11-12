@@ -153,7 +153,7 @@ def calculate_imu_metrics(ulog: ULog, multi_instance, in_air_no_ground_effects: 
 
             if vehicle_imu_status_data['accel_device_id'][0] == estimator_status_data['accel_device_id'][0]:
 
-                for signal, result in [('gyro_coning_vibration', 'imu_coning'),
+                for signal, result in [('delta_angle_coning_metric', 'imu_coning'),
                                        ('gyro_vibration_metric', 'imu_hfgyro'),
                                        ('accel_vibration_metric', 'imu_hfaccel')]:
 
