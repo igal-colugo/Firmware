@@ -35,8 +35,5 @@ px4_add_module(
 	MAIN gps_parameter_switcher
 	SRCS
 		gps_parameter_switcher.cpp
-		gps_parameter_switcher_params.c
-	COMPILE_FLAGS
-		-O2
 )
 

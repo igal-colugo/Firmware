@@ -37,9 +37,13 @@
  * Parameters for GPS Parameter Switcher module
  */
 
-#include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/module_params.h>
-#include <parameters/param.h>
+#ifndef PARAM_DEFINE_INT32
+#define PARAM_DEFINE_INT32(name, def) /* parameter definition */
+#endif
+
+#ifndef PARAM_DEFINE_FLOAT
+#define PARAM_DEFINE_FLOAT(name, def) /* parameter definition */
+#endif
 
 /**
  * GPS Parameter Switching Enable
@@ -51,5 +55,5 @@
  * @group GPS Parameter Switcher
  * @boolean
  */
-PARAM_DEFINE_INT32(GPS_PARAM_SWITCH_EN, 1);
+PARAM_DEFINE_INT32(GPS_P_SWCH_EN, 1);
 

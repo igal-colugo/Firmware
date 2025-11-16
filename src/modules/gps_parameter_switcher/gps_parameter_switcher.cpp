@@ -71,7 +71,7 @@ void GpsParameterSwitcher::Run()
 		parameter_update_s param_update;
 		_parameter_update_sub.copy(&param_update);
 		updateParams();
-		_enabled = _param_gps_param_switch_en.get() != 0;
+		_enabled = _param_gps_p_swch_en.get() != 0;
 	}
 
 	if (!_enabled) {

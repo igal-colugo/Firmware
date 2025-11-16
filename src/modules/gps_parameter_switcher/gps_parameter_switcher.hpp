@@ -48,6 +48,7 @@
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionInterval.hpp>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <parameters/param.h>
@@ -96,7 +97,7 @@ private:
 	bool _enabled{true}; ///< Enable/disable parameter switching
 
 	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::GPS_PARAM_SWITCH_EN>) _param_gps_param_switch_en
-	)
+		(ParamInt<px4::params::GPS_P_SWCH_EN>) _param_gps_p_swch_en
+	);
 };
 
