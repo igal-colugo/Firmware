@@ -269,6 +269,10 @@ bool ControlAllocator::update_effectiveness_source()
             tmp = new ActuatorEffectivenessCustom(this);
             break;
 
+        case EffectivenessSource::YH_FRAME_VTOL:
+            tmp = new ActuatorEffectivenessYHFrameVTOL(this);
+            break;
+
         default:
             PX4_ERR("Unknown airframe");
             break;

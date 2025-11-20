@@ -63,6 +63,7 @@ px4_add_romfs_files(
 	1037_believer
 	1038_glider
 	13000_standard_vtol
+	13150_colugo_y_vtol
 	1041_tailsitter
 	1042_tiltrotor
 	1043_standard_vtol_drop

@@ -46,6 +46,7 @@
 #include <ActuatorEffectivenessStandardVTOL.hpp>
 #include <ActuatorEffectivenessTiltrotorVTOL.hpp>
 #include <ActuatorEffectivenessTailsitterVTOL.hpp>
+#include <ActuatorEffectivenessYHFrameVTOL.hpp>
 #include <ActuatorEffectivenessRoverAckermann.hpp>
 #include <ActuatorEffectivenessRoverDifferential.hpp>
 #include <ActuatorEffectivenessFixedWing.hpp>
@@ -148,6 +149,7 @@ private:
 		MOTORS_6DOF = 7,
 		MULTIROTOR_WITH_TILT = 8,
 		CUSTOM = 9,
+		YH_FRAME_VTOL = 10,
 	};
 
 	EffectivenessSource _effectiveness_source_id{EffectivenessSource::NONE};

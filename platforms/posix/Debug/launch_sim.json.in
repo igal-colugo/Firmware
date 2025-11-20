@@ -198,6 +198,7 @@
               "plane_catapult",
               "plane_lidar",
               "standard_vtol",
+              "colugo_y_vtol",
               "tailsitter",
               "tiltrotor",
               "r1_rover",
