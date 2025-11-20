@@ -1,0 +1,26 @@
+Multirotor mixer for PX4FMU
+===========================
+
+This file defines a single mixer for a quadrotor in the H configuration.  All controls
+are mixed 100%.
+
+R: 4h
+
+Gimbal / payload mixer for last two channels
+-----------------------------------------------------
+
+#M: 1
+#S: 3 5  10000  10000      0 -10000  10000
+
+#M: 1
+#S: 3 6  10000  10000      0 -10000  10000
+
+# quad_hY.main.mix
+# Custom quad X mixer:
+# Front motors (0,2): roll + pitch, no yaw
+# Rear motors (1,3): yaw + pitch, no roll
+
+M: 0 1.000  1.000  1.000  0.000
+M: 1 1.000  0.000  1.000 -1.000
+M: 2 1.000 -1.000  1.000  0.000
+M: 3 1.000  0.000  1.000  1.000
