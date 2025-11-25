@@ -7,23 +7,21 @@ key = "4c"
 description = "COLUGO 53 Custom: Front=no yaw, Rear=no roll"
 
 [rotor_default]
-axis_thrust = [0.0, 0.0, -1.0]
-axis_torque = [0.0, 0.0, -1.0]  # CW default
-ct        = 1.0
-cm        = 0.05                # Default yaw torque
+axis = [0.0, 0.0, -1.0]
+Ct        = 1.0
+Cm        = 0.05                # Default yaw torque
 
 [[rotors]]
 name      = "front_right"
 position  = [0.8, 0.485, 0.0]   # Y=±0.485 provides roll authority
 direction = "CW"
-cm        = 0.0                 # OVERRIDE: No yaw torque
+Cm        = 0.0                 # OVERRIDE: No yaw torque
 
 [[rotors]]
 name      = "front_left"
 position  = [0.8, -0.485, 0.0]  # Y=±0.485 provides roll authority
 direction = "CCW"
-axis_torque = [0.0, 0.0, 1.0]   # OVERRIDE: CCW torque direction
-cm        = 0.0                 # OVERRIDE: No yaw torque
+Cm        = 0.0                 # OVERRIDE: No yaw torque
 
 [[rotors]]
 name      = "rear_left"

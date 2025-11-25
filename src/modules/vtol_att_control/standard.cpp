@@ -65,6 +65,7 @@ Standard::Standard(VtolAttitudeControl *attc) :
 	_mc_throttle_weight = 1.0f;
 
 	_params_handles_standard.pusher_ramp_dt = param_find("VT_PSHER_RMP_DT");
+    	_params_handles_standard.front_trans_pitch = param_find("VT_F_TR_PIT");
 	_params_handles_standard.back_trans_ramp = param_find("VT_B_TRANS_RAMP");
 	_params_handles_standard.pitch_setpoint_offset = param_find("FW_PSP_OFF");
 	_params_handles_standard.reverse_output = param_find("VT_B_REV_OUT");
@@ -109,6 +110,11 @@ void Standard::parameters_update()
 	/* reverse output */
 	param_get(_params_handles_standard.reverse_delay, &v);
 	_params_standard.reverse_delay = math::constrain(v, 0.0f, 10.0f);
+
+	/*temp for amit*/
+	param_get(_params_handles_standard.front_trans_pitch, &v);
+	_params_standard.front_trans_pitch = math::constrain(v, -20.0f, 20.0f);
+
 
 	_cth.parameters_update();
 
@@ -349,7 +355,7 @@ void Standard::update_transition_state()
 		}
 
 		// ramp up FW_PSP_OFF
-		_v_att_sp->pitch_body = _params_standard.pitch_setpoint_offset * (1.0f - mc_weight);
+		_v_att_sp->pitch_body = math::radians(_params_standard.front_trans_pitch);
 
 		const Quatf q_sp(Eulerf(_v_att_sp->roll_body, _v_att_sp->pitch_body, _v_att_sp->yaw_body));
 		q_sp.copyTo(_v_att_sp->q_d);

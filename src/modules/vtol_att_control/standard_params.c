@@ -127,3 +127,19 @@ PARAM_DEFINE_FLOAT(VT_B_REV_DEL, 0.0f);
  * @group VTOL Attitude Control
  */
 PARAM_DEFINE_FLOAT(VT_PSHER_RMP_DT, 3.0f);
+/**
+ * Colugo VTOL: Additional pitch command during the front transition.
+ *
+ * The value is added (in degrees) to FW_PSP_OFF while the controller blends
+ * from multicopter to fixed-wing attitude. Use it to fine-tune the nose-up or
+ * nose-down bias specifically during the transition without affecting the
+ * fixed-wing pitch setpoint offset in cruise.
+ *
+ * @unit deg
+ * @min -30.0
+ * @max 30.0
+ * @increment 0.5
+ * @decimal 1
+ * @group VTOL Attitude Control
+ */
+PARAM_DEFINE_FLOAT(VT_F_TR_PIT, -6.0f);
