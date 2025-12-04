@@ -300,3 +300,18 @@ PARAM_DEFINE_INT32(GPS_HIST_T_O, 3);
  * @group GPS
  */
 PARAM_DEFINE_INT32(GPS_MAV_USE_BARO, 0);
+
+/**
+ * overrite mavlink GPS VElocity NED valid
+ *
+ * @boolean
+ * @min 0
+ * @max 1
+ * @value 0 invalid
+ * @value 1 valid
+ *
+ * @reboot_required true
+ * @group GPS
+ */
+PARAM_DEFINE_INT32(GPS_MAV_VEL_VAL, 1);
+
