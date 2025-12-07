@@ -4398,6 +4398,7 @@ void Commander::battery_status_check()
     }
 }
 
+//@note Estimator check is only performed when armed gps is required for the current mode
 void Commander::estimator_check()
 {
     // Check if quality checking of position accuracy and consistency is to be performed
